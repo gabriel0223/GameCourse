@@ -134,6 +134,7 @@ export const SKIN_TONES = [
 export const HAIR_COLORS = [
   { id: 'plum', name: 'Plum', color: '#5A3B78' },
   { id: 'black', name: 'Black', color: '#2F2C3A' },
+  { id: 'dark-brown', name: 'Dark brown', color: '#4B2D1C' },
   { id: 'brown', name: 'Brown', color: '#7A4A2B' },
   { id: 'blonde', name: 'Blonde', color: '#E8C15A' },
   { id: 'pink', name: 'Pink', color: '#EE85A8' },

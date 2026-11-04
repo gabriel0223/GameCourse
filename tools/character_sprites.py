@@ -99,6 +99,7 @@ def base(skin):
 HAIR_COLORS = {
     "plum": ("#5A3B78", "#3F2857", "#8560A8"),
     "black": ("#2F2C3A", "#1E1C27", "#55516A"),
+    "dark-brown": ("#4B2D1C", "#331D11", "#6E4529"),
     "brown": ("#7A4A2B", "#5A331C", "#A8703F"),
     "blonde": ("#E8C15A", "#C49A3A", "#F7E08E"),
     "pink": ("#EE85A8", "#C95F85", "#FBB7CC"),
