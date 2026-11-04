@@ -8,13 +8,18 @@ import { Sprite } from './components/Sprite';
 import { TopBar } from './components/TopBar';
 import { LibraryProvider, useLibrary } from './state/LibraryContext';
 import { strings } from './strings';
-import { hrefs, isCodexTab, useHashRoute } from './useHashRoute';
+import { GUIDE_CHAPTER_IDS, hrefs, useHashRoute } from './useHashRoute';
 import type { Route } from './useHashRoute';
 import { CharacterView } from './views/CharacterView';
 import { GameView } from './views/GameView';
 import { CodexProvider } from './state/CodexContext';
 import { CodexEditor } from './views/CodexEditor';
-import { CodexEntryView, CodexView } from './views/CodexView';
+import { CodexHome } from './views/CodexHome';
+import { CodexSearchView } from './views/CodexSearchView';
+import { CodexEntryView } from './views/CodexView';
+import { GlossaryView } from './views/GlossaryView';
+import { PathView, PathsView } from './views/PathsView';
+import { QuizView } from './views/QuizView';
 import { ConsolesView } from './views/ConsolesView';
 import { TimelineView } from './views/TimelineView';
 import { LibraryView } from './views/LibraryView';
@@ -133,11 +138,15 @@ function Screens({ route }: { route: Route }) {
     return <PracticeView />;
   }
   if (route.view === 'codex') {
-    if (!route.id) return <CodexView key="all" tab="all" />;
-    if (route.id === 'timeline') return <TimelineView />;
+    if (!route.id || route.id === 'home' || route.id === 'all') return <CodexHome />;
+    if (route.id === 'timeline' || route.id === 'history') return <TimelineView at={route.at} />;
     if (route.id === 'consoles') return <ConsolesView />;
-    if (isCodexTab(route.id)) return <CodexView key={route.id} tab={route.id} />;
-    return route.editing ? <CodexEditor key={route.id} id={route.id} /> : <CodexEntryView id={route.id} />;
+    if (route.id === 'paths' || route.id === 'guides') return <PathsView />;
+    if (route.id === 'path') return route.quiz ? <QuizView key={route.path} id={route.path} /> : <PathView id={route.path} />;
+    if (GUIDE_CHAPTER_IDS.includes(route.id)) return <PathView id={route.id} />;
+    if (route.id === 'glossary' || route.id === 'terms') return <GlossaryView />;
+    if (route.id === 'search') return <CodexSearchView />;
+    return route.editing ? <CodexEditor key={route.id} id={route.id} /> : <CodexEntryView id={route.id} pathId={route.path} />;
   }
   if (route.view === 'search') return <SearchView query={route.query} />;
   if (route.view === 'game') return <GameView id={route.id} />;

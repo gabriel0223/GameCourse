@@ -1,6 +1,7 @@
 import type { WardrobeGenre } from './genres';
 import { NEW_PRACTICE } from './practice';
 import type { PracticeRecord } from './practice';
+import type { QuizRecords } from './quiz';
 
 export type Slot = 'accessory' | 'top' | 'bottom';
 
@@ -163,6 +164,7 @@ export interface CharacterProfile {
   customized: boolean;
   changedHair: boolean;
   readEntries: string[];
+  quizzes: QuizRecords;
   practice: PracticeRecord;
 }
 
@@ -175,5 +177,6 @@ export const DEFAULT_PROFILE: CharacterProfile = {
   customized: false,
   changedHair: false,
   readEntries: [],
+  quizzes: {},
   practice: NEW_PRACTICE,
 };

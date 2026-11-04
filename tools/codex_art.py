@@ -769,6 +769,78 @@ def saving():
         s.oval(x, 40, x + 5, 45, "#ffc857" if i < 2 else "#3a4262")
 
 
+@scene("path-crash-and-comeback")
+def crash_and_comeback():
+    s = Scene("#1c1030", "#e0704a", 31)
+    s.oval(104, 30, 134, 60, "#ffd98a")
+    s.hills(44, 5, "#6a3a4a", 14)
+    s.ground(47, "#8a5a3f", "#b07a50")
+    # a pile of unsold cartridges
+    colors = ("#7c9bff", "#f0708a", "#5fd0b6", "#ffc857", "#c9a6ff")
+    for row, (x0, count) in enumerate(((10, 7), (17, 6), (24, 5), (31, 3))):
+        for i in range(count):
+            x = x0 + i * 12
+            y = 44 - row * 8
+            s.rect(x, y, x + 10, y + 7, "#3a3f55")
+            s.rect(x + 2, y + 1, x + 8, y + 4, colors[(i + row * 2) % 5])
+    # a new console in the sunrise
+    s.rect(106, 42, 134, 53, "#d8d4e8")
+    s.rect(106, 47, 134, 48, "#8a8898")
+    s.rect(110, 44, 124, 45, "#3a3f55")
+    s.rect(128, 50, 131, 51, "#c9503c")
+    s.character(92, 53, None, frame=4)
+    for x, y in ((142, 20), (150, 28), (136, 12)):
+        s.px(x, y, "#fff4b8")
+
+
+@scene("path-rise-and-fall-of-sega")
+def rise_and_fall():
+    s = Scene("#101a4a", "#2f62c0", 32)
+    s.stars(26, 28)
+    s.ground(50, "#16204a", "#3a4f90")
+    # three machines climbing, then a fall
+    steps = ((12, 40), (44, 30), (76, 20))
+    for x, y in steps:
+        s.rect(x, y + 8, x + 28, 50, "#223070")
+        s.rect(x, y + 8, x + 28, y + 9, "#62c7f2")
+        s.rect(x + 3, y, x + 25, y + 7, "#1d1c26")
+        s.rect(x + 3, y + 3, x + 25, y + 3, "#55536a")
+        s.rect(x + 18, y + 5, x + 21, y + 6, "#e8503c")
+    for i, (x, y) in enumerate(((110, 19), (117, 23), (122, 29), (126, 36), (129, 42))):
+        s.px(x, y, "#f4f1fa")
+    s.rect(120, 44, 142, 50, "#ecebf4")
+    s.rect(120, 47, 142, 47, "#c7c5d6")
+    s.line([(126, 44), (130, 50)], "#14101f")
+    s.oval(127, 45, 132, 48, "#e8833a")
+    s.character(84, 20, None, frame=4)
+
+
+@scene("path-games-in-your-pocket")
+def pocket():
+    s = Scene("#5a8ad0", "#ffd9a0", 33)
+    # a train window
+    s.rect(0, 0, W, 8, "#2b2a36")
+    s.rect(0, 44, W, H, "#2b2a36")
+    s.hills(42, 8, "#3f7a62", 12)
+    s.rect(0, 42, W, 44, "#3f7a62")
+    for x in (0, 52, 104, 156):
+        s.rect(x, 0, x + 3, 44, "#2b2a36")
+    # seat and rider
+    s.rect(8, 28, 44, 52, "#a02a4a")
+    s.rect(8, 28, 44, 29, "#c9506a")
+    s.character(20, 53, None, frame=4, flip=True)
+    # handheld, large in the foreground
+    s.rect(62, 12, 142, 57, "#26252f")
+    s.rect(74, 16, 130, 50, "#14101f")
+    s.rect(77, 19, 127, 47, "#2a6fd0")
+    s.rect(77, 39, 127, 47, "#58c75a")
+    s.oval(112, 22, 120, 30, "#ffd23f")
+    s.rect(66, 30, 70, 32, "#c7c5d6")
+    s.rect(67, 28, 69, 34, "#c7c5d6")
+    s.oval(134, 27, 138, 31, "#f0708a")
+    s.oval(134, 34, 138, 38, "#5fd0b6")
+
+
 GLYPHS = {
     "0": ["111", "101", "101", "101", "111"],
     "1": ["010", "110", "010", "010", "111"],

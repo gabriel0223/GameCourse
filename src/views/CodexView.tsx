@@ -1,18 +1,19 @@
-import { useMemo, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { GameShelf } from '../components/GameShelf';
+import { PathMeter } from '../components/PathMeter';
 import { originalArt } from '../content/art';
-import { GLOSSARY } from '../content/codex';
+import type { CodexEntry, CodexImage, CodexSection } from '../content/codex';
+import { findPath, homeOf, nextChoices, pathEntries, pathsWith } from '../content/paths';
+import type { Path } from '../content/paths';
+import { QUIZZES } from '../content/quizzes';
 import { TIMELINE_GROUPS } from '../content/timeline';
-import { timelineOrder } from '../content/timelineOrder';
-import type { CodexCategory, CodexEntry, CodexImage, CodexSection } from '../content/codex';
+import { consoleOrder, timelineOrder } from '../content/timelineOrder';
 import { GENRE_COLORS } from '../domain/genres';
 import { formatDuration } from '../format';
 import { useCodex } from '../state/CodexContext';
 import { useLibrary } from '../state/LibraryContext';
 import { strings } from '../strings';
-import { codexTabHref, currentVisit, hrefs } from '../useHashRoute';
-import type { CodexTab } from '../useHashRoute';
+import { hrefs } from '../useHashRoute';
 
 const t = strings.codex;
 
@@ -24,9 +25,8 @@ export function EntryArt({ entry }: { entry: CodexEntry }) {
   return <span className="codex-art" aria-hidden="true" />;
 }
 
-const GUIDE_CATEGORIES: CodexCategory[] = ['history', 'consoles', 'playing', 'industry'];
-// These have their own pages, and only join this list during a search.
-const SEARCH_ONLY: CodexCategory[] = ['history', 'consoles'];
+export const pathHref = (path: Path) =>
+  path.generation === undefined ? hrefs.path(path.id) : hrefs.timelineAt(path.generation);
 
 export function ReadMark() {
   return (
@@ -39,9 +39,9 @@ export function ReadMark() {
   );
 }
 
-function GenreCards({ entries, read }: { entries: CodexEntry[]; read: string[] }) {
+export function EntryCards({ entries, read, wide = false }: { entries: CodexEntry[]; read: string[]; wide?: boolean }) {
   return (
-    <div className="genre-grid">
+    <div className={wide ? 'genre-grid guide-grid' : 'genre-grid'}>
       {entries.map((entry) => (
         <a
           className="genre-card"
@@ -61,14 +61,6 @@ function GenreCards({ entries, read }: { entries: CodexEntry[]; read: string[] }
   );
 }
 
-export const consoleOrder = (entries: CodexEntry[]) =>
-  entries
-    .filter((entry) => entry.console)
-    .sort(
-      (a, b) =>
-        (a.console?.generation ?? 0) - (b.console?.generation ?? 0) || (a.console?.year ?? 0) - (b.console?.year ?? 0),
-    );
-
 export function ConsoleCards({ entries }: { entries: CodexEntry[] }) {
   const { profile } = useLibrary();
   return (
@@ -87,147 +79,6 @@ export function ConsoleCards({ entries }: { entries: CodexEntry[] }) {
         </a>
       ))}
     </div>
-  );
-}
-
-function GuideList({ entries, read }: { entries: CodexEntry[]; read: string[] }) {
-  return (
-    <ul className="guide-list">
-      {entries.map((entry) => (
-        <li key={entry.id}>
-          <a className="guide-link" href={hrefs.codexEntry(entry.id)}>
-            <EntryArt entry={entry} />
-            <span className="guide-copy">
-              <strong>{entry.title}</strong>
-              <span>{entry.summary}</span>
-            </span>
-            {read.includes(entry.id) && <ReadMark />}
-          </a>
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-export function CodexView({ tab }: { tab: CodexTab }) {
-  const { profile } = useLibrary();
-  const { canEdit, entries: allEntries } = useCodex();
-  const [query, setQuery] = useState(() => currentVisit().query ?? '');
-  const needle = query.trim().toLowerCase();
-
-  const entries = useMemo(
-    () =>
-      allEntries.filter(
-        (entry) =>
-          !needle ||
-          entry.title.toLowerCase().includes(needle) ||
-          entry.summary.toLowerCase().includes(needle) ||
-          entry.console?.maker.toLowerCase().includes(needle) ||
-          entry.examples?.some((name) => name.toLowerCase().includes(needle)),
-      ),
-    [allEntries, needle],
-  );
-  const terms = useMemo(
-    () =>
-      GLOSSARY.filter(
-        (item) =>
-          !needle || item.term.toLowerCase().includes(needle) || item.definition.toLowerCase().includes(needle),
-      ),
-    [needle],
-  );
-
-  const shows = (category: CodexTab) => tab === 'all' || tab === category;
-  const byCategory = (category: CodexCategory) => entries.filter((entry) => entry.category === category);
-  const showGenres = shows('genres') && byCategory('genres').length > 0;
-  const showTerms = shows('terms') && terms.length > 0;
-  const guides = GUIDE_CATEGORIES.filter(
-    (category) => shows(category) && byCategory(category).length > 0 && (!SEARCH_ONLY.includes(category) || needle),
-  );
-  const readCount = allEntries.filter((entry) => profile.readEntries.includes(entry.id)).length;
-
-  return (
-    <main className="page">
-      <header className="page-header">
-        <h1>{t.title}</h1>
-        {canEdit && (
-          <a className="button button-link" href={hrefs.codexNew}>
-            {t.newGuide}
-          </a>
-        )}
-        <div className="codex-search">
-          <label className="sr-only" htmlFor="codex-search">
-            {t.searchLabel}
-          </label>
-          <input
-            id="codex-search"
-            type="search"
-            value={query}
-            placeholder={t.searchPlaceholder}
-            onChange={(event) => {
-              setQuery(event.target.value);
-              currentVisit().query = event.target.value;
-            }}
-          />
-        </div>
-      </header>
-
-      <p className="count codex-count">{t.readCount(readCount, allEntries.length)}</p>
-
-      {tab === 'all' && !needle && (
-        <a className="timeline-feature" href={hrefs.timeline}>
-          <span className="timeline-feature-years" aria-hidden="true">
-            1958
-            <i />
-            {new Date().getFullYear()}
-          </span>
-          <span className="timeline-feature-copy">
-            <strong>{t.timeline.title}</strong>
-            <span>{t.timeline.summary}</span>
-          </span>
-          <span className="timeline-feature-action">{t.timeline.open}</span>
-        </a>
-      )}
-      {tab === 'all' && !needle && (
-        <a className="timeline-feature" href={hrefs.consoles}>
-          <span className="timeline-feature-years" aria-hidden="true">
-            Gen 1
-            <i />
-            Gen 9
-          </span>
-          <span className="timeline-feature-copy">
-            <strong>{t.consoles.title}</strong>
-            <span>{t.consoles.summary}</span>
-          </span>
-          <span className="timeline-feature-action">{t.consoles.open}</span>
-        </a>
-      )}
-      {showGenres && (
-        <section className="codex-section">
-          <h2>{t.categories.genres}</h2>
-          <GenreCards entries={byCategory('genres')} read={profile.readEntries} />
-        </section>
-      )}
-      {guides.map((category) => (
-        <section className="codex-section" key={category}>
-          <h2>{t.categories[category]}</h2>
-          <GuideList entries={byCategory(category)} read={profile.readEntries} />
-        </section>
-      ))}
-      {showTerms && (
-        <section className="codex-section">
-          <h2>{t.categories.terms}</h2>
-          <dl className="glossary">
-            {terms.map((item) => (
-              <div key={item.term}>
-                <dt>{item.term}</dt>
-                <dd>{item.definition}</dd>
-              </div>
-            ))}
-          </dl>
-        </section>
-      )}
-      {!showGenres && guides.length === 0 && !showTerms && <p className="empty">{t.noResults}</p>}
-    </main>
   );
 }
 
@@ -355,38 +206,137 @@ function GenreProgressPanel({ entry }: { entry: CodexEntry }) {
   );
 }
 
-function TimelineNavigation({ entry }: { entry: CodexEntry }) {
+function GenerationEvents({ generation }: { generation: number }) {
   const { entries } = useCodex();
-  const ordered = timelineOrder(entries);
-  const index = ordered.findIndex((item) => item.id === entry.id);
-  const stops = [
-    [t.timeline.earlier, ordered[index - 1]],
-    [t.timeline.later, ordered[index + 1]],
-  ] as const;
-  const group = TIMELINE_GROUPS.find((item) => item.generation === entry.timeline?.generation);
-  const parent = entry.timeline?.kind === 'event' && group && group.generation > 0 ? `gen-${group.generation}` : null;
+  const { profile } = useLibrary();
+  const events = timelineOrder(entries).filter(
+    (entry) => entry.timeline?.kind === 'event' && entry.timeline.generation === generation,
+  );
+  if (!events.length) return null;
   return (
     <section>
-      <h2>{t.timeline.onTimeline}</h2>
-      <ul className="example-list">
-        {parent && group && (
-          <li>
-            <a href={hrefs.codexEntry(parent)}>
-              {t.timeline.partOf} {group.title}
+      <h2>{t.timeline.events}</h2>
+      <ol className="era-events">
+        {events.map((entry) => (
+          <li key={entry.id}>
+            <a href={hrefs.codexEntry(entry.id)}>
+              <span className="timeline-year">{entry.timeline?.label}</span>
+              <strong>{entry.title}</strong>
+              {profile.readEntries.includes(entry.id) && <ReadMark />}
             </a>
           </li>
-        )}
-        {stops.map(
-          ([label, item]) =>
-            item && (
-              <li key={label}>
-                <a href={hrefs.codexEntry(item.id)}>
-                  {label}: {item.title}
-                </a>
-              </li>
-            ),
-        )}
-      </ul>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function PartOfPanel({ entry }: { entry: CodexEntry }) {
+  const paths = pathsWith(entry);
+  if (!paths.length) return null;
+  return (
+    <section className="progress-panel part-of">
+      <h2>{t.paths.partOf}</h2>
+      {paths.map((path) => (
+        <div key={path.id}>
+          <a className="path-link" href={pathHref(path)}>
+            {path.title}
+          </a>
+          <PathMeter path={path} />
+        </div>
+      ))}
+    </section>
+  );
+}
+
+function PathPanel({ path, stops, current }: { path: Path; stops: CodexEntry[]; current: number }) {
+  const { profile } = useLibrary();
+  const quiz = QUIZZES[path.id];
+  return (
+    <section className="progress-panel">
+      <a className="path-link" href={hrefs.path(path.id)}>
+        {path.title}
+      </a>
+      <PathMeter path={path} />
+      <ol className="path-mini">
+        {stops.map((stop, index) => (
+          <li key={stop.id}>
+            <a
+              href={hrefs.pathStop(stop.id, path.id)}
+              aria-current={index === current ? 'step' : undefined}
+              data-read={profile.readEntries.includes(stop.id)}
+            >
+              {stop.title}
+            </a>
+          </li>
+        ))}
+      </ol>
+      {quiz && (
+        <a className="path-mini-quiz" href={hrefs.pathQuiz(path.id)}>
+          {t.paths.takeQuiz}
+        </a>
+      )}
+    </section>
+  );
+}
+
+function PathControls({ entry, path, stops, current }: { entry: CodexEntry; path: Path; stops: CodexEntry[]; current: number }) {
+  const { profile, setRead } = useLibrary();
+  const read = profile.readEntries.includes(entry.id);
+  const previous = stops[current - 1];
+  const next = stops[current + 1];
+  // The last stop leads to the quiz, unless she has already passed it.
+  const toQuiz = !next && Boolean(QUIZZES[path.id]) && !profile.quizzes[path.id]?.passed;
+  const target = next ? hrefs.pathStop(next.id, path.id) : toQuiz ? hrefs.pathQuiz(path.id) : hrefs.path(path.id);
+  const finishLabel = toQuiz ? t.paths.takeQuiz : t.paths.finish;
+  const readLabel = toQuiz ? t.paths.readAndQuiz : t.paths.readAndFinish;
+  const primary = read ? (next ? t.paths.nextStop : finishLabel) : next ? t.paths.readAndNext : readLabel;
+
+  return (
+    <div className="path-controls">
+      <button
+        className="button button-primary"
+        type="button"
+        onClick={() => {
+          if (!read) setRead(entry.id, true);
+          window.location.hash = target;
+        }}
+      >
+        {primary}
+      </button>
+      {read && (
+        <button className="button button-quiet" type="button" onClick={() => setRead(entry.id, false)}>
+          {t.markUnread}
+        </button>
+      )}
+      <span className="path-controls-links">
+        {previous && <a href={hrefs.pathStop(previous.id, path.id)}>{t.paths.previousStop}</a>}
+        {next && <a href={target}>{`${t.paths.nextStop}: ${next.title}`}</a>}
+      </span>
+    </div>
+  );
+}
+
+function NextChoices({ entry }: { entry: CodexEntry }) {
+  const { entries } = useCodex();
+  const { profile } = useLibrary();
+  const choices = nextChoices(entry, entries, profile.readEntries);
+  if (!choices.length) return null;
+  return (
+    <section className="next-choices">
+      <h2>{t.next.title}</h2>
+      <div>
+        {choices.map((choice) => (
+          <a className="next-card" href={hrefs.codexEntry(choice.entry.id)} key={choice.entry.id}>
+            <EntryArt entry={choice.entry} />
+            {profile.readEntries.includes(choice.entry.id) && <ReadMark />}
+            <span>
+              <em>{t.next[choice.reason]}</em>
+              <strong>{choice.entry.title}</strong>
+            </span>
+          </a>
+        ))}
+      </div>
     </section>
   );
 }
@@ -416,94 +366,74 @@ function ReadControl({ entry }: { entry: CodexEntry }) {
 }
 
 function ConsolePanel({ entry }: { entry: CodexEntry }) {
-  const { entries } = useCodex();
   const info = entry.console;
   if (!info) return null;
-  const ordered = consoleOrder(entries);
-  const index = ordered.findIndex((item) => item.id === entry.id);
-  const stops = [
-    [t.timeline.earlier, ordered[index - 1]],
-    [t.timeline.later, ordered[index + 1]],
-  ] as const;
-  const group = TIMELINE_GROUPS.find((item) => item.generation === info.generation);
   return (
-    <>
-      <section>
-        <h2>{t.consoles.card}</h2>
-        <dl className="console-facts">
+    <section>
+      <h2>{t.consoles.card}</h2>
+      <dl className="console-facts">
+        <div>
+          <dt>{t.consoles.maker}</dt>
+          <dd>{info.maker}</dd>
+        </div>
+        <div>
+          <dt>{t.consoles.released}</dt>
+          <dd>{info.year}</dd>
+        </div>
+        <div>
+          <dt>{t.consoles.type}</dt>
+          <dd>{info.handheld ? t.consoles.handheld : t.consoles.homeConsole}</dd>
+        </div>
+        {info.sales && (
           <div>
-            <dt>{t.consoles.maker}</dt>
-            <dd>{info.maker}</dd>
+            <dt>{t.consoles.sales}</dt>
+            <dd>{info.sales}</dd>
           </div>
-          <div>
-            <dt>{t.consoles.released}</dt>
-            <dd>{info.year}</dd>
-          </div>
-          <div>
-            <dt>{t.consoles.type}</dt>
-            <dd>{info.handheld ? t.consoles.handheld : t.consoles.homeConsole}</dd>
-          </div>
-          {info.sales && (
-            <div>
-              <dt>{t.consoles.sales}</dt>
-              <dd>{info.sales}</dd>
-            </div>
-          )}
-        </dl>
-      </section>
-      <section>
-        <h2>{t.consoles.back}</h2>
-        <ul className="example-list">
-          {group && (
-            <li>
-              <a href={hrefs.codexEntry(`gen-${group.generation}`)}>
-                {t.timeline.partOf} {group.title}
-              </a>
-            </li>
-          )}
-          {index >= 0 &&
-            stops.map(
-              ([label, item]) =>
-                item && (
-                  <li key={label}>
-                    <a href={hrefs.codexEntry(item.id)}>
-                      {label}: {item.title}
-                    </a>
-                  </li>
-                ),
-            )}
-        </ul>
-      </section>
-    </>
+        )}
+      </dl>
+    </section>
   );
 }
 
-export function Article({ entry, preview = false }: { entry: CodexEntry; preview?: boolean }) {
-  const { canEdit, find } = useCodex();
-  const related = (entry.related ?? []).flatMap((relatedId) => find(relatedId) ?? []);
-  const onTimeline = Boolean(entry.timeline);
-  const hasSide = Boolean(entry.genre || entry.console || entry.examples?.length || related.length || onTimeline);
+export function Article({
+  entry,
+  preview = false,
+  pathId = null,
+}: {
+  entry: CodexEntry;
+  preview?: boolean;
+  pathId?: string | null;
+}) {
+  const { canEdit, entries } = useCodex();
+  const opened = findPath(pathId);
+  const stops = opened ? pathEntries(opened, entries) : [];
+  const current = stops.findIndex((stop) => stop.id === entry.id);
+  const path = current >= 0 ? opened : undefined;
+  const home = homeOf(entry);
+  const hasSide = Boolean(!preview || entry.genre || entry.console);
   const groupColor = TIMELINE_GROUPS.find(
     (item) => item.generation === (entry.timeline?.generation ?? entry.console?.generation),
   )?.color;
   const color = entry.genre ? GENRE_COLORS[entry.genre] : groupColor;
   const style = (color ? { '--genre': color } : undefined) as CSSProperties | undefined;
-  const section: CodexTab = entry.category;
-  const backHref = codexTabHref(section);
 
   return (
     <div style={style}>
       <header className="article-hero">
         <div className="article-hero-inner">
           {!preview && (
-            <a className="back" href={backHref}>
-              {onTimeline ? t.timeline.back : t.categories[section]}
+            <a className="back" href={path ? hrefs.path(path.id) : home ? pathHref(home) : hrefs.codex}>
+              {path?.title ?? home?.title ?? t.back}
             </a>
           )}
           <div className="article-hero-row">
             <div>
-              {(entry.timeline || entry.console) && (
-                <p className="article-kicker">{entry.timeline?.label ?? entry.console?.year}</p>
+              {path ? (
+                <p className="article-kicker">{t.paths.stopOf(current + 1, stops.length)}</p>
+              ) : (
+                (entry.timeline || entry.console) && (
+                  <p className="article-kicker">{entry.timeline?.label ?? entry.console?.year}</p>
+                )
               )}
               <h1>{entry.title}</h1>
               <p>{entry.summary}</p>
@@ -522,39 +452,22 @@ export function Article({ entry, preview = false }: { entry: CodexEntry; preview
           {entry.sections.map((section, index) => (
             <Section key={index} section={section} />
           ))}
-          {!preview && <ReadControl entry={entry} />}
+          {entry.timeline?.kind === 'generation' && !preview && <GenerationEvents generation={entry.timeline.generation} />}
+          {!preview &&
+            (path ? (
+              <PathControls entry={entry} path={path} stops={stops} current={current} />
+            ) : (
+              <>
+                <ReadControl entry={entry} />
+                <NextChoices entry={entry} />
+              </>
+            ))}
         </article>
         {hasSide && (
           <aside className="article-side">
+            {!preview && (path ? <PathPanel path={path} stops={stops} current={current} /> : <PartOfPanel entry={entry} />)}
             {entry.genre && <GenreProgressPanel entry={entry} />}
-            {onTimeline && !preview && <TimelineNavigation entry={entry} />}
             {entry.console && <ConsolePanel entry={entry} />}
-            {entry.examples && (
-              <section>
-                <h2>{t.examples}</h2>
-                <ul className="example-list">
-                  {entry.examples.map((name) => (
-                    <li key={name}>
-                      <a href={hrefs.search(name)} aria-label={t.findGame(name)}>
-                        {name}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            )}
-            {related.length > 0 && (
-              <section>
-                <h2>{t.related}</h2>
-                <ul className="example-list">
-                  {related.map((item) => (
-                    <li key={item.id}>
-                      <a href={hrefs.codexEntry(item.id)}>{item.title}</a>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            )}
           </aside>
         )}
       </div>
@@ -562,7 +475,7 @@ export function Article({ entry, preview = false }: { entry: CodexEntry; preview
   );
 }
 
-export function CodexEntryView({ id }: { id: string }) {
+export function CodexEntryView({ id, pathId }: { id: string; pathId: string | null }) {
   const { find, ready } = useCodex();
   const entry = find(id);
 
@@ -580,7 +493,7 @@ export function CodexEntryView({ id }: { id: string }) {
 
   return (
     <main>
-      <Article entry={entry} />
+      <Article entry={entry} pathId={pathId} />
     </main>
   );
 }

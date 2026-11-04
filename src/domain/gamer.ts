@@ -1,5 +1,8 @@
+import { ALL_PATHS, pathRead } from '../content/paths';
+import type { Path } from '../content/paths';
 import { WARDROBE_GENRES, genreEntryId, pickGenres } from './genres';
 import { bestScore } from './practice';
+import { hasPerfectQuiz, passedCount } from './quiz';
 import type { WardrobeGenre } from './genres';
 import type { LibraryEntry } from './types';
 import { PIECES } from './wardrobe';
@@ -199,6 +202,38 @@ const ACHIEVEMENTS: AchievementRule[] = [
       [1, 2, 3, 4, 5, 6, 7, 8, 9].every((generation) => profile.readEntries.includes(`gen-${generation}`)),
   },
   {
+    id: 'first-quiz',
+    difficulty: 'easy',
+    group: 'Codex',
+    title: 'Passed your first quiz',
+    description: 'Pass the quiz at the end of any path.',
+    earned: ({ profile }) => passedCount(profile.quizzes) >= 1,
+  },
+  {
+    id: 'perfect-quiz',
+    difficulty: 'medium',
+    group: 'Codex',
+    title: 'Got a perfect score',
+    description: 'Answer every question in a path quiz correctly.',
+    earned: ({ profile }) => hasPerfectQuiz(profile.quizzes),
+  },
+  {
+    id: 'three-paths',
+    difficulty: 'medium',
+    group: 'Codex',
+    title: 'Finished three paths',
+    description: 'Pass the quizzes on 3 paths.',
+    earned: ({ profile }) => passedCount(profile.quizzes) >= 3,
+  },
+  {
+    id: 'six-paths',
+    difficulty: 'hard',
+    group: 'Codex',
+    title: 'Finished six paths',
+    description: 'Pass the quizzes on 6 paths.',
+    earned: ({ profile }) => passedCount(profile.quizzes) >= 6,
+  },
+  {
     id: 'first-run',
     difficulty: 'easy',
     group: 'Practice',
@@ -282,6 +317,7 @@ export interface GamerState {
   gold: { earned: number; spent: number; balance: number };
   achievements: Array<Omit<AchievementRule, 'earned' | 'difficulty'> & { unlocked: boolean; gold: number }>;
   earnedCount: number;
+  paths: Array<Path & { read: number; done: boolean }>;
   equipped: Record<Slot, Piece | null>;
 }
 
@@ -298,6 +334,12 @@ export function deriveGamer(entries: LibraryEntry[], profile: CharacterProfile):
     gold: ACHIEVEMENT_GOLD[difficulty],
   }));
   const earnedCount = achievements.filter((item) => item.unlocked).length;
+  const paths = ALL_PATHS.map((path) => {
+    const read = pathRead(path, profile.readEntries);
+    // A path is finished by its quiz. Reading only tracks her place, but an era has no quiz.
+    const done = path.kind === 'path' ? Boolean(profile.quizzes[path.id]?.passed) : read === path.entryIds.length;
+    return { ...path, read, done };
+  });
   const worn = (slot: Slot) => {
     const piece = PIECES.find((item) => item.id === profile.equipped[slot]);
     return piece && owned.has(piece.id) ? piece : null;
@@ -306,7 +348,9 @@ export function deriveGamer(entries: LibraryEntry[], profile: CharacterProfile):
     entries.reduce((sum, entry) => sum + entryXp(entry), 0) + earnedCount * ACHIEVEMENT_XP + profile.practice.xp,
   );
   const earnedGold =
-    achievements.reduce((sum, item) => sum + (item.unlocked ? item.gold : 0), 0) + (progress.level - 1) * LEVEL_GOLD;
+    achievements.reduce((sum, item) => sum + (item.unlocked ? item.gold : 0), 0) +
+    paths.reduce((sum, item) => sum + (item.done ? item.gold : 0), 0) +
+    (progress.level - 1) * LEVEL_GOLD;
   const spent = Object.values(profile.owned).reduce((sum, price) => sum + price, 0);
   return {
     progress,
@@ -318,6 +362,7 @@ export function deriveGamer(entries: LibraryEntry[], profile: CharacterProfile):
     gold: { earned: earnedGold, spent, balance: Math.max(0, earnedGold - spent) },
     achievements,
     earnedCount,
+    paths,
     equipped: { accessory: worn('accessory'), top: worn('top'), bottom: worn('bottom') },
   };
 }

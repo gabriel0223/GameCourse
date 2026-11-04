@@ -13,3 +13,12 @@ export function timelineOrder(entries: CodexEntry[]): CodexEntry[] {
       return left.year - right.year;
     });
 }
+
+export function consoleOrder(entries: CodexEntry[]): CodexEntry[] {
+  return entries
+    .filter((entry) => entry.console)
+    .sort(
+      (a, b) =>
+        (a.console?.generation ?? 0) - (b.console?.generation ?? 0) || (a.console?.year ?? 0) - (b.console?.year ?? 0),
+    );
+}

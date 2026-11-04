@@ -52,9 +52,9 @@ export function GameShelf({ games }: { games: CodexGame[] }) {
       {games.map((item) => {
         const game = hasYear(item) ? answers?.[lookups.indexOf(item)] : null;
         return game ? (
-          <GameCard key={item.name} game={game} entry={find(game.id)} />
+          <GameCard key={`${item.name}-${item.year}`} game={game} entry={find(game.id)} />
         ) : (
-          <NamedGame key={item.name} game={item} loading={!answers} />
+          <NamedGame key={`${item.name}-${item.year}`} game={item} loading={!answers} />
         );
       })}
     </div>

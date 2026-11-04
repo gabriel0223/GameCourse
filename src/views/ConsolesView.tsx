@@ -1,9 +1,10 @@
 import type { CSSProperties } from 'react';
 import { TIMELINE_GROUPS } from '../content/timeline';
+import { consoleOrder } from '../content/timelineOrder';
 import { useCodex } from '../state/CodexContext';
 import { strings } from '../strings';
 import { hrefs } from '../useHashRoute';
-import { ConsoleCards, consoleOrder } from './CodexView';
+import { ConsoleCards } from './CodexView';
 
 const t = strings.codex;
 const GROUPS = TIMELINE_GROUPS.filter((group) => group.generation > 0);
@@ -18,6 +19,9 @@ export function ConsolesView() {
 
   return (
     <main className="page">
+      <a className="back" href={hrefs.timeline}>
+        {t.timeline.back}
+      </a>
       <header className="page-header">
         <h1>{t.consoles.title}</h1>
         {canEdit && (

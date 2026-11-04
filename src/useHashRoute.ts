@@ -8,12 +8,13 @@ export type Route =
   | { view: 'character' }
   | { view: 'shop' }
   | { view: 'practice'; game: string | null }
-  | { view: 'codex'; id: string | null; editing: boolean };
+  | { view: 'codex'; id: string | null; editing: boolean; at: string | null; path: string | null; quiz: boolean };
 
-export const CODEX_TABS = ['all', 'genres', 'history', 'consoles', 'playing', 'industry', 'terms'] as const;
+export const CODEX_TABS = ['home', 'paths', 'history', 'glossary'] as const;
 export type CodexTab = (typeof CODEX_TABS)[number];
 
-export const isCodexTab = (id: string): id is CodexTab => (CODEX_TABS as readonly string[]).includes(id);
+// The first paths keep their old addresses, so older links still land in the right place.
+export const GUIDE_CHAPTER_IDS = ['playing', 'genres', 'industry'];
 
 const LISTS: GameStatus[] = ['playing', 'backlog', 'finished', 'dropped'];
 
@@ -24,7 +25,15 @@ export function parseRoute(hash: string): Route {
   if (parts[0] === 'shop') return { view: 'shop' };
   if (parts[0] === 'practice') return { view: 'practice', game: parts[1] ?? null };
   if (parts[0] === 'codex') {
-    return { view: 'codex', id: parts[1] ? decodeURIComponent(parts[1]) : null, editing: parts[2] === 'edit' };
+    const query = new URLSearchParams(params);
+    return {
+      view: 'codex',
+      id: parts[1] ? decodeURIComponent(parts[1]) : null,
+      editing: parts[2] === 'edit',
+      at: query.get('at'),
+      path: parts[1] === 'path' && parts[2] ? decodeURIComponent(parts[2]) : query.get('path'),
+      quiz: parts[1] === 'path' && parts[3] === 'quiz',
+    };
   }
   if (parts[0] === 'search') {
     return { view: 'search', query: new URLSearchParams(params).get('q') ?? '' };
@@ -46,7 +55,14 @@ export const hrefs = {
   codexNew: '#/codex/new/edit',
   codexNewEvent: '#/codex/new-event/edit',
   codexNewConsole: '#/codex/new-console/edit',
+  paths: '#/codex/paths',
+  path: (id: string) => `#/codex/path/${encodeURIComponent(id)}`,
+  pathQuiz: (id: string) => `#/codex/path/${encodeURIComponent(id)}/quiz`,
+  pathStop: (id: string, path: string) => `#/codex/${encodeURIComponent(id)}?path=${encodeURIComponent(path)}`,
+  glossary: '#/codex/glossary',
+  codexSearch: '#/codex/search',
   timeline: '#/codex/timeline',
+  timelineAt: (generation: number) => `#/codex/timeline?at=${generation}`,
   consoles: '#/codex/consoles',
   codexTab: (tab: string) => `#/codex/${tab}`,
   list: (list: GameStatus) => `#/library/${list}`,
@@ -55,9 +71,8 @@ export const hrefs = {
 };
 
 export function codexTabHref(tab: CodexTab): string {
-  if (tab === 'all') return hrefs.codex;
+  if (tab === 'home') return hrefs.codex;
   if (tab === 'history') return hrefs.timeline;
-  if (tab === 'consoles') return hrefs.consoles;
   return hrefs.codexTab(tab);
 }
 
@@ -77,6 +92,7 @@ const currentHash = () => window.location.hash || '#/';
 let visits: Visit[] = [{ hash: currentHash(), scroll: 0 }];
 let position = 0;
 let arrowTarget: number | null = null;
+let pendingQuery: string | null = null;
 const listeners = new Set<() => void>();
 
 function tagBrowserEntry() {
@@ -102,6 +118,10 @@ function recordVisit(): number {
     visits = [...visits.slice(0, position + 1), { hash, scroll: 0 }];
     position += 1;
   }
+  if (pendingQuery !== null) {
+    visits[position].query = pendingQuery;
+    pendingQuery = null;
+  }
   tagBrowserEntry();
   listeners.forEach((listener) => listener());
   return scroll;
@@ -119,11 +139,40 @@ export const goForward = () => travel(position + 1);
 // Lets a page keep small details, like a search, for when you come back to it.
 export const currentVisit = (): Visit => visits[position];
 
+// The search box stays put across Codex pages, and each search keeps its words in its own visit.
+const onCodexSearch = () => currentHash() === hrefs.codexSearch;
+
+export function setCodexQuery(query: string) {
+  if (onCodexSearch()) {
+    visits[position].query = query;
+  } else {
+    pendingQuery = query;
+    window.location.hash = hrefs.codexSearch;
+  }
+  listeners.forEach((listener) => listener());
+}
+
 function subscribe(listener: () => void) {
   listeners.add(listener);
   return () => {
     listeners.delete(listener);
   };
+}
+
+export function useCodexQuery() {
+  return useSyncExternalStore(subscribe, () => pendingQuery ?? (onCodexSearch() ? visits[position].query ?? '' : ''));
+}
+
+// Opens a page at one of its sections, unless the visit is returning to a saved spot.
+export function useScrollToSection(sectionId: string | null) {
+  useEffect(() => {
+    if (!sectionId || currentVisit().scroll > 0) return;
+    // The second frame runs after the route change has scrolled the page to the top.
+    const frame = requestAnimationFrame(() =>
+      requestAnimationFrame(() => document.getElementById(sectionId)?.scrollIntoView({ block: 'start' })),
+    );
+    return () => cancelAnimationFrame(frame);
+  }, [sectionId]);
 }
 
 export function useHistoryArrows() {

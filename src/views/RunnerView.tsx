@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { CodexLinks } from '../components/CodexLinks';
 import { ControlsGuide } from '../components/ControlsGuide';
 import { PauseMenu } from '../components/PauseMenu';
 import { RunResults } from '../components/RunResults';
@@ -229,6 +230,7 @@ function Setup({ onStart }: { onStart(device: Device, hints: boolean): void }) {
         </button>
       </section>
       <ControlsGuide guide={runnerControls(device)} />
+      <CodexLinks ids={['playing-buttons', 'playing-dualsense']} />
     </div>
   );
 }

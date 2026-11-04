@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { CodexLinks } from '../components/CodexLinks';
 import { ControlsGuide } from '../components/ControlsGuide';
 import { PauseMenu } from '../components/PauseMenu';
 import { RunResults } from '../components/RunResults';
@@ -339,6 +340,7 @@ function SetupPanel({ onStart }: { onStart(setup: Setup): void }) {
         </button>
       </section>
       <ControlsGuide guide={jetControls(scheme)} />
+      <CodexLinks ids={['playing-sticks', 'playing-triggers']} />
     </div>
   );
 }

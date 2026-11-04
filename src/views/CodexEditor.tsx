@@ -626,12 +626,6 @@ export function CodexEditor({ id }: { id: string }) {
               </button>
             ))}
           </div>
-
-          <label className="field">
-            {t.examples}
-            <small>{t.examplesHint}</small>
-            <textarea value={current.examples} onChange={(event) => update({ examples: event.target.value })} />
-          </label>
         </div>
       )}
       <div className="editor-page-end" />

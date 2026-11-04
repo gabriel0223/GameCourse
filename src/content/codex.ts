@@ -1,6 +1,8 @@
 import { genreEntryId } from '../domain/genres';
 import type { WardrobeGenre } from '../domain/genres';
+import { strings } from '../strings';
 import { CONSOLE_ENTRIES } from './consoles';
+import { ENTRY_GAMES } from './entryGames';
 import { TIMELINE_ENTRIES } from './timeline';
 
 export type CodexCategory = 'genres' | 'industry' | 'playing' | 'history' | 'consoles';
@@ -54,7 +56,6 @@ export interface CodexEntry {
   title: string;
   summary: string;
   genre?: WardrobeGenre;
-  examples?: string[];
   sections: CodexSection[];
   related?: string[];
   heroImage?: CodexImage;
@@ -72,7 +73,7 @@ const genre = (
   name: WardrobeGenre,
   summary: string,
   sections: CodexSection[],
-  examples: string[],
+  gamesToTry: CodexGame[],
   related?: string[],
 ): CodexEntry => ({
   id: genreEntryId(name),
@@ -80,259 +81,119 @@ const genre = (
   title: name,
   genre: name,
   summary,
-  sections,
-  examples,
+  sections: [...sections, { heading: strings.codex.examples, games: gamesToTry }],
   related,
 });
+
+const prose = (...paragraphs: string[]): CodexSection[] => paragraphs.map((text) => ({ text }));
+const try_ = (name: string, year: number): CodexGame => ({ name, year });
 
 const GUIDES: CodexEntry[] = [
   genre(
     'RPG',
     'Grow a character or party through a long story.',
-    [
-      {
-        text: 'RPG stands for role-playing game. You take on a role, make your character stronger over time, and follow a story that often lasts dozens of hours.',
-      },
-      {
-        heading: 'What you usually do',
-        list: [
-          'Earn XP and level up.',
-          'Choose skills, weapons, and armor.',
-          'Complete a main story and optional side quests.',
-          'Talk to characters and explore towns.',
-        ],
-      },
-      {
-        heading: 'Two common types',
-        list: [
-          'Turn-based RPGs let you plan each move, so they are a gentle place to start.',
-          'Action RPGs happen in real time, so your reactions matter as much as your build.',
-        ],
-      },
-    ],
-    ['Final Fantasy VII Remake Intergrade', 'The Witcher 3: Wild Hunt', 'Hades', 'Disco Elysium'],
+    prose(
+      `RPG stands for role-playing game. You take on the role of a character, or lead a small group called a party, and follow a story that often lasts dozens of hours. The genre grew out of tabletop games like Dungeons & Dragons, where numbers describe what each character can do, and those numbers are still at its heart.`,
+      `The core loop is growth. Fighting and finishing quests earns XP, and enough XP raises your level, which makes you stronger. You choose skills, weapons, and armor, and the mix you settle on is called a build. Between fights you talk to characters, explore towns, and pick up side quests, which are optional tasks outside the main story.`,
+      `RPGs come in two broad types. Turn-based RPGs let you plan each move, so they are a gentle place to start. Action RPGs happen in real time, so your reactions matter as much as your build. A long RPG can look like a huge commitment, but you rarely need to see everything. Follow the main quest, save often, and only take on the side quests that interest you.`,
+    ),
+    [try_('Final Fantasy VII Remake Intergrade', 2021), try_('The Witcher 3: Wild Hunt', 2015), try_('Hades', 2020), try_('Disco Elysium', 2019)],
     ['playing-saving'],
   ),
   genre(
     'Platformer',
     'Run and jump through levels built around movement.',
-    [
-      {
-        text: 'Platformers are about moving through a space. You run, jump, and time your moves to cross gaps and avoid hazards. They are great for building controller confidence.',
-      },
-      {
-        heading: 'What you usually do',
-        list: [
-          'Jump between platforms.',
-          'Avoid enemies and traps.',
-          'Learn a level by trying it again.',
-          'Find hidden paths and collectibles.',
-        ],
-      },
-      {
-        heading: 'A related style',
-        text: 'A metroidvania is a large connected map. New abilities open paths that were blocked earlier.',
-      },
-    ],
-    ['Celeste', 'Hollow Knight', 'Portal 2', 'Cuphead'],
+    prose(
+      `Platformers are about moving through a space. You run, jump, and time your moves to cross gaps and avoid hazards. The genre took off in the early 1980s with arcade games like Donkey Kong, and Super Mario Bros. turned it into one of the most popular kinds of game ever made.`,
+      `Most levels teach by letting you fail. You try a jump, miss it, respawn a moment later, and try again with a better sense of the timing. That quick loop is why platformers are so good for building controller confidence. Your hands learn how far a character jumps and how quickly it stops, and hidden paths and collectibles reward anyone who wants an extra challenge.`,
+      `A popular related style is the metroidvania, named after Metroid and Castlevania. Instead of separate levels, it has one large connected map, and new abilities open paths that were blocked earlier. Hollow Knight is a famous example. Difficulty varies a lot across the genre, and even a tough game like Celeste has an Assist Mode that lets you adjust the challenge.`,
+    ),
+    [try_('Celeste', 2018), try_('Hollow Knight', 2017), try_('Portal 2', 2011), try_('Cuphead', 2017)],
     ['playing-sticks'],
   ),
   genre(
     'Action',
     'Fast fights that reward timing and quick decisions.',
-    [
-      {
-        text: 'Action games focus on real-time challenge. You fight enemies directly and learn when to attack, dodge, or block.',
-      },
-      {
-        heading: 'What you usually do',
-        list: [
-          'Chain attacks together into combos.',
-          'Watch enemies for signs of their next attack.',
-          'Dodge or block at the right moment.',
-          'Beat tough bosses.',
-        ],
-      },
-      {
-        heading: 'Common styles',
-        list: [
-          "Hack and slash and beat 'em up games send waves of enemies at you.",
-          'Fighting games match two characters in short rounds.',
-        ],
-      },
-    ],
-    ['Hades', 'Devil May Cry 5', 'Street Fighter 6', 'Sifu'],
+    prose(
+      `Action games focus on real-time challenge. You fight enemies directly, and success depends on your timing and reactions more than on long-term planning. A good fight works like a conversation: the enemy shows what it is about to do, and you decide whether to attack, dodge, or block.`,
+      `Learning to read those signs is the heart of the genre. A raised weapon or a flash of light usually warns of an attack, and reacting at the right moment opens a chance to strike back. Chaining attacks together in a row is called a combo. Many games build up to a boss, a strong enemy that tests everything you have learned so far.`,
+      `The genre has several styles. Hack and slash games and beat ’em ups send waves of enemies at you, as in Devil May Cry 5. Fighting games such as Street Fighter 6 match two characters in short rounds. Soulslikes, inspired by Dark Souls, are known for demanding fights. If a game feels too fast, try an easier difficulty first, because it gives you more time to learn the patterns.`,
+    ),
+    [try_('Hades', 2020), try_('Devil May Cry 5', 2019), try_('Street Fighter 6', 2023), try_('Sifu', 2022)],
     ['playing-triggers'],
   ),
   genre(
     'Adventure',
     'Explore a world and uncover its story.',
-    [
-      {
-        text: 'Adventure games put exploration and story first. You are often solving a mystery, talking to characters, or finding out what happened in a place.',
-      },
-      {
-        heading: 'What you usually do',
-        list: [
-          'Explore places at your own pace.',
-          'Talk to characters and make choices.',
-          'Find clues and solve small puzzles.',
-          'Follow the story to its end.',
-        ],
-      },
-      {
-        heading: 'Why it suits beginners',
-        text: 'Many adventure games ask for curiosity more than fast reactions, so they are a comfortable way to enjoy a story.',
-      },
-    ],
-    ['Outer Wilds', 'A Short Hike', 'Life is Strange', 'Firewatch'],
+    prose(
+      `Adventure games put exploration and story first. You are often solving a mystery, talking to characters, or finding out what happened in a place. The name comes from Adventure, a text game from the 1970s in which players typed commands to explore a cave.`,
+      `Instead of combat, progress usually comes from curiosity. You look around, find clues, make choices in conversations, and solve small puzzles to open the way forward. In Life is Strange, your decisions shape the story. In Outer Wilds, nobody tells you where to go, and you work out a mystery by exploring a tiny solar system.`,
+      `Many adventure games ask for curiosity more than fast reactions, so they are a comfortable way to enjoy a story. Short ones like A Short Hike are also easy to finish, and finishing a game feels great early on. You will also see the word action-adventure, which mixes exploration with combat, as The Legend of Zelda does.`,
+    ),
+    [try_('Outer Wilds', 2019), try_('A Short Hike', 2019), try_('Life is Strange', 2015), try_('Firewatch', 2016)],
     ['playing-world'],
   ),
   genre(
     'Shooter',
     'Aim and fire, usually from inside the action.',
-    [
-      {
-        text: 'Shooters are built around aiming and using ranged weapons. First-person shooters show the world through your character’s eyes. Third-person shooters show your character on screen.',
-      },
-      {
-        heading: 'What you usually do',
-        list: [
-          'Aim with the right stick or mouse.',
-          'Move and stay out of danger.',
-          'Manage ammo, health, and cover.',
-          'Play a story alone or join matches online.',
-        ],
-      },
-      {
-        heading: 'Getting started',
-        text: 'Aiming and moving at once takes practice. Start with a single-player game on an easier setting, and look for an aim assist option.',
-      },
-    ],
-    ['Doom Eternal', 'Titanfall 2', 'Halo Infinite', 'Overwatch 2'],
+    prose(
+      `Shooters are built around aiming and using ranged weapons. First-person shooters show the world through your character’s eyes. Third-person shooters show your character on screen, which makes it easier to see what is around you. Doom brought the first-person shooter into the mainstream in 1993, and the genre has been one of the biggest in games ever since.`,
+      `The main skill is doing two things at once. With a controller, the left stick moves you and the right stick aims, while L2 usually aims more carefully and R2 fires. At the same time you watch your ammo and health, which are shown on the HUD, the information laid over the screen. Staying in cover and moving often will keep you alive longer than perfect aim.`,
+      `Shooters can be solo stories or online matches. Titanfall 2 has a campaign you play alone, while Overwatch 2 is built around teams competing against other people, which is known as PvP. Aiming and moving at once takes practice, so start with a single-player game on an easier setting, and look for an aim assist option.`,
+    ),
+    [try_('Doom Eternal', 2020), try_('Titanfall 2', 2016), try_('Halo Infinite', 2021), try_('Overwatch 2', 2022)],
     ['playing-sticks', 'playing-triggers'],
   ),
   genre(
     'Strategy',
     'Plan ahead and make decisions that pay off later.',
-    [
-      {
-        text: 'Strategy games reward thinking more than reflexes. You manage units or resources and try to stay a step ahead of your opponent.',
-      },
-      {
-        heading: 'What you usually do',
-        list: [
-          'Build a base, city, or deck.',
-          'Manage limited resources.',
-          'Plan your moves around your opponent.',
-          'Learn systems that connect to each other.',
-        ],
-      },
-      {
-        heading: 'Two common types',
-        list: [
-          'Turn-based strategy gives you as long as you need for each move.',
-          'Real-time strategy keeps moving, so decisions need to be quicker.',
-        ],
-      },
-    ],
-    ["Sid Meier's Civilization VI", 'Slay the Spire', 'Into the Breach', 'XCOM 2'],
+    prose(
+      `Strategy games reward thinking more than reflexes. You manage units or resources and try to stay a step ahead of your opponent, whether that is another person or the computer. Chess is a good comparison: what matters is your plan, not how fast your hands are.`,
+      `Most strategy games are built from systems that connect to each other. You might build a city, gather resources, or assemble a deck of cards, and each choice limits what you can do later. In Slay the Spire, every card you add changes how your whole deck plays. Losing is often useful here, because it shows you which decision went wrong.`,
+      `There are two common types. Turn-based strategy gives you as long as you need for each move, as in Civilization VI and XCOM 2. Real-time strategy keeps moving, so decisions need to be quicker. Turn-based games are the better place to start, since you can stop and think at any moment. Just be ready for long sessions, because a single game of Civilization can last many hours.`,
+    ),
+    [try_("Sid Meier's Civilization VI", 2016), try_('Slay the Spire', 2019), try_('Into the Breach', 2018), try_('XCOM 2', 2016)],
   ),
   genre(
     'Horror',
     'Tension, fear, and survival against the odds.',
-    [
-      {
-        text: 'Horror games use sound, darkness, and vulnerability to make you feel uneasy. You often have limited resources, and running away can be the smart choice.',
-      },
-      {
-        heading: 'What you usually do',
-        list: [
-          'Explore dark, dangerous places.',
-          'Save your ammo and healing items.',
-          'Hide from or escape threats.',
-          'Piece together what happened.',
-        ],
-      },
-      {
-        heading: 'Good to know',
-        text: 'Horror ranges from quiet dread to sudden jump scares. Playing with a friend, or with the lights on, is completely valid.',
-      },
-    ],
-    ['Resident Evil 4', 'Silent Hill 2', 'Alien: Isolation', 'Phasmophobia'],
+    prose(
+      `Horror games use sound, darkness, and vulnerability to make you feel uneasy. You are usually weaker than whatever you are facing, and running away can be the smart choice. Games are especially good at horror because you are the one who has to open the next door.`,
+      `Many belong to a style called survival horror, which Resident Evil made famous in 1996. Ammo and healing items are limited, so every fight is a decision. You explore dark places, hide from threats, and piece together what happened from notes and clues. Alien: Isolation takes this further, because the creature hunting you cannot be killed, so you spend much of the game hiding.`,
+      `Horror ranges from quiet dread to sudden jump scares, and it affects everyone differently. You can make it easier on yourself by taking breaks and stopping when it stops being fun. Phasmophobia can be played in co-op, and being scared with a friend is a very different experience. Playing with the lights on is completely valid.`,
+    ),
+    [try_('Resident Evil 4', 2023), try_('Silent Hill 2', 2024), try_('Alien: Isolation', 2014), try_('Phasmophobia', 2020)],
   ),
   genre(
     'Cozy',
     'Relaxed games with low pressure and gentle goals.',
-    [
-      {
-        text: 'Cozy games are about comfort. You might run a farm, decorate a home, or care for characters, usually at your own pace. Cozy is more of a mood than a strict genre.',
-      },
-      {
-        heading: 'What you usually do',
-        list: [
-          'Build, grow, or decorate something.',
-          'Follow simple daily routines.',
-          'Get to know a small group of characters.',
-          'Set your own goals.',
-        ],
-      },
-      {
-        heading: 'In this app',
-        text: 'Simulation games count as Cozy by default. If one feels different to you, change its main genre on its game page.',
-      },
-    ],
-    ['Stardew Valley', 'A Short Hike', 'Unpacking', 'Spiritfarer'],
+    prose(
+      `Cozy games are about comfort. You might run a farm, decorate a home, or care for characters, usually at your own pace. There is rarely a way to lose, and nothing terrible happens if you take a day off. Cozy is more of a mood than a strict genre, so it can include farming games, life simulators, and gentle puzzle games.`,
+      `Daily routines are a big part of the appeal. In Stardew Valley you plant crops, visit your neighbors, and slowly restore an old farm, one in-game day at a time. In Unpacking you take belongings out of boxes and put them away, and the objects quietly tell the story of someone’s life. Small goals like these are easy to pick up after a long day.`,
+      `Cozy games also let you set your own goals. Some days you might focus on one task, and other days you might just wander around. That makes them a great place to practice moving, using menus, and reading the screen without any pressure. In this app, simulation games count as Cozy.`,
+    ),
+    [try_('Stardew Valley', 2016), try_('A Short Hike', 2019), try_('Unpacking', 2021), try_('Spiritfarer', 2020)],
   ),
   genre(
     'Racing and Sports',
     'Compete in events based on real or imagined sports.',
-    [
-      {
-        text: 'These games are about competition and skill. Racing games focus on speed and control. Sports games turn soccer, basketball, and other sports into playable matches.',
-      },
-      {
-        heading: 'What you usually do',
-        list: [
-          'Learn how a car, team, or player handles.',
-          'Compete against the computer or other people.',
-          'Improve your times and results.',
-          'Unlock new cars, teams, or events.',
-        ],
-      },
-      {
-        heading: 'Two kinds of racing',
-        list: [
-          'Arcade racers are forgiving and focus on fun.',
-          'Racing simulators try to feel like real driving.',
-        ],
-      },
-    ],
-    ['Forza Horizon 5', 'Rocket League', 'EA Sports FC 25', 'Gran Turismo 7'],
+    prose(
+      `These games are about competition and skill. Racing games focus on speed and control, and sports games turn soccer, basketball, and other sports into playable matches. Both give you a clear goal: finish first, or score more than the other side. Much of the fun comes from seeing yourself improve.`,
+      `Racing comes in two main kinds. Arcade racers, like Forza Horizon 5, are forgiving and focus on fun. Racing simulators try to feel like real driving, and Gran Turismo 7 leans in that direction. With a controller, R2 accelerates and L2 brakes. Because triggers sense how far you press them, you can ease on and off gently instead of always going full speed.`,
+      `Sports games usually follow real leagues and teams. EA Sports FC 25 is built around soccer clubs and players, while Rocket League mixes soccer with rocket-powered cars. You can play against the computer or other people, and good results often unlock new cars, teams, or events. Start on an easier setting, and learn how a car or player handles before you worry about winning.`,
+    ),
+    [try_('Forza Horizon 5', 2021), try_('Rocket League', 2015), try_('EA Sports FC 25', 2024), try_('Gran Turismo 7', 2022)],
     ['playing-triggers'],
   ),
   genre(
     'Puzzle',
     'Use logic and observation to solve problems.',
-    [
-      {
-        text: 'Puzzle games give you a set of rules and ask you to find the solution. The satisfaction comes from the moment everything clicks.',
-      },
-      {
-        heading: 'What you usually do',
-        list: [
-          'Learn a simple rule.',
-          'Combine it with rules you already know.',
-          'Experiment until you see the solution.',
-          'Take on harder variations.',
-        ],
-      },
-      {
-        heading: 'Why it suits beginners',
-        text: 'Many puzzle games have no time pressure, so you can think for as long as you like.',
-      },
-    ],
-    ['Portal 2', 'Unpacking', 'The Witness', 'Baba Is You'],
+    prose(
+      `Puzzle games give you a set of rules and ask you to find the solution. The satisfaction comes from the moment everything clicks. Tetris is the most famous example, turning falling blocks into a game almost anyone can understand in seconds.`,
+      `Good puzzle games teach by building up. You learn a simple rule, combine it with rules you already know, and then meet a harder variation that makes you see the old idea differently. The Witness teaches its line puzzles without any words, while Baba Is You lets you rewrite the rules themselves, which appear as words inside each level.`,
+      `Many puzzle games have no time pressure, so you can think for as long as you like, which makes them a great fit for beginners. If you get stuck, walk away for a while, because solutions often appear when you come back. Looking up a hint is fine too. Just try to read one small step rather than the full answer.`,
+    ),
+    [try_('Portal 2', 2011), try_('Unpacking', 2021), try_('The Witness', 2016), try_('Baba Is You', 2019)],
   ),
 
   {
@@ -340,19 +201,11 @@ const GUIDES: CodexEntry[] = [
     category: 'industry',
     title: 'Developer',
     summary: 'The team that actually makes a game.',
-    sections: [
-      {
-        text: 'A developer, or studio, designs and builds a game. That includes programmers, artists, designers, writers, composers, and testers.',
-      },
-      {
-        heading: 'Good to know',
-        list: [
-          'A developer can be one person or thousands of people.',
-          'Stardew Valley was made by one person, known as ConcernedApe.',
-          'The Witcher 3 was made by a large studio, CD Projekt Red.',
-        ],
-      },
-    ],
+    sections: prose(
+      `A developer, or studio, designs and builds a game. When people talk about who made a game, this is usually who they mean. The word can describe a whole company or one person working on it.`,
+      `Making a game takes many kinds of work. Programmers write the code, artists create the characters and worlds, and designers decide the rules and levels. Writers create the story, composers make the music, and testers hunt for bugs before release. Early in the industry, developers often got no public credit at all, which is part of why four Atari programmers left to start Activision in 1979.`,
+      `A developer can be one person or thousands of people. Stardew Valley was made by one person, Eric Barone, known as ConcernedApe. The Witcher 3 was made by a large studio, CD Projekt Red. Both are huge successes, which shows how differently games can be built.`,
+    ),
     related: ['industry-publisher', 'industry-indie'],
   },
   {
@@ -360,19 +213,11 @@ const GUIDES: CodexEntry[] = [
     category: 'industry',
     title: 'Publisher',
     summary: 'The company that helps bring a game to players.',
-    sections: [
-      {
-        text: 'A publisher handles the business side of a game. It may pay for development, run marketing, and manage distribution and sales.',
-      },
-      {
-        heading: 'Developer or publisher?',
-        text: 'The developer makes the game, and the publisher helps release it. Doom Eternal was developed by id Software and published by Bethesda Softworks. Some companies do both, like Capcom with Resident Evil 4.',
-      },
-      {
-        heading: 'Why it matters',
-        text: 'If you love a game, its developer is usually the better name to follow, because that team made the work you enjoyed.',
-      },
-    ],
+    sections: prose(
+      `A publisher handles the business side of a game. It may pay for development, run marketing, and manage distribution and sales. In return, it usually takes a share of the money a game earns, and it often has a say in when the game comes out.`,
+      `The developer makes the game, and the publisher helps release it. Doom Eternal was developed by id Software and published by Bethesda Softworks. Some companies do both, like Capcom with Resident Evil 4. Large publishers also own studios of their own, so the line between the two jobs can be blurry.`,
+      `If you love a game, its developer is usually the better name to follow, because that team made the work you enjoyed. You can see both names on every game’s page in this app, and over time you will start to recognize the studios whose games suit you.`,
+    ),
     related: ['industry-developer', 'industry-indie'],
   },
   {
@@ -380,40 +225,22 @@ const GUIDES: CodexEntry[] = [
     category: 'industry',
     title: 'Platform',
     summary: 'The system or store where you play a game.',
-    sections: [
-      {
-        text: 'A platform is the hardware you play on, like PC, PlayStation 5, Xbox Series X|S, or Nintendo Switch. Not every game is available on every platform.',
-      },
-      {
-        heading: 'Stores on PC',
-        text: 'PC games are usually bought from a store app. Steam is the biggest, and others include the Epic Games Store and GOG. Games you buy on Steam stay in your Steam library.',
-      },
-      {
-        heading: 'Exclusives',
-        text: 'An exclusive is a game available only on certain platforms, sometimes only for a limited time.',
-      },
-    ],
+    sections: prose(
+      `A platform is the hardware you play on, like PC, PlayStation 5, Xbox Series X|S, or Nintendo Switch. Not every game is available on every platform, so it is always worth checking before you buy.`,
+      `PC games are usually bought from a store app. Steam is the biggest, and others include the Epic Games Store and GOG. Games you buy on Steam stay in your Steam library, so you can delete one to save space and install it again later. Store sales are also very common, which makes wishlists useful.`,
+      `An exclusive is a game available only on certain platforms, sometimes only for a limited time. Companies use exclusives to give people a reason to buy their hardware. Some console exclusives reach PC a few years later, which is good news if you play on PC.`,
+    ),
   },
   {
     id: 'industry-indie',
     category: 'industry',
     title: 'Indie and AAA',
     summary: 'Two ends of the game-making scale.',
-    sections: [
-      {
-        text: 'These words describe how a game was made and funded. They say nothing about its quality.',
-      },
-      {
-        list: [
-          'AAA, said "triple-A", means a big-budget game from a large studio and publisher.',
-          'Indie is short for independent. It usually means a smaller team, often without a large publisher.',
-        ],
-      },
-      {
-        heading: 'Why try both',
-        text: 'AAA games often have huge worlds and high production values. Indie games are often shorter, cheaper, and more experimental, which makes them great for discovering what you like.',
-      },
-    ],
+    sections: prose(
+      `These words describe how a game was made and funded. They say nothing about its quality. AAA, said “triple-A”, means a big-budget game from a large studio and publisher. Indie is short for independent, and it usually means a smaller team, often without a large publisher.`,
+      `AAA games often have huge worlds and high production values, with hundreds of people working for years. Because they cost so much, publishers tend to stick to familiar ideas. Indie games are often shorter, cheaper, and more experimental, because a small team can take risks that a big company might avoid.`,
+      `Both have produced classics. The Witcher 3 is a AAA game, while Stardew Valley and Hades are indie hits. Indie games are especially good for discovering what you like, because you can often try several for the price of one big release. The line between the two can be blurry, so treat the words as a rough guide.`,
+    ),
   },
   {
     id: 'industry-releases',
@@ -421,6 +248,10 @@ const GUIDES: CodexEntry[] = [
     title: 'Remake, remaster, and port',
     summary: 'Three ways an older game comes back.',
     sections: [
+      ...prose(
+        `Older games often return in new forms, and the words for them are easy to mix up. A remaster is an existing game improved for newer systems, usually with sharper graphics and smoother play. Underneath, it is still the same game.`,
+        `A remake goes much further. It is rebuilt from the ground up, often with new graphics and controls and sometimes with changes to the story. Resident Evil 4 from 2023 is a remake of the 2005 original. A port is different again: it is a game adapted to run on another platform, like a console game released on PC.`,
+      ),
       {
         table: {
           headers: ['Word', 'What it means', 'Example'],
@@ -431,6 +262,9 @@ const GUIDES: CodexEntry[] = [
           ],
         },
       },
+      {
+        text: `These words matter when you are choosing what to play. Old controls and cameras can feel stiff today, so a remake is often the friendliest way to meet a classic. Playing the original is still worthwhile if you are curious about how it felt at the time.`,
+      },
     ],
     related: ['industry-platform'],
   },
@@ -439,20 +273,11 @@ const GUIDES: CodexEntry[] = [
     category: 'industry',
     title: 'DLC and updates',
     summary: 'How games change after release.',
-    sections: [
-      {
-        list: [
-          'DLC means downloadable content: extra content you add to a game, sometimes for a price.',
-          'An expansion is a large piece of DLC, often with a new area or story.',
-          'A patch is an update that fixes problems or changes the balance.',
-          'Early access lets you play and buy a game before it is finished.',
-        ],
-      },
-      {
-        heading: 'Do you need DLC?',
-        text: 'Usually not at first. Play the main game, then decide whether you want more.',
-      },
-    ],
+    sections: prose(
+      `Games often keep changing after release. DLC means downloadable content: extra content you add to a game, sometimes for a price. It can be as small as a new outfit or as large as an expansion, which often adds a new area or story.`,
+      `A patch is an update that fixes problems or changes the balance. Most games receive patches automatically, especially soon after launch. A change that makes something stronger is called a buff, and one that makes it weaker is called a nerf. Early access is different: it lets you play and buy a game before it is finished, while the developers keep building it. Hades was made this way.`,
+      `Do you need DLC? Usually not at first. Play the main game, then decide whether you want more. Some games later release a complete edition with all their DLC included, so there is rarely any rush to buy extras on day one.`,
+    ),
   },
 
   {
@@ -461,19 +286,12 @@ const GUIDES: CodexEntry[] = [
     title: 'Using a DualSense on PC',
     summary: 'Connect your controller with a cable or Bluetooth.',
     sections: [
+      ...prose(
+        `A DualSense works well on PC, and you can connect it in two ways. The easiest is a USB cable. Plug a USB-C data cable into the top of the controller, plug the other end into your PC, and wait a few seconds for Windows to find it. If nothing happens, try another cable, because some cables can only charge.`,
+        `The wireless option is Bluetooth, which takes a minute to set up the first time. Both work for normal play, but adaptive triggers and detailed haptics usually need a cable. If you want to feel everything the controller can do, stay wired.`,
+      ),
       {
-        heading: 'Easiest: use a USB cable',
-        steps: [
-          'Plug a USB-C data cable into the top of the controller.',
-          'Plug the other end into your PC.',
-          'Wait a few seconds for Windows to find it.',
-        ],
-      },
-      {
-        text: 'If nothing happens, try another cable. Some cables can only charge.',
-      },
-      {
-        heading: 'Wireless: use Bluetooth',
+        heading: 'Connecting with Bluetooth',
         steps: [
           'Open Windows Settings, then Bluetooth & devices.',
           'Turn Bluetooth on and choose Add device.',
@@ -482,16 +300,7 @@ const GUIDES: CodexEntry[] = [
         ],
       },
       {
-        heading: 'Cable or Bluetooth?',
-        text: 'Both work for normal play. Adaptive triggers and detailed haptics usually need a cable.',
-      },
-      {
-        heading: 'If a game ignores the controller',
-        list: [
-          'Open the game from Steam, which supports the DualSense.',
-          'Check the game’s Controller settings.',
-          'Reconnect the controller and restart the game.',
-        ],
+        text: `If a game ignores the controller, open it from Steam, which supports the DualSense, and check the game’s Controller settings. If that doesn’t help, reconnect the controller and restart the game.`,
       },
     ],
     related: ['playing-buttons'],
@@ -502,9 +311,10 @@ const GUIDES: CodexEntry[] = [
     title: 'Button names and Xbox prompts',
     summary: 'Match PlayStation buttons to the letters on screen.',
     sections: [
-      {
-        text: 'Many PC games show Xbox buttons even when a DualSense is connected. The buttons are in the same places, so go by position, not by symbol.',
-      },
+      ...prose(
+        `Many PC games show Xbox buttons even when a DualSense is connected. The buttons are in the same places, so go by position, not by symbol. When a game says to press A, press Cross, the bottom button. B is Circle on the right, X is Square on the left, and Y is Triangle on top.`,
+        `Each button also has a usual job. Cross tends to confirm or jump, Circle goes back or dodges, and Square and Triangle handle attacks and special actions. Those jobs aren’t fixed, though. Older PlayStation games in Japan often used Circle to confirm and Cross to cancel, so if a menu ever feels backwards, that may be why.`,
+      ),
       { figure: 'face-buttons' },
       {
         table: {
@@ -521,7 +331,7 @@ const GUIDES: CodexEntry[] = [
         },
       },
       {
-        text: 'Some games let you switch to PlayStation button icons in their settings. Look under Controls or Display.',
+        text: `Some games let you switch to PlayStation button icons in their settings. Look under Controls or Display. Many also show them automatically once the game detects a DualSense, especially when it is connected before you start the game.`,
       },
     ],
     related: ['playing-dualsense', 'playing-triggers'],
@@ -531,24 +341,11 @@ const GUIDES: CodexEntry[] = [
     category: 'playing',
     title: 'Moving with two sticks',
     summary: 'Most 3D games use one stick to move and one to look.',
-    sections: [
-      {
-        text: 'In most 3D games, the left stick moves your character and the right stick moves the camera. Using both at once feels strange at first, and almost everyone needs practice.',
-      },
-      {
-        heading: 'Tips',
-        list: [
-          'Keep your thumbs resting on the sticks.',
-          'Use small movements, because cameras can turn quickly.',
-          'Lower the camera sensitivity if it feels too fast.',
-          'Try walking in a circle around an object while looking at it.',
-        ],
-      },
-      {
-        heading: 'Camera feels backwards?',
-        text: 'Look for Invert Y in the settings. It swaps up and down, and many people prefer it.',
-      },
-    ],
+    sections: prose(
+      `In most 3D games, the left stick moves your character and the right stick moves the camera. Using both at once feels strange at first, and almost everyone needs practice. Your thumbs are learning to do two separate jobs, so give them time.`,
+      `Keep your thumbs resting on the sticks, and use small movements, because cameras can turn quickly. A great exercise is walking in a circle around an object while looking at it. It trains both thumbs at once, and the movement soon starts to feel natural.`,
+      `If the camera feels too fast, lower the camera sensitivity in the settings. If it feels backwards, look for Invert Y, which swaps up and down. Many people prefer it, and there is no wrong choice. The sticks can also be pressed in as buttons called L3 and R3. Games often use them for actions like sprinting or crouching.`,
+    ),
     related: ['playing-buttons'],
   },
   {
@@ -556,23 +353,11 @@ const GUIDES: CodexEntry[] = [
     category: 'playing',
     title: 'Triggers and bumpers',
     summary: 'The four shoulder buttons on top of the controller.',
-    sections: [
-      {
-        text: 'The top row, L1 and R1, are bumpers. They are quick to press, so games use them for fast actions. The lower row, L2 and R2, are triggers. They can sense how far you press them.',
-      },
-      {
-        heading: 'Common uses',
-        list: [
-          'L2 to aim and R2 to shoot in shooters.',
-          'R2 to accelerate and L2 to brake in racing games.',
-          'L1 or R1 to block, switch items, or use skills.',
-        ],
-      },
-      {
-        heading: 'How to hold them',
-        text: 'Rest your index fingers on the bumpers and your middle fingers on the triggers. That way you can reach all four without moving your hands.',
-      },
-    ],
+    sections: prose(
+      `The top row, L1 and R1, are bumpers. They are quick to press, so games use them for fast actions like blocking, switching items, or using skills. The lower row, L2 and R2, are triggers. They can sense how far you press them, so a light squeeze and a full press can do different things.`,
+      `That is why triggers handle actions that feel analog. In shooters, L2 usually aims and R2 shoots. In racing games, R2 accelerates and L2 brakes. On a DualSense, the adaptive triggers can also push back against your fingers in supported games, so pulling a bowstring can actually feel tense.`,
+      `Rest your index fingers on the bumpers and your middle fingers on the triggers. That way you can reach all four without moving your hands. If you are used to holding a controller with only your index fingers, this takes a little getting used to, but it makes fast games much easier.`,
+    ),
     related: ['playing-buttons'],
   },
   {
@@ -580,57 +365,31 @@ const GUIDES: CodexEntry[] = [
     category: 'playing',
     title: 'Reading the game world',
     summary: 'The visual signals games use to guide you.',
-    sections: [
-      {
-        text: 'Designers leave signals in the world so they can guide you without words. Experienced players notice them automatically, and you will too.',
-      },
-      {
-        heading: 'Signals to look for',
-        list: [
-          'Bright paint or a contrasting color often marks a ledge you can climb.',
-          'A light in the distance usually points toward where to go next.',
-          'Glowing or sparkling objects can often be picked up or used.',
-          'Red barrels often explode.',
-          'A cracked wall may break open.',
-          'A big empty arena usually means a fight is coming.',
-        ],
-      },
-      {
-        heading: 'If you feel lost',
-        text: 'Open the map, check your current objective, and look for a light or path that stands out.',
-      },
-    ],
+    sections: prose(
+      `Designers leave signals in the world so they can guide you without words. Experienced players notice them automatically, and you will too. The first screen of Super Mario Bros. famously teaches jumping and enemies without any instructions, and modern games use the same idea everywhere.`,
+      `Color and light do most of the work. Bright paint or a contrasting color often marks a ledge you can climb. A light in the distance usually points toward where to go next. Glowing or sparkling objects can often be picked up or used.`,
+      `Shapes and spaces also send messages. Red barrels often explode, and a cracked wall may break open. A big empty arena usually means a fight is coming, so look for items before you step inside. If you feel lost, open the map, check your current objective, and look for a light or path that stands out.`,
+    ),
   },
   {
     id: 'playing-saving',
     category: 'playing',
     title: 'Saving and difficulty',
     summary: 'Protect your progress and choose a comfortable challenge.',
-    sections: [
-      {
-        heading: 'How saving works',
-        list: [
-          'Autosave means the game saves for you, often with a small icon on screen.',
-          'A checkpoint is a place you return to after failing.',
-          'A manual save is one you make yourself from a menu or save point.',
-        ],
-      },
-      {
-        text: 'Before you quit, make sure the game has saved, especially if it was made before autosave was common.',
-      },
-      {
-        heading: 'Choosing a difficulty',
-        text: 'Pick the setting that lets you enjoy the game. Easy mode is a real way to play, and you can often change it later.',
-      },
-      {
-        heading: 'Stuck?',
-        text: 'Failing is a normal part of learning a game. Try a different approach, lower the difficulty, or look up a tip. None of those is cheating.',
-      },
-    ],
+    sections: prose(
+      `Games save your progress in a few different ways. Autosave means the game saves for you, often with a small icon on screen. A checkpoint is a place you return to after failing. A manual save is one you make yourself from a menu or save point. Before you quit, make sure the game has saved, especially if it was made before autosave was common.`,
+      `Difficulty is a choice, not a test. Pick the setting that lets you enjoy the game. Easy mode is a real way to play, and you can often change it later. Developers include these options because they want more people to finish their games.`,
+      `Failing is a normal part of learning a game. If you are stuck, try a different approach, lower the difficulty, or look up a tip. None of those is cheating. Even experienced players get stuck, and the only rule is that you should be having a good time.`,
+    ),
   },
 ];
 
-export const CODEX_ENTRIES: CodexEntry[] = [...GUIDES, ...TIMELINE_ENTRIES, ...CONSOLE_ENTRIES];
+const withGames = (entry: CodexEntry): CodexEntry => {
+  const games = ENTRY_GAMES[entry.id];
+  return games ? { ...entry, sections: [...entry.sections, { heading: strings.codex.entryGames, games }] } : entry;
+};
+
+export const CODEX_ENTRIES: CodexEntry[] = [...GUIDES, ...TIMELINE_ENTRIES, ...CONSOLE_ENTRIES].map(withGames);
 
 export const GLOSSARY: GlossaryTerm[] = [
   { term: 'Aggro', definition: 'When an enemy notices you and starts attacking.' },

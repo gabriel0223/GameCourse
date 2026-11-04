@@ -20,7 +20,6 @@ export interface Draft {
   console?: CodexEntry['console'];
   title: string;
   summary: string;
-  examples: string;
   heroImage?: CodexImage;
   blocks: Block[];
 }
@@ -98,7 +97,6 @@ export function toDraft(entry: CodexEntry): Draft {
     console: entry.console,
     title: entry.title,
     summary: entry.summary,
-    examples: (entry.examples ?? []).join('\n'),
     heroImage: entry.heroImage,
     blocks: entry.sections.map(toBlock),
   };
@@ -111,7 +109,6 @@ export function newDraft(id: string): Draft {
     category: 'playing',
     title: '',
     summary: '',
-    examples: '',
     blocks: [emptyBlock('text')],
   };
 }
@@ -133,7 +130,6 @@ export function newConsoleDraft(id: string): Draft {
 }
 
 export function fromDraft(draft: Draft): CodexEntry {
-  const examples = lines(draft.examples);
   const entry: CodexEntry = {
     id: draft.id,
     category: draft.category,
@@ -142,7 +138,6 @@ export function fromDraft(draft: Draft): CodexEntry {
     sections: draft.blocks.flatMap((block) => toSection(block) ?? []),
   };
   if (draft.genre) entry.genre = draft.genre;
-  if (examples.length) entry.examples = examples;
   if (draft.related) entry.related = draft.related;
   if (draft.timeline) entry.timeline = draft.timeline;
   if (draft.console) entry.console = { ...draft.console, maker: draft.console.maker.trim(), sales: draft.console.sales.trim() };

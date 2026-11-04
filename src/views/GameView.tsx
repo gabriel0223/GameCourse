@@ -4,12 +4,13 @@ import { Cover, GameCard } from '../components/GameCard';
 import { ImageGallery } from '../components/ImageGallery';
 import { Star } from '../components/Star';
 import { catalog, seenGame } from '../data';
-import { GENRE_COLORS, pickGenres } from '../domain/genres';
+import { GENRE_COLORS, genreEntryId, pickGenres } from '../domain/genres';
 import type { Game, GameDetails, LibraryEntry, TimeToBeat } from '../domain/types';
 import { XP_PER_HOUR, entryMinutes } from '../domain/xp';
 import { formatDay, formatDuration, formatPlaytime, todayLocal } from '../format';
 import { useLibrary } from '../state/LibraryContext';
 import { strings } from '../strings';
+import { hrefs } from '../useHashRoute';
 import { getPreviousHash } from '../useHashRoute';
 
 const t = strings.game;
@@ -346,9 +347,14 @@ export function GameView({ id }: { id: string }) {
           <div className="game-title">
             <p className="game-genre">
               {genres.map((item) => (
-                <span key={item} style={{ color: GENRE_COLORS[item] }}>
+                <a
+                  key={item}
+                  href={hrefs.codexEntry(genreEntryId(item))}
+                  style={{ color: GENRE_COLORS[item] }}
+                  title={strings.codex.readGuide(item)}
+                >
                   {item}
-                </span>
+                </a>
               ))}
             </p>
             <h1>{game.name}</h1>

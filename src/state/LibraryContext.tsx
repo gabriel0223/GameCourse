@@ -6,6 +6,7 @@ import type { GamerState } from '../domain/gamer';
 import { changeStatus, logSession, newEntry, rateGame, removeSession } from '../domain/library';
 import type { Game, GameStatus, LibraryEntry } from '../domain/types';
 import { applyRun, loadPractice } from '../domain/practice';
+import { applyQuiz } from '../domain/quiz';
 import type { FinishedRun, RunReward } from '../domain/practice';
 import { DEFAULT_PROFILE, PIECES } from '../domain/wardrobe';
 import type { CharacterProfile, Piece, Slot } from '../domain/wardrobe';
@@ -35,6 +36,7 @@ interface LibraryValue {
   equip(slot: Slot, pieceId: string | null): void;
   setAppearance(change: Partial<Pick<CharacterProfile, 'skin' | 'hairStyle' | 'hairColor'>>): void;
   setRead(entryId: string, read: boolean): void;
+  recordQuiz(pathId: string, score: number, total: number): void;
   recordRun(run: FinishedRun): RunReward;
   notify(text: string, tone: Toast['tone']): void;
 }
@@ -99,6 +101,10 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
         for (const achievement of after.achievements) {
           const wasEarned = before.achievements.find((item) => item.id === achievement.id)?.unlocked;
           if (achievement.unlocked && !wasEarned) notify(strings.toast.achievement(achievement.title), 'reward');
+        }
+        for (const path of after.paths) {
+          const wasDone = before.paths.find((item) => item.id === path.id)?.done;
+          if (path.done && !wasDone) notify(strings.toast.pathDone(path.title), 'reward');
         }
         const gold = after.gold.earned - before.gold.earned;
         if (gold > 0) notify(strings.toast.gold(gold), 'reward');
@@ -189,6 +195,10 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
         const { practice, reward } = applyRun(current.practice, run, today);
         putProfile({ ...current, practice });
         return reward;
+      },
+      recordQuiz: (pathId, score, total) => {
+        const current = latestProfile.current;
+        putProfile({ ...current, quizzes: applyQuiz(current.quizzes, pathId, score, total) });
       },
       setRead: (entryId, read) => {
         const current = latestProfile.current;

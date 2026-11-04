@@ -2,26 +2,59 @@ import { useEffect, useRef } from 'react';
 import type { CodexCategory } from '../content/codex';
 import { useCodex } from '../state/CodexContext';
 import { strings } from '../strings';
-import { CODEX_TABS, codexTabHref, goBack, goForward, isCodexTab, useHistoryArrows } from '../useHashRoute';
+import {
+  CODEX_TABS,
+  GUIDE_CHAPTER_IDS,
+  codexTabHref,
+  goBack,
+  goForward,
+  setCodexQuery,
+  useCodexQuery,
+  useHistoryArrows,
+} from '../useHashRoute';
 import type { CodexTab, Route } from '../useHashRoute';
 
 const CATEGORY_TABS: Record<CodexCategory, CodexTab> = {
-  genres: 'genres',
+  genres: 'paths',
   history: 'history',
-  consoles: 'consoles',
-  playing: 'playing',
-  industry: 'industry',
+  consoles: 'history',
+  playing: 'paths',
+  industry: 'paths',
 };
 
-function CodexTabs({ id }: { id: string | null }) {
+function activeTab(id: string | null, path: string | null, category: CodexCategory | undefined): CodexTab | null {
+  if (!id || id === 'home' || id === 'all') return 'home';
+  if (path) return 'paths';
+  if (category) return CATEGORY_TABS[category];
+  if (id === 'paths' || id === 'guides' || GUIDE_CHAPTER_IDS.includes(id)) return 'paths';
+  if (id === 'timeline' || id === 'consoles' || id === 'history') return 'history';
+  if (id === 'glossary' || id === 'terms') return 'glossary';
+  return null;
+}
+
+function CodexSearch() {
+  const query = useCodexQuery();
+  return (
+    <div className="codex-search" role="search">
+      <label className="sr-only" htmlFor="codex-search">
+        {strings.codex.searchLabel}
+      </label>
+      <input
+        id="codex-search"
+        type="search"
+        value={query}
+        placeholder={strings.codex.searchPlaceholder}
+        onChange={(event) => setCodexQuery(event.target.value)}
+      />
+    </div>
+  );
+}
+
+function CodexTabs({ id, path }: { id: string | null; path: string | null }) {
   const { find } = useCodex();
   const current = useRef<HTMLAnchorElement>(null);
   const entry = id ? find(id) : undefined;
-  let active: CodexTab | null = entry ? CATEGORY_TABS[entry.category] : null;
-  if (!id) active = 'all';
-  else if (id === 'timeline') active = 'history';
-  else if (id === 'consoles') active = 'consoles';
-  else if (isCodexTab(id)) active = id;
+  const active = activeTab(id, path, entry?.category);
 
   // On phones the row scrolls sideways, so the current section stays in view.
   useEffect(() => {
@@ -37,7 +70,7 @@ function CodexTabs({ id }: { id: string | null }) {
           href={codexTabHref(tab)}
           aria-current={tab === active ? 'page' : undefined}
         >
-          {strings.codex.categories[tab]}
+          {strings.codex.tabs[tab]}
         </a>
       ))}
     </nav>
@@ -70,7 +103,12 @@ export function TopBar({ route }: { route: Route }) {
           <Arrow forward />
         </button>
       </div>
-      {route.view === 'codex' && !route.editing && <CodexTabs id={route.id} />}
+      {route.view === 'codex' && !route.editing && (
+        <>
+          <CodexTabs id={route.id} path={route.path} />
+          <CodexSearch />
+        </>
+      )}
     </div>
   );
 }

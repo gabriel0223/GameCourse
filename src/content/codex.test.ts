@@ -2,6 +2,9 @@ import { existsSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { WARDROBE_GENRES, genreEntryId } from '../domain/genres';
 import { CODEX_ENTRIES, GLOSSARY, findEntry } from './codex';
+import type { CodexEntry } from './codex';
+import { ENTRY_GAMES } from './entryGames';
+import { mergeCodex } from './mergeCodex';
 import { TIMELINE_GROUPS } from './timeline';
 
 describe('Codex content', () => {
@@ -45,7 +48,7 @@ describe('Codex content', () => {
     const years = events.map((entry) => entry.timeline?.year ?? 0);
     expect(years).toEqual([...years].sort((a, b) => a - b));
     for (const entry of events) {
-      expect(entry.sections.every((section) => !section.heading), entry.id).toBe(true);
+      expect(entry.sections.every((section) => !section.heading || section.games), entry.id).toBe(true);
       const words = entry.sections.map((section) => section.text ?? '').join(' ').split(/\s+/).length;
       expect(words, entry.id).toBeGreaterThanOrEqual(120);
       expect(TIMELINE_GROUPS.some((group) => group.generation === entry.timeline?.generation)).toBe(true);
@@ -57,14 +60,66 @@ describe('Codex content', () => {
     for (const entry of consoles) {
       expect(entry.console?.maker, entry.id).toBeTruthy();
       expect(entry.console?.generation, entry.id).toBeGreaterThan(0);
-      expect(entry.sections.every((section) => !section.heading), entry.id).toBe(true);
+      expect(entry.sections.every((section) => !section.heading || section.games), entry.id).toBe(true);
       const words = entry.sections.map((section) => section.text ?? '').join(' ').split(/\s+/).length;
       expect(words, entry.id).toBeGreaterThanOrEqual(120);
     }
   });
+  it('gives every entry on a path at least two paragraphs, like the history entries', () => {
+    for (const entry of CODEX_ENTRIES) {
+      expect(entry.sections.filter((section) => section.text).length, entry.id).toBeGreaterThanOrEqual(2);
+      const words = entry.sections.map((section) => section.text ?? '').join(' ').split(/\s+/).length;
+      expect(words, entry.id).toBeGreaterThanOrEqual(90);
+    }
+  });
+  it('lists only games an entry talks about, within what one lookup allows', () => {
+    const plain = (text: string) => text.toLowerCase().replace(/’/g, "'");
+    const missing: string[] = [];
+    const nicknames: Record<string, string> = {
+      "Bonk's Adventure": 'Bonk',
+      "The King of Fighters '94": 'The King of Fighters',
+      'The Witcher 3: Wild Hunt': 'The Witcher 3',
+      'Sonic the Hedgehog': 'Sonic',
+      'Phoenix Wright: Ace Attorney': 'Phoenix Wright',
+      'Ghost of Yōtei': 'Ghost of Yotei',
+      'PUBG: Battlegrounds': "PlayerUnknown's Battlegrounds",
+      'Alex Kidd in Miracle World': 'Alex Kidd',
+      'The Need for Speed': 'Need for Speed',
+      'NiGHTS into Dreams': 'NiGHTS into Dreams',
+      'Halo: Combat Evolved': 'Halo',
+      'Geometry Wars': 'Geometry Wars',
+      'Pokémon Red': 'Pokémon',
+      'Pokémon Ruby': 'Pokémon Ruby',
+      'Pokémon X': 'Pokémon X',
+      'Fire Emblem: Awakening': 'Fire Emblem Awakening',
+      'Uncharted 2': 'Uncharted 2',
+      'Metal Gear Solid 2': 'Metal Gear Solid 2',
+      'Sonic Adventure 2': 'Sonic Adventure 2',
+      'Dragon Quest VIII': 'Dragon Quest VIII',
+    };
+    for (const [id, games] of Object.entries(ENTRY_GAMES)) {
+      const entry = findEntry(id);
+      expect(entry, id).toBeDefined();
+      expect(games.length, id).toBeLessThanOrEqual(12);
+      const text = plain(entry?.sections.map((section) => section.text ?? '').join(' ') ?? '');
+      for (const game of games) {
+        const names = [game.name, game.name.replace(/^The /, ''), game.name.split(': ').pop() ?? '', nicknames[game.name] ?? ''];
+        if (!names.filter(Boolean).some((name) => text.includes(plain(name)))) missing.push(`${id}: ${game.name}`);
+      }
+    }
+    expect(missing).toEqual([]);
+  });
+  it('keeps game cards on entries edited before they had any', () => {
+    const original = findEntry('event-sonic') as CodexEntry;
+    const edited = { ...original, sections: original.sections.filter((section) => !section.games) };
+    const merged = mergeCodex(CODEX_ENTRIES, [edited]).find((entry) => entry.id === 'event-sonic');
+    expect(merged?.sections.some((section) => section.games)).toBe(true);
+  });
   it('gives every genre games to try', () => {
     for (const entry of CODEX_ENTRIES.filter((item) => item.category === 'genres')) {
-      expect(entry.examples?.length).toBeGreaterThanOrEqual(4);
+      const games = entry.sections.find((section) => section.games)?.games ?? [];
+      expect(games.length, entry.id).toBeGreaterThanOrEqual(4);
+      expect(games.every((game) => game.year), entry.id).toBe(true);
     }
   });
 });
