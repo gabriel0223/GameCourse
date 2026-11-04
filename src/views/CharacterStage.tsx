@@ -40,7 +40,7 @@ export function CharacterStage({ slot = null, preview = null }: CharacterStagePr
                 data-equipped={Boolean(piece)}
                 data-selected={item === slot}
               >
-                {piece ? <PieceArt piece={piece} /> : <span className="tile-empty">{t.empty}</span>}
+                {piece ? <PieceArt piece={piece} /> : <span className="tile-empty" />}
               </a>
             </div>
           );

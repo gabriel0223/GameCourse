@@ -1923,13 +1923,35 @@ input[aria-invalid='true'] {
   color: var(--muted);
 }
 
-.tile-empty {
-  display: grid;
-  place-items: center;
-  height: 100%;
-  color: var(--muted);
-  font-family: var(--body);
-  font-size: 14px;
+.equip-slot .tile[data-equipped='false'] {
+  border: 2px dashed #453f56;
+  background: color-mix(in srgb, var(--surface) 55%, transparent);
+}
+
+.equip-slot .tile[data-equipped='false']:hover {
+  border-color: var(--muted);
+}
+
+.equip-slot .tile[data-equipped='false'][data-selected='true'] {
+  border-color: var(--text);
+}
+
+/* A small plus, because clicking an empty slot is how she fills it. */
+.tile-empty,
+.tile-empty::after {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 18px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--muted);
+  transform: translate(-50%, -50%);
+}
+
+.tile-empty::after {
+  content: '';
+  transform: translate(-50%, -50%) rotate(90deg);
 }
 
 .tile-grid {
