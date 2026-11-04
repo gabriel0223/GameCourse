@@ -99,7 +99,8 @@ const GUIDES: CodexEntry[] = [
       `The core loop is growth. Fighting and finishing quests earns XP, and enough XP raises your level, which makes you stronger. You choose skills, weapons, and armor, and the mix you settle on is called a build. Between fights you talk to characters, explore towns, and pick up side quests, which are optional tasks outside the main story.`,
       `RPGs come in two broad types. Turn-based RPGs let you plan each move, so they are a gentle place to start. Action RPGs happen in real time, so your reactions matter as much as your build. A long RPG can look like a huge commitment, but you rarely need to see everything. Follow the main quest, save often, and only take on the side quests that interest you.`,
     ),
-    [try_('Final Fantasy VII Remake Intergrade', 2021), try_('The Witcher 3: Wild Hunt', 2015), try_('Hades', 2020), try_('Disco Elysium', 2019)],
+    // IGDB's Intergrade page didn't match a lookup, so this card uses the base game.
+    [try_('Final Fantasy VII Remake', 2020), try_('The Witcher 3: Wild Hunt', 2015), try_('Hades', 2020), try_('Disco Elysium', 2019)],
     ['playing-saving'],
   ),
   genre(
