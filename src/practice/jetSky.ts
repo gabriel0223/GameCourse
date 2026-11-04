@@ -85,16 +85,29 @@ const PALETTE = [
   '#D8272E',
 ];
 
-// How far the dither nudges each pixel. Higher values look grittier.
+// The dusk above the gold, from ember through rose and violet to indigo. These only go on open sky
+// and the shaded parts of clouds, so jets, water, and sunlit gold keep the colors above. Sampled
+// from skyColor so the steps sit evenly.
+const DUSK = [
+  '#E68216', '#E07414', '#D96814', '#F59A1E', '#F38C1A', '#F28218', '#EC6A28', '#E25E34', '#C89078',
+  '#B07C72', '#96686C', '#7C5468', '#F27211', '#C34841', '#CE4320', '#A34442', '#B33524', '#8A4344',
+  '#72404C', '#9B2F2F', '#862D3B', '#663650', '#732B41', '#552F50', '#5F2946', '#4A2A4D', '#3E274D',
+  '#34244A', '#2A2046', '#221C40', '#1B193A', '#171634',
+];
+
+// How far the dither nudges each pixel. Higher values look grittier. Open sky gets more, so the long
+// dusk gradient melts together instead of showing stripes.
 const DITHER = '0.062';
+const SKY_DITHER = '0.1';
 
 const paletteGlsl = () => {
-  const items = PALETTE.map((hex) => {
+  const items = [...PALETTE, ...DUSK].map((hex) => {
     const c = new THREE.Color();
     c.setStyle(hex, THREE.LinearSRGBColorSpace);
     return `vec3(${c.r.toFixed(4)}, ${c.g.toFixed(4)}, ${c.b.toFixed(4)})`;
   });
-  return `const int PAL_SIZE = ${items.length};
+  return `const int BASE_SIZE = ${PALETTE.length};
+  const int PAL_SIZE = ${items.length};
   const vec3 PAL[${items.length}] = vec3[${items.length}](${items.join(', ')});`;
 };
 
@@ -136,11 +149,19 @@ const SHARED = /* glsl */ `
     float h = max(d.y, 0.);
     float toSun = dot(d, uSun);
     float facing = toSun * 0.5 + 0.5;
-    vec3 c = mix(vec3(0.97, 0.56, 0.10), vec3(0.76, 0.36, 0.10), smoothstep(0.0, 0.16, h));
-    c = mix(c, vec3(0.34, 0.30, 0.36), smoothstep(0.1, 0.42, h));
-    c = mix(c, vec3(0.10, 0.14, 0.24), smoothstep(0.4, 0.95, h));
-    // The sky falls into dusky slate away from the sun.
-    c = mix(mix(vec3(0.46, 0.36, 0.34), vec3(0.20, 0.24, 0.34), smoothstep(0., 0.5, h)), c, smoothstep(0.1, 0.8, facing));
+    // The warm bands climb higher around the sun, and sink lower across the sky from it.
+    float e = h / mix(0.8, 1.2, smoothstep(0.45, 1., facing));
+    vec3 c = mix(vec3(0.97, 0.56, 0.10), vec3(0.86, 0.45, 0.10), smoothstep(0.0, 0.22, e));
+    c = mix(c, vec3(0.74, 0.27, 0.13), smoothstep(0.17, 0.35, e));
+    c = mix(c, vec3(0.57, 0.22, 0.28), smoothstep(0.26, 0.46, e));
+    c = mix(c, vec3(0.38, 0.23, 0.37), smoothstep(0.36, 0.62, e));
+    c = mix(c, vec3(0.23, 0.19, 0.35), smoothstep(0.48, 0.80, e));
+    c = mix(c, vec3(0.14, 0.14, 0.27), smoothstep(0.68, 1.0, e));
+    // Across from the sun, the air fades from a dusky rose into the coming night.
+    vec3 far = mix(vec3(0.46, 0.34, 0.33), vec3(0.47, 0.30, 0.38), smoothstep(0.0, 0.12, h));
+    far = mix(far, vec3(0.31, 0.24, 0.37), smoothstep(0.08, 0.36, h));
+    far = mix(far, vec3(0.17, 0.16, 0.29), smoothstep(0.28, 0.76, h));
+    c = mix(far, c, smoothstep(0.1, 0.8, facing));
     float s = max(toSun, 0.);
     c += vec3(1.0, 0.56, 0.12) * pow(s, 7.) * 0.42;
     c += vec3(1.0, 0.72, 0.28) * pow(s, 48.) * 0.75;
@@ -164,7 +185,7 @@ const CLOUD_FRAGMENT = /* glsl */ `
   const float NEAR_STEP = 90.;
   const vec3 SUN_LIGHT = vec3(2.1, 1.28, 0.5);
   const vec3 SHADE_LOW = vec3(0.17, 0.12, 0.12);
-  const vec3 SHADE_HIGH = vec3(0.36, 0.32, 0.35);
+  const vec3 SHADE_HIGH = vec3(0.42, 0.27, 0.33);
 
   float cloudDensity(vec3 p, bool fine) {
     float h = (p.y - uLayer.x) / (uLayer.y - uLayer.x);
@@ -234,6 +255,7 @@ const CLOUD_FRAGMENT = /* glsl */ `
     float span = leave - enter;
     float cosSun = dot(rd, uSun);
     float scatter = phase(cosSun);
+    vec3 far = skyColor(normalize(vec3(rd.x, 0.02, rd.z)));
     // Big steps cross empty air and grow with distance. Reaching a cloud, the ray backs up and
     // walks through it in small steps, so the surface stays soft without any visible rings.
     float growth = pow(span / NEAR_STEP + 1., 2. / float(uSteps));
@@ -273,7 +295,7 @@ const CLOUD_FRAGMENT = /* glsl */ `
       vec3 color = shade + SUN_LIGHT * lit * scatter * mix(0.42, 1., body);
       // Distance dissolves the clouds into the warm air.
       float haze = 1. - exp(-t * 0.00017);
-      color = mix(color, skyColor(normalize(vec3(rd.x, 0.02, rd.z))), haze * 0.86);
+      color = mix(color, far, haze * 0.86);
       float pass = exp(-d * stride * 0.03);
       light += through * (1. - pass) * color;
       through *= pass;
@@ -293,11 +315,88 @@ const CLOUD_FRAGMENT = /* glsl */ `
   }
 `;
 
+// Works out once per frame where the sun lands on screen, and how much of it the clouds and jets
+// leave showing, by checking a small patch of pixels around it.
+const COMPOSE_VERTEX = /* glsl */ `
+  out vec2 vUv;
+  flat out vec3 vSun;
+  uniform sampler2D uScene;
+  uniform sampler2D uCloud;
+  uniform mat3 uRot;
+  uniform vec2 uTan;
+  uniform vec3 uSun;
+
+  void main() {
+    vUv = uv;
+    gl_Position = vec4(position.xy, 0., 1.);
+    vSun = vec3(0.);
+    vec3 view = uSun * uRot;
+    if (view.z > -0.05) return;
+    vec2 at = view.xy / -view.z / uTan;
+    float frame = smoothstep(1.5, 1.02, max(abs(at.x), abs(at.y)));
+    if (frame <= 0.) return;
+    float clear = 0.;
+    for (int i = 0; i < 24; i++) {
+      float turn = float(i) * 2.39996;
+      vec2 near = at * 0.5 + 0.5 + vec2(cos(turn), sin(turn)) * sqrt((float(i) + 0.5) / 24.) * vec2(0.022, 0.04);
+      near = clamp(near, vec2(0.), vec2(1.));
+      if (textureLod(uScene, near, 0.).a <= 0.5) clear += textureLod(uCloud, near, 0.).a;
+    }
+    vSun = vec3(at, smoothstep(0.08, 0.8, clear / 24.) * frame);
+  }
+`;
+
 const COMPOSE_FRAGMENT = /* glsl */ `
   ${SHARED}
+  flat in vec3 vSun;
   uniform sampler2D uCloud;
   uniform float uFlash;
   ${paletteGlsl()}
+
+  // A faint disc of light scattered between the lens elements.
+  float ghost(vec2 p, vec2 center, float size) {
+    float r = length(p - center) / size;
+    return smoothstep(1., 0.82, r) * (0.45 + 0.55 * r * r);
+  }
+
+  // Everything the sun does to the lens, which lands on top of the whole picture.
+  vec3 lensFlare(vec2 ndc) {
+    float seen = vSun.z;
+    if (seen <= 0.) return vec3(0.);
+    vec2 shape = vec2(uTan.x / uTan.y, 1.);
+    vec2 sun = vSun.xy * shape;
+    vec2 at = ndc * shape;
+    vec2 p = at - sun;
+    float r = length(p);
+    float angle = atan(p.y, p.x);
+
+    // Glare washes over the sky, clouds, and jet, and blows out the middle.
+    vec3 light = vec3(1.0, 0.56, 0.16) * exp(-r * 2.5) * 0.36;
+    light += vec3(1.0, 0.8, 0.46) * exp(-r * 7.) * 0.7;
+    light += vec3(1.0, 0.97, 0.86) * exp(-r * r * 260.) * 1.5;
+
+    // Spikes from the shape of the lens opening.
+    float spikes = pow(abs(cos(angle * 2. + 0.5)), 240.) + pow(abs(cos(angle * 3. + 1.55)), 300.) * 0.45;
+    float rays = 0.5 + 0.5 * sin(angle * 23. + 1.) * sin(angle * 37.);
+    // Each spike gets its own length, so the burst looks caught by a lens instead of drawn.
+    float reach = 4.6 + 1.3 * sin(angle * 5. + 0.8);
+    light += vec3(1.0, 0.9, 0.66) * spikes * exp(-r * reach) * 0.9;
+    light += vec3(1.0, 0.7, 0.3) * rays * rays * exp(-r * 6.) * 0.34;
+
+    // A chain of ghosts running from the sun through the middle of the screen.
+    light += vec3(0.9, 0.42, 0.14) * ghost(at, sun * -0.32, 0.075) * 0.16;
+    light += vec3(0.82, 0.3, 0.3) * ghost(at, sun * -0.62, 0.15) * 0.1;
+    light += vec3(0.95, 0.66, 0.2) * ghost(at, sun * 0.34, 0.045) * 0.2;
+    light += vec3(0.62, 0.3, 0.42) * ghost(at, sun * -1.05, 0.24) * 0.08;
+
+    // A wide colored arc, faintest on the side of the lens away from the top left.
+    float band = (r - 1.28) / 0.13;
+    float arc = exp(-band * band) * smoothstep(-0.2, 0.9, cos(angle - 2.35));
+    vec3 tint = mix(vec3(1.0, 0.72, 0.2), vec3(0.95, 0.3, 0.3), smoothstep(-1., 0.2, band));
+    tint = mix(tint, vec3(0.5, 0.3, 0.75), smoothstep(0., 1.2, band));
+    light += tint * arc * 0.15;
+    return light * seen;
+  }
 
   vec3 oceanColor(vec3 ro, vec3 rd, float t) {
     vec3 p = ro + rd * t;
@@ -326,10 +425,10 @@ const COMPOSE_FRAGMENT = /* glsl */ `
     return mix(color, skyColor(normalize(vec3(rd.x, 0.015, rd.z))), haze);
   }
 
-  vec3 nearestColor(vec3 c) {
+  vec3 nearestColor(vec3 c, int count) {
     vec3 best = PAL[0];
     float bestScore = 1e9;
-    for (int i = 0; i < PAL_SIZE; i++) {
+    for (int i = 0; i < count; i++) {
       vec3 diff = (c - PAL[i]) * vec3(0.9, 1.1, 0.75);
       float score = dot(diff, diff);
       if (score < bestScore) {
@@ -383,11 +482,17 @@ const COMPOSE_FRAGMENT = /* glsl */ `
     c = mix(c, c * c * (3. - 2. * c), 0.62);
     vec2 edge = ndc * vec2(0.82, 0.92);
     c *= 1. - dot(edge, edge) * 0.2;
+    vec3 flare = lensFlare(ndc);
+    c += flare;
     c += uFlash * vec3(1.0, 0.7, 0.3);
 
     // A light ordered dither nudges every pixel before it snaps to the palette.
-    c += (bayer(gl_FragCoord.xy) - 0.5) * ${DITHER};
-    outColor = vec4(nearestColor(c), 1.);
+    float grain = bayer(gl_FragCoord.xy) - 0.5;
+    float open = reach < 0. ? cloud.a * smoothstep(-0.08, 0., rd.y) : 0.;
+    c += grain * mix(${DITHER}, ${SKY_DITHER}, open);
+    // Gold has far less blue than green, which keeps sunlit clouds on the base colors.
+    bool cool = reach < 0. && rd.y > 0. && c.b > c.g * 0.8;
+    outColor = vec4(nearestColor(c, cool || open + grain * 0.5 > 0.25 ? PAL_SIZE : BASE_SIZE), 1.);
   }
 `;
 
@@ -398,18 +503,20 @@ export interface SkyPass {
   dispose(): void;
 }
 
-function fullScreen(fragmentShader: string, uniforms: Record<string, THREE.IUniform>) {
+const FULL_SCREEN_VERTEX = /* glsl */ `
+  out vec2 vUv;
+  void main() {
+    vUv = uv;
+    gl_Position = vec4(position.xy, 0., 1.);
+  }`;
+
+function fullScreen(fragmentShader: string, uniforms: Record<string, THREE.IUniform>, vertexShader = FULL_SCREEN_VERTEX) {
   const material = new THREE.ShaderMaterial({
     glslVersion: THREE.GLSL3,
     uniforms,
     depthTest: false,
     depthWrite: false,
-    vertexShader: /* glsl */ `
-      out vec2 vUv;
-      void main() {
-        vUv = uv;
-        gl_Position = vec4(position.xy, 0., 1.);
-      }`,
+    vertexShader,
     fragmentShader,
   });
   const mesh = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), material);
@@ -437,7 +544,7 @@ export function createSkyPass(colorTexture: THREE.Texture, depthTexture: THREE.T
     uFlash: { value: 0 },
   };
   const clouds = fullScreen(CLOUD_FRAGMENT, uniforms);
-  const sky = fullScreen(COMPOSE_FRAGMENT, uniforms);
+  const sky = fullScreen(COMPOSE_FRAGMENT, uniforms, COMPOSE_VERTEX);
   return {
     cloudScene: clouds.scene,
     skyScene: sky.scene,
