@@ -1,6 +1,6 @@
-import type { CodexCategory, CodexEntry, CodexImage, CodexSection } from './codex';
+import type { CodexCategory, CodexEntry, CodexGame, CodexImage, CodexSection } from './codex';
 
-export type BlockKind = 'text' | 'list' | 'steps' | 'table' | 'image' | 'figure' | 'consoles';
+export type BlockKind = 'text' | 'list' | 'steps' | 'table' | 'image' | 'figure' | 'consoles' | 'games';
 
 export interface Block {
   key: string;
@@ -41,11 +41,19 @@ const lines = (text: string) =>
 // Spaces around the bar keep names like Xbox Series X|S in one cell.
 const cells = (line: string) => line.split(/\s+\|\s+/).map((cell) => cell.trim());
 
+const gameLine = ({ name, year }: CodexGame) => (year ? `${name} (${year})` : name);
+
+function parseGame(line: string): CodexGame {
+  const dated = line.match(/^(.+?)\s*\((\d{4})\)$/);
+  return dated ? { name: dated[1], year: Number(dated[2]) } : { name: line };
+}
+
 function toBlock(section: CodexSection): Block {
   const base = { key: blockKey(), heading: section.heading ?? '', body: '' };
   if (section.image) return { ...base, kind: 'image', image: section.image };
   if (section.figure) return { ...base, kind: 'figure' };
   if (section.consoles !== undefined) return { ...base, kind: 'consoles', body: String(section.consoles) };
+  if (section.games) return { ...base, kind: 'games', body: section.games.map(gameLine).join('\n') };
   if (section.list) return { ...base, kind: 'list', body: section.list.join('\n') };
   if (section.steps) return { ...base, kind: 'steps', body: section.steps.join('\n') };
   if (section.table) {
@@ -64,6 +72,8 @@ function toSection(block: Block): CodexSection | null {
       return lines(block.body).length ? { ...heading, list: lines(block.body) } : null;
     case 'steps':
       return lines(block.body).length ? { ...heading, steps: lines(block.body) } : null;
+    case 'games':
+      return lines(block.body).length ? { ...heading, games: lines(block.body).map(parseGame) } : null;
     case 'table': {
       const [headers, ...rows] = lines(block.body).map(cells);
       return headers ? { ...heading, table: { headers, rows } } : null;

@@ -7,6 +7,22 @@ export interface RankableGame {
   total_rating_count?: number;
   version_parent?: number;
   game_type?: number;
+  first_release_date?: number;
+}
+
+export interface GameLookup {
+  name: string;
+  year: number;
+}
+
+// Early access can put a game's first date years before its full release, so
+// the window reaches further back than forward. It still separates a game from
+// a remake with the same name. IGDB dates start at 1970, so the range does too.
+const YEARS_BEFORE = 3;
+const YEARS_AFTER = 1;
+
+export function releaseWindow(year: number): [number, number] {
+  return [Math.max(0, Date.UTC(year - YEARS_BEFORE, 0, 1) / 1000), Date.UTC(year + YEARS_AFTER + 1, 0, 1) / 1000];
 }
 
 function normalize(text: string): string {
@@ -29,6 +45,22 @@ function matchTier(name: string, query: string): number {
   const words = name.split(' ');
   if (query.split(' ').every((word) => words.some((item) => item.startsWith(word)))) return 3;
   return 4;
+}
+
+// Finds the game a Codex list means. Anything looser than the start of the title
+// counts as missing, because a plain name beats a link to the wrong game.
+export function pickGame<T extends RankableGame>(games: T[], lookup: GameLookup): T | null {
+  const needle = normalize(lookup.name);
+  const [from, to] = releaseWindow(lookup.year);
+  return (
+    games
+      .filter((game) => !game.version_parent && !HIDDEN_GAME_TYPES.has(game.game_type ?? -1))
+      .filter((game) => (game.first_release_date ?? -1) >= from && (game.first_release_date ?? -1) < to)
+      .map((game) => ({ game, tier: matchTier(normalize(game.name), needle) }))
+      .filter((item) => item.tier <= 1)
+      .sort((a, b) => a.tier - b.tier || (b.game.total_rating_count ?? 0) - (a.game.total_rating_count ?? 0))[0]?.game ??
+    null
+  );
 }
 
 export function rankGames<T extends RankableGame>(lists: T[][], query: string, limit: number): T[] {

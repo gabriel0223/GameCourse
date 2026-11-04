@@ -1,7 +1,49 @@
 import { describe, expect, it } from 'vitest';
-import { rankGames } from './rank';
+import { pickGame, rankGames } from './rank';
 
 const game = (id: number, name: string, rest = {}) => ({ id, name, ...rest });
+
+const released = (year: number) => ({ first_release_date: Date.UTC(year, 5, 1) / 1000 });
+
+describe('pickGame', () => {
+  it('tells a game from its remake by year', () => {
+    const games = [game(1, 'Resident Evil', released(2002)), game(2, 'Resident Evil', released(1996))];
+    expect(pickGame(games, { name: 'Resident Evil', year: 1996 })?.id).toBe(2);
+    expect(pickGame(games, { name: 'Resident Evil', year: 2002 })?.id).toBe(1);
+  });
+
+  it('picks the better known game when two share a title and era', () => {
+    const games = [
+      game(1, 'Adventure', { ...released(1980), total_rating_count: 3 }),
+      game(2, 'Adventure', { ...released(1980), total_rating_count: 90 }),
+    ];
+    expect(pickGame(games, { name: 'Adventure', year: 1980 })?.id).toBe(2);
+  });
+
+  it('prefers the exact title, then accepts a longer one', () => {
+    const games = [game(1, 'Metroid Fusion', { ...released(1986), total_rating_count: 900 }), game(2, 'Metroid', released(1986))];
+    expect(pickGame(games, { name: 'Metroid', year: 1986 })?.id).toBe(2);
+    const fighter = [game(3, 'Street Fighter II: The World Warrior', released(1991))];
+    expect(pickGame(fighter, { name: 'Street Fighter II', year: 1991 })?.id).toBe(3);
+  });
+
+  it('finds a game whose early access began years before', () => {
+    expect(pickGame([game(1, "Baldur's Gate 3", released(2020))], { name: 'Baldur’s Gate 3', year: 2023 })?.id).toBe(1);
+  });
+
+  it('skips editions and bundles', () => {
+    const games = [
+      game(1, 'Halo: Combat Evolved', { ...released(2001), version_parent: 9 }),
+      game(2, 'Halo: Combat Evolved', { ...released(2001), game_type: 3 }),
+    ];
+    expect(pickGame(games, { name: 'Halo: Combat Evolved', year: 2001 })).toBeNull();
+  });
+
+  it('returns nothing rather than a weak match or an undated game', () => {
+    expect(pickGame([game(1, 'Home Pong', released(1975))], { name: 'Pong', year: 1975 })).toBeNull();
+    expect(pickGame([game(1, 'Pong')], { name: 'Pong', year: 1972 })).toBeNull();
+  });
+});
 
 describe('rankGames', () => {
   it('puts the exact title first, even from a long list of loose matches', () => {

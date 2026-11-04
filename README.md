@@ -55,6 +55,7 @@ The Twitch secret must only be stored in Supabase secrets, never in `.env` or th
 - `supabase`: the database schema and IGDB Edge Function.
 - `src/content/codex.ts`: Codex guides and glossary.
 - `src/content/consoles.ts`: Console entries. Generation pages list them automatically.
+- `src/content/timeline.ts`: Generations and timeline events. A generation's games carry a release year, which the app uses to find them on IGDB. A game with no year, or one IGDB doesn't have, stays a plain card.
 - `src/practice`: Practice minigames. Rules, controller layouts, input, and drawing are kept separate. Sunset Ace uses Three.js, which loads only when that game opens. `jetSky.ts` draws the sky, clouds, ocean, and final palette as one shader, and it lowers its own quality to hold a smooth frame rate. `jetAudio.ts` builds every sound live with the Web Audio API, so there are no audio files.
 - `tools/codex_art.py`: generates the Codex scenes.
 - `tools/runner_art.py`: generates the Endless Runner world. Its Japanese signs use glyphs from DotGothic16, under the SIL Open Font License.

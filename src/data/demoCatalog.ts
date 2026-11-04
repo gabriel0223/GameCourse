@@ -69,4 +69,7 @@ export const demoCatalog: GameCatalog = {
     const [criticScore, criticReviews] = SAMPLE_CRITICS[id] ?? [null, null];
     return { ...found, criticScore, criticReviews };
   },
+  async lookup(games) {
+    return games.map(({ name }) => GAMES.find((item) => item.name.toLowerCase() === name.toLowerCase()) ?? null);
+  },
 };

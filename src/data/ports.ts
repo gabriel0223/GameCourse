@@ -1,11 +1,13 @@
 import type { CodexEntry, CodexImage } from '../content/codex';
-import type { Game, LibraryEntry } from '../domain/types';
+import type { Game, GameLookup, LibraryEntry } from '../domain/types';
 import type { CharacterProfile } from '../domain/wardrobe';
 
 export interface GameCatalog {
   suggestions(): Promise<Game[]>;
   search(query: string): Promise<Game[]>;
   get(id: string): Promise<Game | null>;
+  // One answer per lookup, in the same order, with null for a game it can't find.
+  lookup(games: GameLookup[]): Promise<Array<Game | null>>;
 }
 
 export interface LibraryStore {

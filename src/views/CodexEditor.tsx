@@ -19,7 +19,7 @@ import { Article } from './CodexView';
 
 const t = strings.editor;
 type AddableKind = Exclude<BlockKind, 'figure' | 'consoles'>;
-const ADDABLE: AddableKind[] = ['text', 'list', 'steps', 'image', 'table'];
+const ADDABLE: AddableKind[] = ['text', 'list', 'steps', 'games', 'image', 'table'];
 
 interface ImageFieldProps {
   id: string;
@@ -150,7 +150,10 @@ function BlockEditor({ block, index, count, selected, onChange, onMove, onRemove
     id: block.key,
   });
   const label = t.blockKinds[block.kind];
-  const hint = block.kind === 'list' || block.kind === 'steps' || block.kind === 'table' ? t.hints[block.kind] : null;
+  const hint =
+    block.kind === 'list' || block.kind === 'steps' || block.kind === 'table' || block.kind === 'games'
+      ? t.hints[block.kind]
+      : null;
   const isTarget = overIndex === index && activeIndex !== index && activeIndex >= 0;
   const classes = ['block'];
   if (selected) classes.push('block-selected');

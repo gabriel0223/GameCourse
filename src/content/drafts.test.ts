@@ -16,6 +16,14 @@ describe('Codex drafts', () => {
     draft.timeline = { kind: 'event', generation: 3, year: 1990, label: '1990' };
     expect(fromDraft(draft).timeline?.year).toBe(1990);
   });
+  it('turns lines into game cards, with a year when one is given', () => {
+    const draft = newDraft('custom-1');
+    draft.title = 'Test';
+    draft.blocks = [{ ...emptyBlock('games'), body: 'Pac-Man (1980)\nHome Pong (variations)' }];
+    expect(fromDraft(draft).sections).toEqual([
+      { games: [{ name: 'Pac-Man', year: 1980 }, { name: 'Home Pong (variations)' }] },
+    ]);
+  });
   it('turns lines into lists and tables', () => {
     const draft = newDraft('custom-1');
     draft.title = 'Test';

@@ -346,10 +346,12 @@ export const strings = {
       image: 'Image',
       figure: 'Button diagram',
       consoles: 'Console list',
+      games: 'Game cards',
     },
     hints: {
       list: 'One item per line.',
       steps: 'One step per line.',
+      games: 'One game per line. Add the release year in brackets to link it to IGDB, like Metroid (1986).',
       table: 'One row per line. Separate cells with a space, |, and a space. The first row is the header.',
     },
     add: (kind: string) => `Add ${kind.toLowerCase()}`,

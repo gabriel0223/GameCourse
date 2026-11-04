@@ -1,11 +1,13 @@
 import { isUserToken } from './auth.ts';
-import { rankGames } from './rank.ts';
+import { pickGame, rankGames, releaseWindow } from './rank.ts';
+import type { GameLookup } from './rank.ts';
 
 const CLIENT_ID = Deno.env.get('TWITCH_CLIENT_ID') ?? '';
 const CLIENT_SECRET = Deno.env.get('TWITCH_CLIENT_SECRET') ?? '';
 const ALLOWED_ORIGIN = Deno.env.get('APP_ORIGIN') ?? 'https://gabriel0223.github.io';
 const CACHE_DAYS = 7;
 const SEARCH_RESULTS = 24;
+const MAX_LOOKUPS = 12;
 
 // Plain requests instead of the Supabase library, because this function starts
 // fresh on most requests and loading that library slows every start.
@@ -50,6 +52,11 @@ interface IgdbGame {
   version_parent?: number;
   game_type?: number;
 }
+
+const isLookup = (item: unknown): item is GameLookup => {
+  const { name, year } = (item ?? {}) as Partial<GameLookup>;
+  return typeof name === 'string' && name.length > 0 && name.length <= 100 && Number.isInteger(year);
+};
 
 let token: { value: string; expiresAt: number } | null = null;
 
@@ -161,6 +168,26 @@ async function searchGames(text: string) {
   return payload;
 }
 
+// One request for a whole Codex list. Each title gets its own date range, which
+// keeps long series like Final Fantasy from crowding out the rest of the list.
+async function lookupGames(lookups: GameLookup[]) {
+  const key = `lookup1:${lookups.map((item) => `${item.name.toLowerCase()}|${item.year}`).join(',')}`;
+  return cached(key, async () => {
+    const titles = lookups.map(({ name, year }) => {
+      const [from, to] = releaseWindow(year);
+      return `(name ~ ${quote(name)}* & first_release_date >= ${from} & first_release_date < ${to})`;
+    });
+    const games = await igdb(
+      `fields ${SEARCH_FIELDS}; where (${titles.join(' | ')}) & version_parent = null; ` +
+        'sort total_rating_count desc; limit 200;',
+    );
+    return lookups.map((lookup) => {
+      const game = pickGame(games, lookup);
+      return game ? toGame(game) : null;
+    });
+  });
+}
+
 Deno.serve(async (request) => {
   if (request.method === 'OPTIONS') return new Response('ok', { headers: cors });
 
@@ -172,7 +199,7 @@ Deno.serve(async (request) => {
       });
     }
 
-    const { action, query, id } = await request.json();
+    const { action, query, id, games } = await request.json();
     let result: unknown;
 
     if (action === 'search' && typeof query === 'string' && query.trim()) {
@@ -182,6 +209,14 @@ Deno.serve(async (request) => {
         const games = await igdb(`fields ${FIELDS}; where id = ${id}; limit 1;`);
         return games[0] ? toGame(games[0]) : null;
       });
+    } else if (
+      action === 'lookup' &&
+      Array.isArray(games) &&
+      games.length > 0 &&
+      games.length <= MAX_LOOKUPS &&
+      games.every(isLookup)
+    ) {
+      result = await lookupGames(games);
     } else if (action === 'suggestions') {
       result = await cached('suggestions', async () =>
         (

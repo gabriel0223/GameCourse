@@ -1,4 +1,4 @@
-import type { CodexEntry, CodexSection } from './codex';
+import type { CodexEntry, CodexGame, CodexSection } from './codex';
 
 export interface TimelineGroup {
   generation: number;
@@ -25,7 +25,7 @@ interface GenerationInput {
   summary: string;
   history: string[];
   innovations: string[];
-  games: string[];
+  games: CodexGame[];
   note?: string;
 }
 
@@ -37,7 +37,7 @@ const generation = ({ n, summary, history, innovations, games, note }: Generatio
     { heading: 'Consoles', consoles: n },
   ];
   if (note) sections.push({ text: note });
-  sections.push({ heading: 'Games that defined it', list: games });
+  sections.push({ heading: 'Games that defined it', games });
   return {
     id: `gen-${n}`,
     category: 'history',
@@ -79,7 +79,11 @@ export const TIMELINE_ENTRIES: CodexEntry[] = [
       'On-screen score tracking and internal sound on Pong systems.',
       'Integrated circuits, which made consoles cheaper to build.',
     ],
-    games: ['Pong', 'Tennis on the Magnavox Odyssey', 'Home Pong variations'],
+    games: [
+      { name: 'Pong', year: 1972 },
+      { name: 'Table Tennis', year: 1972 },
+      { name: 'Home Pong variations' },
+    ],
   }),
   generation({
     n: 2,
@@ -95,7 +99,12 @@ export const TIMELINE_ENTRIES: CodexEntry[] = [
       'Home versions of popular arcade games.',
       'Handheld electronic games, including Game & Watch.',
     ],
-    games: ['Space Invaders', 'Pac-Man', 'Pitfall!', 'Adventure'],
+    games: [
+      { name: 'Space Invaders', year: 1978 },
+      { name: 'Pac-Man', year: 1980 },
+      { name: 'Pitfall!', year: 1982 },
+      { name: 'Adventure', year: 1980 },
+    ],
   }),
   generation({
     n: 3,
@@ -111,7 +120,13 @@ export const TIMELINE_ENTRIES: CodexEntry[] = [
       'Battery saves, which let long adventures continue later.',
       'A lockout chip that gave Nintendo control over which games were released.',
     ],
-    games: ['Super Mario Bros.', 'The Legend of Zelda', 'Metroid', 'Final Fantasy', 'Mega Man 2'],
+    games: [
+      { name: 'Super Mario Bros.', year: 1985 },
+      { name: 'The Legend of Zelda', year: 1986 },
+      { name: 'Metroid', year: 1986 },
+      { name: 'Final Fantasy', year: 1987 },
+      { name: 'Mega Man 2', year: 1988 },
+    ],
   }),
   generation({
     n: 4,
@@ -127,7 +142,13 @@ export const TIMELINE_ENTRIES: CodexEntry[] = [
       'Coprocessors in cartridges, such as the Super FX chip behind Star Fox.',
       'A large handheld market led by Game Boy.',
     ],
-    games: ['Super Mario World', 'Sonic the Hedgehog', 'Street Fighter II', 'Chrono Trigger', 'Tetris on Game Boy'],
+    games: [
+      { name: 'Super Mario World', year: 1990 },
+      { name: 'Sonic the Hedgehog', year: 1991 },
+      { name: 'Street Fighter II', year: 1991 },
+      { name: 'Chrono Trigger', year: 1995 },
+      { name: 'Tetris', year: 1989 },
+    ],
   }),
   generation({
     n: 5,
@@ -143,7 +164,13 @@ export const TIMELINE_ENTRIES: CodexEntry[] = [
       'Memory cards for saving progress.',
       'Analog sticks and vibration on controllers.',
     ],
-    games: ['Super Mario 64', 'The Legend of Zelda: Ocarina of Time', 'Final Fantasy VII', 'Metal Gear Solid', 'Resident Evil'],
+    games: [
+      { name: 'Super Mario 64', year: 1996 },
+      { name: 'The Legend of Zelda: Ocarina of Time', year: 1998 },
+      { name: 'Final Fantasy VII', year: 1997 },
+      { name: 'Metal Gear Solid', year: 1998 },
+      { name: 'Resident Evil', year: 1996 },
+    ],
   }),
   generation({
     n: 6,
@@ -159,7 +186,13 @@ export const TIMELINE_ENTRIES: CodexEntry[] = [
       'Backward compatibility on PlayStation 2.',
       'Much larger open-world games.',
     ],
-    games: ['Halo: Combat Evolved', 'Grand Theft Auto III', 'Metroid Prime', 'Shadow of the Colossus', 'Resident Evil 4'],
+    games: [
+      { name: 'Halo: Combat Evolved', year: 2001 },
+      { name: 'Grand Theft Auto III', year: 2001 },
+      { name: 'Metroid Prime', year: 2002 },
+      { name: 'Shadow of the Colossus', year: 2005 },
+      { name: 'Resident Evil 4', year: 2005 },
+    ],
   }),
   generation({
     n: 7,
@@ -175,7 +208,13 @@ export const TIMELINE_ENTRIES: CodexEntry[] = [
       'Digital stores, downloadable games, and achievements.',
       'Blu-ray storage on PlayStation 3.',
     ],
-    games: ['Wii Sports', 'The Elder Scrolls V: Skyrim', 'BioShock', 'Portal 2', 'The Last of Us'],
+    games: [
+      { name: 'Wii Sports', year: 2006 },
+      { name: 'The Elder Scrolls V: Skyrim', year: 2011 },
+      { name: 'BioShock', year: 2007 },
+      { name: 'Portal 2', year: 2011 },
+      { name: 'The Last of Us', year: 2013 },
+    ],
   }),
   generation({
     n: 8,
@@ -191,7 +230,13 @@ export const TIMELINE_ENTRIES: CodexEntry[] = [
       'Consumer VR headsets.',
       'Built-in screenshot, video, and sharing tools.',
     ],
-    games: ['The Legend of Zelda: Breath of the Wild', 'The Witcher 3: Wild Hunt', 'Fortnite', 'God of War', 'Hades'],
+    games: [
+      { name: 'The Legend of Zelda: Breath of the Wild', year: 2017 },
+      { name: 'The Witcher 3: Wild Hunt', year: 2015 },
+      { name: 'Fortnite', year: 2017 },
+      { name: 'God of War', year: 2018 },
+      { name: 'Hades', year: 2020 },
+    ],
   }),
   generation({
     n: 9,
@@ -208,7 +253,12 @@ export const TIMELINE_ENTRIES: CodexEntry[] = [
       'Handheld gaming PCs and wider cloud gaming.',
     ],
     note: 'Generations are a convention, not an official standard. Nintendo Switch 2 is listed here because of when it launched, but sources do not yet agree on its generation.',
-    games: ['Elden Ring', 'Baldur’s Gate 3', 'The Legend of Zelda: Tears of the Kingdom', 'Astro Bot'],
+    games: [
+      { name: 'Elden Ring', year: 2022 },
+      { name: "Baldur's Gate 3", year: 2023 },
+      { name: 'The Legend of Zelda: Tears of the Kingdom', year: 2023 },
+      { name: 'Astro Bot', year: 2024 },
+    ],
   }),
 
   event(

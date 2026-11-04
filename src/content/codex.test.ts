@@ -31,6 +31,14 @@ describe('Codex content', () => {
       expect(CODEX_ENTRIES.filter((item) => item.console?.generation === n).length).toBeGreaterThanOrEqual(4);
     }
   });
+  it('gives every generation games, with years so they can link to IGDB', () => {
+    for (let n = 1; n <= 9; n++) {
+      const games = findEntry(`gen-${n}`)?.sections.find((section) => section.games)?.games ?? [];
+      expect(games.length, `gen-${n}`).toBeGreaterThanOrEqual(3);
+      expect(games.length, `gen-${n}`).toBeLessThanOrEqual(12);
+      expect(games.filter((game) => game.year).length, `gen-${n}`).toBeGreaterThanOrEqual(1);
+    }
+  });
   it('keeps timeline events in date order and in valid groups', () => {
     const events = CODEX_ENTRIES.filter((entry) => entry.timeline?.kind === 'event');
     expect(events.length).toBeGreaterThanOrEqual(30);

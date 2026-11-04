@@ -29,6 +29,11 @@ export interface CodexImage {
   path?: string;
 }
 
+export interface CodexGame {
+  name: string;
+  year?: number;
+}
+
 export interface CodexSection {
   heading?: string;
   text?: string;
@@ -39,6 +44,8 @@ export interface CodexSection {
   image?: CodexImage;
   // Shows every console entry in this generation.
   consoles?: number;
+  // Shown as game cards. A game with a year links to its IGDB page when it's found.
+  games?: CodexGame[];
 }
 
 export interface CodexEntry {

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { CSSProperties } from 'react';
+import { GameShelf } from '../components/GameShelf';
 import { originalArt } from '../content/art';
 import { GLOSSARY } from '../content/codex';
 import { TIMELINE_GROUPS } from '../content/timeline';
@@ -294,6 +295,7 @@ function Section({ section }: { section: CodexSection }) {
       )}
       {section.figure === 'face-buttons' && <FaceButtons />}
       {section.consoles !== undefined && <GenerationConsoles generation={section.consoles} />}
+      {section.games && <GameShelf games={section.games} />}
       {section.image && <ArticleImage image={section.image} />}
       {section.table && (
         <div className="article-table">

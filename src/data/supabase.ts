@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import type { CodexEntry, CodexImage, CodexSection } from '../content/codex';
 import type { WardrobeGenre } from '../domain/genres';
-import type { Game, GameStatus, LibraryEntry, PlaySession } from '../domain/types';
+import type { Game, GameLookup, GameStatus, LibraryEntry, PlaySession } from '../domain/types';
 import type { CharacterProfile } from '../domain/wardrobe';
 import type { CodexStore, GameCatalog, LibraryStore } from './ports';
 
@@ -136,6 +136,8 @@ export const supabaseCodexStore: CodexStore = {
 // These match the keys and lifetime the igdb Edge Function uses.
 const CACHE_DAYS = 7;
 const searchKey = (query: string) => `search3:${query.trim().slice(0, 100).toLowerCase()}`;
+const lookupKey = (games: GameLookup[]) =>
+  `lookup1:${games.map((item) => `${item.name.toLowerCase()}|${item.year}`).join(',')}`;
 
 // Saved answers come straight from the database, which is much faster than
 // starting the Edge Function. A miss of any kind falls through to the function.
@@ -150,7 +152,7 @@ async function savedAnswer<T>(key: string): Promise<T | null> {
   return fresh ? (data.payload as T | null) : null;
 }
 
-async function callIgdb<T>(cacheKey: string, body: Record<string, string>): Promise<T> {
+async function callIgdb<T>(cacheKey: string, body: Record<string, unknown>): Promise<T> {
   const saved = await savedAnswer<T>(cacheKey);
   if (saved !== null) return saved;
   const { data, error } = await required().functions.invoke('igdb', { body });
@@ -162,4 +164,5 @@ export const igdbCatalog: GameCatalog = {
   suggestions: () => callIgdb<Game[]>('suggestions', { action: 'suggestions' }),
   search: (query) => callIgdb<Game[]>(searchKey(query), { action: 'search', query }),
   get: (id) => callIgdb<Game | null>(`game2:${id}`, { action: 'game', id }),
+  lookup: (games) => callIgdb<Array<Game | null>>(lookupKey(games), { action: 'lookup', games }),
 };

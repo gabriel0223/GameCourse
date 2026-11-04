@@ -24,6 +24,11 @@ export const catalog: GameCatalog = {
       if (game) seen.set(id, game);
       return game;
     }),
+  lookup: (games) =>
+    source.lookup(games).then((found) => {
+      remember(found.filter((game) => game !== null));
+      return found;
+    }),
 };
 
 export const store: LibraryStore = supabase ? supabaseStore : localStore;

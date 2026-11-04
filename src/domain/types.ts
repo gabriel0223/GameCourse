@@ -18,6 +18,12 @@ export interface Game {
   criticReviews?: number | null;
 }
 
+// A game named in the Codex. The year tells it apart from remakes.
+export interface GameLookup {
+  name: string;
+  year: number;
+}
+
 export interface PlaySession {
   id: string;
   minutes: number;
