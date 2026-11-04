@@ -1,17 +1,20 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import type { CSSProperties, FormEvent } from 'react';
 import { Cover } from '../components/GameCard';
 import { catalog } from '../data';
 import { GENRE_COLORS, WARDROBE_GENRES, pickMainGenre } from '../domain/genres';
 import type { WardrobeGenre } from '../domain/genres';
 import type { Game, LibraryEntry } from '../domain/types';
-import { entryMinutes } from '../domain/xp';
+import { XP_PER_HOUR, entryMinutes } from '../domain/xp';
 import { formatDay, formatDuration, todayLocal } from '../format';
 import { useLibrary } from '../state/LibraryContext';
 import { strings } from '../strings';
 import { getPreviousHash } from '../useHashRoute';
 
 const t = strings.game;
+const QUICK_MINUTES = [15, 30, 60, 120];
+const MINUTE_STEP = 15;
+const RATINGS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
 function Fact({ label, values }: { label: string; values: Array<string | number> }) {
   return (
@@ -22,72 +25,137 @@ function Fact({ label, values }: { label: string; values: Array<string | number>
   );
 }
 
+function Stepper({
+  label,
+  value,
+  lessLabel,
+  moreLabel,
+  onChange,
+  onStep,
+}: {
+  label: string;
+  value: string;
+  lessLabel: string;
+  moreLabel: string;
+  onChange(value: string): void;
+  onStep(direction: 1 | -1): void;
+}) {
+  const id = useId();
+  return (
+    <div className="stepper">
+      <label className="stepper-label" htmlFor={id}>
+        {label}
+      </label>
+      <div className="stepper-control">
+        <button type="button" aria-label={lessLabel} onClick={() => onStep(-1)}>
+          &minus;
+        </button>
+        <input
+          id={id}
+          inputMode="numeric"
+          type="number"
+          min="0"
+          placeholder="0"
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+        />
+        <button type="button" aria-label={moreLabel} onClick={() => onStep(1)}>
+          +
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function LogForm({ game }: { game: Game }) {
   const { logTime } = useLibrary();
   const [hours, setHours] = useState('');
   const [minutes, setMinutes] = useState('');
-  const [date, setDate] = useState(todayLocal());
-  const [error, setError] = useState(false);
+  const total = Math.round(Math.max(Number(hours) || 0, 0) * 60 + Math.max(Number(minutes) || 0, 0));
+
+  function setTotal(next: number) {
+    const clamped = Math.max(next, 0);
+    const wholeHours = Math.floor(clamped / 60);
+    setHours(wholeHours > 0 ? String(wholeHours) : '');
+    setMinutes(clamped % 60 > 0 ? String(clamped % 60) : '');
+  }
 
   function submit(event: FormEvent) {
     event.preventDefault();
-    const total = Number(hours || 0) * 60 + Number(minutes || 0);
-    if (!Number.isFinite(total) || total <= 0) {
-      setError(true);
-      return;
-    }
-    logTime(game, Math.round(total), date || todayLocal());
-    setHours('');
-    setMinutes('');
-    setError(false);
+    if (total <= 0) return;
+    logTime(game, total, todayLocal());
+    setTotal(0);
   }
 
   return (
     <form className="log-form" onSubmit={submit} noValidate>
       <h2>{t.logTitle}</h2>
-      <div className="log-fields">
-        <label>
-          {t.hours}
-          <input
-            inputMode="numeric"
-            type="number"
-            min="0"
-            value={hours}
-            aria-invalid={error}
-            onChange={(event) => {
-              setHours(event.target.value);
-              setError(false);
-            }}
-          />
-        </label>
-        <label>
-          {t.minutes}
-          <input
-            inputMode="numeric"
-            type="number"
-            min="0"
-            value={minutes}
-            aria-invalid={error}
-            onChange={(event) => {
-              setMinutes(event.target.value);
-              setError(false);
-            }}
-          />
-        </label>
-        <label>
-          {t.date}
-          <input type="date" value={date} max={todayLocal()} onChange={(event) => setDate(event.target.value)} />
-        </label>
+      <div className="log-quick">
+        {QUICK_MINUTES.map((amount) => (
+          <button
+            key={amount}
+            type="button"
+            aria-label={t.addTime(formatDuration(amount))}
+            onClick={() => setTotal(total + amount)}
+          >
+            +{formatDuration(amount)}
+          </button>
+        ))}
       </div>
-      {error && (
-        <p className="field-error" role="alert">
-          {t.logError}
-        </p>
-      )}
-      <button className="button button-primary" type="submit">
-        {t.logButton}
-      </button>
+      <div className="log-fields">
+        <Stepper
+          label={t.hours}
+          value={hours}
+          lessLabel={t.fewerHours}
+          moreLabel={t.moreHours}
+          onChange={setHours}
+          onStep={(direction) => setTotal(total + direction * 60)}
+        />
+        <Stepper
+          label={t.minutes}
+          value={minutes}
+          lessLabel={t.fewerMinutes}
+          moreLabel={t.moreMinutes}
+          onChange={setMinutes}
+          onStep={(direction) => setTotal(total + direction * MINUTE_STEP)}
+        />
+      </div>
+      <div className="log-foot">
+        <button className="button button-primary" type="submit" disabled={total <= 0}>
+          {total > 0 ? t.logAmount(formatDuration(total)) : t.logButton}
+        </button>
+        {total > 0 && <span className="log-xp">{t.xpPreview(Math.round((total / 60) * XP_PER_HOUR))}</span>}
+      </div>
     </form>
+  );
+}
+
+function RatingPicker({ entry }: { entry: LibraryEntry }) {
+  const { setRating } = useLibrary();
+  const [preview, setPreview] = useState<number | null>(null);
+  const lit = preview ?? entry.rating ?? 0;
+  return (
+    <section className="rating-section">
+      <div className="rating-heading">
+        <h2>{t.ratingTitle}</h2>
+        <span className="rating-value">{entry.rating ? t.ratingValue(entry.rating) : t.ratingPrompt}</span>
+      </div>
+      <div className="rating-scale" role="group" aria-label={t.ratingTitle} onMouseLeave={() => setPreview(null)}>
+        {RATINGS.map((rating) => (
+          <button
+            key={rating}
+            type="button"
+            className={rating <= lit ? 'rating-lit' : undefined}
+            aria-label={t.ratingOption(rating)}
+            aria-pressed={entry.rating === rating}
+            onMouseEnter={() => setPreview(rating)}
+            onClick={() => setRating(entry, entry.rating === rating ? null : rating)}
+          >
+            {rating}
+          </button>
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -226,6 +294,11 @@ export function GameView({ id }: { id: string }) {
                 <span>
                   {t.played} <strong>{formatDuration(entryMinutes(entry))}</strong>
                 </span>
+                {entry.status === 'finished' && entry.rating && (
+                  <span>
+                    {t.ratingTitle} <strong>{t.ratingValue(entry.rating)}</strong>
+                  </span>
+                )}
               </p>
             )}
             <StatusActions game={game} entry={entry} />
@@ -234,6 +307,7 @@ export function GameView({ id }: { id: string }) {
       </header>
       <div className="game-body">
         <div className="game-activity">
+          {entry?.status === 'finished' && <RatingPicker entry={entry} />}
           <LogForm game={game} />
           {entry && <History entry={entry} />}
         </div>

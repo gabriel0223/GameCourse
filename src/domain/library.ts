@@ -9,6 +9,7 @@ export function newEntry(game: Game, status: GameStatus, now: string): LibraryEn
     mainGenre: pickMainGenre(game.genres, game.themes),
     sessions: [],
     finishedAt: status === 'finished' ? now : null,
+    rating: null,
     updatedAt: now,
   };
 }
@@ -39,6 +40,11 @@ export function changeStatus(entry: LibraryEntry, status: GameStatus, now: strin
     finishedAt: status === 'finished' ? (entry.finishedAt ?? now) : null,
     updatedAt: now,
   };
+}
+
+// Going back to Playing keeps the rating, so finishing again doesn't lose it.
+export function rateGame(entry: LibraryEntry, rating: number | null, now: string): LibraryEntry {
+  return { ...entry, rating, updatedAt: now };
 }
 
 export function changeMainGenre(entry: LibraryEntry, mainGenre: WardrobeGenre, now: string): LibraryEntry {

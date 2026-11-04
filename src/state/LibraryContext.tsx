@@ -4,7 +4,7 @@ import { store } from '../data';
 import { deriveGamer } from '../domain/gamer';
 import type { GamerState } from '../domain/gamer';
 import type { WardrobeGenre } from '../domain/genres';
-import { changeMainGenre, changeStatus, logSession, newEntry, removeSession } from '../domain/library';
+import { changeMainGenre, changeStatus, logSession, newEntry, rateGame, removeSession } from '../domain/library';
 import type { Game, GameStatus, LibraryEntry } from '../domain/types';
 import { applyRun, loadPractice } from '../domain/practice';
 import type { FinishedRun, RunReward } from '../domain/practice';
@@ -31,6 +31,7 @@ interface LibraryValue {
   deleteSession(entry: LibraryEntry, sessionId: string): void;
   setStatus(entry: LibraryEntry, status: GameStatus): void;
   setMainGenre(entry: LibraryEntry, genre: WardrobeGenre): void;
+  setRating(entry: LibraryEntry, rating: number | null): void;
   removeGame(entry: LibraryEntry): void;
   buy(piece: Piece): void;
   equip(slot: Slot, pieceId: string | null): void;
@@ -158,6 +159,7 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
       setStatus: (entry, status) =>
         put(changeStatus(entry, status, nowIso()), status === 'finished' ? strings.toast.finished : undefined),
       setMainGenre: (entry, genre) => put(changeMainGenre(entry, genre, nowIso())),
+      setRating: (entry, rating) => put(rateGame(entry, rating, nowIso())),
       removeGame: (entry) => {
         const next = latestEntries.current.filter((item) => item.game.id !== entry.game.id);
         commit(next, latestProfile.current, () => store.remove(entry.game.id));

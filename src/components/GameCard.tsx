@@ -3,6 +3,7 @@ import { GENRE_COLORS, pickMainGenre } from '../domain/genres';
 import type { Game, LibraryEntry } from '../domain/types';
 import { entryMinutes } from '../domain/xp';
 import { formatDuration } from '../format';
+import { strings } from '../strings';
 import { hrefs } from '../useHashRoute';
 
 export function Cover({ game, genreColor }: { game: Game; genreColor: string }) {
@@ -20,7 +21,12 @@ export function GameCard({ game, entry }: { game: Game; entry?: LibraryEntry }) 
   const detail = minutes > 0 ? formatDuration(minutes) : (game.year ?? '');
   return (
     <a className="game-card" href={hrefs.game(game.id)} style={{ '--genre': GENRE_COLORS[genre] } as CSSProperties}>
-      <Cover game={game} genreColor={GENRE_COLORS[genre]} />
+      <span className="game-card-art">
+        <Cover game={game} genreColor={GENRE_COLORS[genre]} />
+        {entry?.status === 'finished' && entry.rating && (
+          <span className="game-card-rating">{strings.game.ratingValue(entry.rating)}</span>
+        )}
+      </span>
       <span className="game-card-name">{game.name}</span>
       <span className="game-card-meta">
         <span className="game-card-genre">{genre}</span>

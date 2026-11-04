@@ -13,7 +13,8 @@ function read(): LibraryEntry[] {
   if (memory) return memory;
   try {
     const raw = window.localStorage.getItem(KEY);
-    memory = raw ? (JSON.parse(raw) as LibraryEntry[]) : [];
+    const saved = raw ? (JSON.parse(raw) as LibraryEntry[]) : [];
+    memory = saved.map((entry) => ({ ...entry, rating: entry.rating ?? null }));
   } catch {
     memory = [];
   }

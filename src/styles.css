@@ -564,6 +564,24 @@ input[aria-invalid='true'] {
   text-decoration: none;
 }
 
+.game-card-art {
+  position: relative;
+  display: block;
+}
+
+.game-card-rating {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 2px 8px;
+  border-radius: 8px;
+  background: rgb(9 8 15 / 82%);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
 .game-card .cover {
   transition:
     transform 0.18s ease-out,
@@ -785,34 +803,176 @@ input[aria-invalid='true'] {
 }
 
 .log-form,
+.rating-section,
 .history-section {
   display: flex;
   flex-direction: column;
   gap: 14px;
 }
 
+.log-form,
+.rating-section {
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+}
+
 .log-form h2,
+.rating-section h2,
 .history-section h2 {
   font-size: 22px;
 }
 
-.log-form .button {
-  align-self: flex-start;
+.log-quick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.log-quick button {
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: transparent;
+  color: var(--soft);
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition:
+    border-color 0.12s ease-out,
+    color 0.12s ease-out;
+}
+
+.log-quick button:hover {
+  border-color: var(--genre);
+  color: var(--text);
 }
 
 .log-fields {
   display: grid;
-  grid-template-columns: 1fr 1fr 1.4fr;
+  grid-template-columns: 1fr 1fr;
   gap: 12px;
 }
 
-.log-fields label {
+.stepper {
   display: flex;
   flex-direction: column;
   gap: 6px;
   min-width: 0;
+}
+
+.stepper-label {
   color: var(--soft);
   font-size: 14px;
+}
+
+.stepper-control {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--ground);
+}
+
+.stepper-control:focus-within {
+  border-color: var(--soft);
+}
+
+.stepper-control button {
+  min-height: 52px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--soft);
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.stepper-control button:hover {
+  background: var(--raised);
+  color: var(--text);
+}
+
+.stepper-control input {
+  min-height: 52px;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  font-family: var(--display);
+  font-size: 22px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.stepper-control input:focus {
+  outline: none;
+}
+
+.stepper-control input::-webkit-outer-spin-button,
+.stepper-control input::-webkit-inner-spin-button {
+  margin: 0;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.log-foot {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 2px;
+}
+
+.log-xp {
+  color: var(--gold);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.rating-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.rating-value {
+  color: var(--soft);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.rating-scale {
+  display: grid;
+  grid-template-columns: repeat(10, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.rating-scale button {
+  min-height: 46px;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: var(--raised);
+  color: var(--soft);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition:
+    background 0.1s ease-out,
+    color 0.1s ease-out;
+}
+
+.rating-scale button.rating-lit {
+  background: var(--text);
+  color: var(--ground);
 }
 
 .history {
@@ -3568,11 +3728,12 @@ textarea:hover {
     gap: 32px;
     padding: 24px 16px 40px;
   }
-  .log-fields {
-    grid-template-columns: 1fr 1fr;
+  .log-form,
+  .rating-section {
+    padding: 16px;
   }
-  .log-fields label:last-child {
-    grid-column: 1 / -1;
+  .stepper-control {
+    grid-template-columns: 38px minmax(0, 1fr) 38px;
   }
   .toasts {
     right: 16px;

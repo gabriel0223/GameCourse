@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { pickMainGenre } from './genres';
-import { changeStatus, logSession, newEntry, removeSession } from './library';
+import { changeStatus, logSession, newEntry, rateGame, removeSession } from './library';
 import type { Game, PlaySession } from './types';
 import { entryXp, levelFromXp, totalXp, xpToNextLevel } from './xp';
 
@@ -93,5 +93,22 @@ describe('status rules', () => {
   it('removes a logged session and its XP', () => {
     const played = logSession(newEntry(game, 'backlog', NOW), session('a', 60), NOW);
     expect(entryXp(removeSession(played, 'a', NOW))).toBe(0);
+  });
+});
+
+describe('rating', () => {
+  it('starts empty, saves a score, and clears', () => {
+    const entry = newEntry(game, 'finished', NOW);
+    expect(entry.rating).toBeNull();
+    expect(rateGame(entry, 8, NOW).rating).toBe(8);
+    expect(rateGame(rateGame(entry, 8, NOW), null, NOW).rating).toBeNull();
+  });
+  it('survives going back to Playing and finishing again', () => {
+    const rated = rateGame(newEntry(game, 'finished', NOW), 9, NOW);
+    expect(changeStatus(changeStatus(rated, 'playing', NOW), 'finished', NOW).rating).toBe(9);
+  });
+  it('gives no XP', () => {
+    const entry = newEntry(game, 'finished', NOW);
+    expect(entryXp(rateGame(entry, 10, NOW))).toBe(entryXp(entry));
   });
 });

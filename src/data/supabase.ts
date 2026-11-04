@@ -17,6 +17,7 @@ interface EntryRow {
   main_genre: WardrobeGenre;
   sessions: PlaySession[];
   finished_at: string | null;
+  rating: number | null;
   updated_at: string;
 }
 
@@ -32,6 +33,7 @@ function toEntry(row: EntryRow): LibraryEntry {
     mainGenre: row.main_genre,
     sessions: row.sessions,
     finishedAt: row.finished_at,
+    rating: row.rating,
     updatedAt: row.updated_at,
   };
 }
@@ -40,7 +42,7 @@ export const supabaseStore: LibraryStore = {
   async list() {
     const { data, error } = await required()
       .from('library_entries')
-      .select('game_id, game, status, main_genre, sessions, finished_at, updated_at')
+      .select('game_id, game, status, main_genre, sessions, finished_at, rating, updated_at')
       .order('updated_at', { ascending: false });
     if (error) throw error;
     return (data as EntryRow[]).map(toEntry);
@@ -57,6 +59,7 @@ export const supabaseStore: LibraryStore = {
       main_genre: entry.mainGenre,
       sessions: entry.sessions,
       finished_at: entry.finishedAt,
+      rating: entry.rating,
       updated_at: entry.updatedAt,
     });
     if (error) throw error;

@@ -27,5 +27,7 @@ export interface LibraryEntry {
   mainGenre: WardrobeGenre;
   sessions: PlaySession[];
   finishedAt: string | null;
+  // 1 to 10, set by her on a finished game.
+  rating: number | null;
   updatedAt: string;
 }
