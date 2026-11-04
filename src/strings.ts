@@ -16,6 +16,10 @@ export const strings = {
     suggestions: 'Games to explore',
     empty: 'No games found. Try a shorter or different name.',
     error: "Search isn't working right now. Please try again.",
+    suggestionsLabel: 'Game suggestions',
+    searching: 'Searching...',
+    noSuggestions: 'No games found yet. Keep typing.',
+    seeAll: (query: string) => `See all results for "${query}"`,
   },
   lists: {
     playing: 'Playing',

@@ -1,9 +1,11 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.45.4';
+import { rankGames } from './rank.ts';
 
 const CLIENT_ID = Deno.env.get('TWITCH_CLIENT_ID') ?? '';
 const CLIENT_SECRET = Deno.env.get('TWITCH_CLIENT_SECRET') ?? '';
 const ALLOWED_ORIGIN = Deno.env.get('APP_ORIGIN') ?? 'https://gabriel0223.github.io';
 const CACHE_DAYS = 7;
+const SEARCH_RESULTS = 24;
 
 const db = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
 
@@ -16,6 +18,8 @@ const cors = {
 const FIELDS =
   'name,summary,first_release_date,cover.url,genres.name,themes.name,platforms.name,' +
   'involved_companies.developer,involved_companies.publisher,involved_companies.company.name';
+
+const SEARCH_FIELDS = `${FIELDS},total_rating_count,version_parent,game_type`;
 
 interface IgdbName {
   name: string;
@@ -31,6 +35,9 @@ interface IgdbGame {
   themes?: IgdbName[];
   platforms?: IgdbName[];
   involved_companies?: Array<{ developer: boolean; publisher: boolean; company: IgdbName }>;
+  total_rating_count?: number;
+  version_parent?: number;
+  game_type?: number;
 }
 
 let token: { value: string; expiresAt: number } | null = null;
@@ -91,6 +98,31 @@ function quote(text: string): string {
   return `"${text.replace(/["\\]/g, ' ')}"`;
 }
 
+// IGDB's search is fuzzy and can miss an exact title, so a title lookup runs beside it.
+// One lookup can fail and search still works, but a partial result is never cached.
+async function searchGames(text: string) {
+  const key = `search2:${text.toLowerCase()}`;
+  const { data } = await db.from('igdb_cache').select('payload, fetched_at').eq('cache_key', key).maybeSingle();
+  if (data && Date.now() - new Date(data.fetched_at).getTime() < CACHE_DAYS * 86_400_000) return data.payload;
+
+  const lookups = await Promise.allSettled([
+    igdb(
+      `fields ${SEARCH_FIELDS}; where name ~ ${quote(text)}* & version_parent = null; ` +
+        'sort total_rating_count desc; limit 50;',
+    ),
+    igdb(`search ${quote(text)}; fields ${SEARCH_FIELDS}; where version_parent = null; limit 50;`),
+  ]);
+  const found = lookups.flatMap((lookup) => (lookup.status === 'fulfilled' ? [lookup.value] : []));
+  lookups.forEach((lookup) => lookup.status === 'rejected' && console.error(lookup.reason));
+  if (found.length === 0) throw new Error('Both IGDB lookups failed');
+
+  const payload = rankGames(found, text, SEARCH_RESULTS).map(toGame);
+  if (found.length === lookups.length) {
+    await db.from('igdb_cache').upsert({ cache_key: key, payload, fetched_at: new Date().toISOString() });
+  }
+  return payload;
+}
+
 // The anon key is public, so a valid key alone doesn't prove it's a real user.
 async function isSignedIn(request: Request): Promise<boolean> {
   const jwt = request.headers.get('Authorization')?.replace(/^Bearer\s+/i, '');
@@ -114,10 +146,7 @@ Deno.serve(async (request) => {
     let result: unknown;
 
     if (action === 'search' && typeof query === 'string' && query.trim()) {
-      const text = query.trim().slice(0, 100);
-      result = await cached(`search:${text.toLowerCase()}`, async () =>
-        (await igdb(`search ${quote(text)}; fields ${FIELDS}; limit 24;`)).map(toGame),
-      );
+      result = await searchGames(query.trim().slice(0, 100));
     } else if (action === 'game' && /^\d+$/.test(String(id))) {
       result = await cached(`game:${id}`, async () => {
         const games = await igdb(`fields ${FIELDS}; where id = ${id}; limit 1;`);
