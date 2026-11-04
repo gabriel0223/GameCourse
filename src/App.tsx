@@ -4,6 +4,7 @@ import type { Session } from '@supabase/supabase-js';
 import { isDemo } from './data';
 import { supabase } from './data/supabase';
 import { GoldAmount } from './components/GoldAmount';
+import { Icon } from './components/Icon';
 import { Sprite } from './components/Sprite';
 import { TopBar } from './components/TopBar';
 import { LibraryProvider, useLibrary } from './state/LibraryContext';
@@ -30,23 +31,6 @@ import { SearchView } from './views/SearchView';
 
 // The 3D engine is large, so it only loads when this game opens.
 const JetView = lazy(() => import('./views/JetView').then((module) => ({ default: module.JetView })));
-
-const ICONS = {
-  library: 'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z',
-  character: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM5 20c.8-3.6 3.4-5.5 7-5.5s6.2 1.9 7 5.5',
-  practice:
-    'M7 8h10a4 4 0 0 1 4 4v4a2.5 2.5 0 0 1-4.6 1.3L15 15H9l-1.4 2.3A2.5 2.5 0 0 1 3 16v-4a4 4 0 0 1 4-4ZM8 11v3M6.5 12.5h3M15.5 12.5h.01M18 11.5h.01',
-  shop: 'M4 9h16l-1 11H5L4 9ZM8 9V7a4 4 0 0 1 8 0v2',
-  codex: 'M5 5.5A2.5 2.5 0 0 1 7.5 3H19v15H7.5A2.5 2.5 0 0 0 5 20.5v-15ZM5 20.5A2.5 2.5 0 0 0 7.5 21H19v-3',
-};
-
-function NavIcon({ name }: { name: keyof typeof ICONS }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d={ICONS[name]} />
-    </svg>
-  );
-}
 
 function PlayerCard() {
   const { gamer, profile } = useLibrary();
@@ -86,23 +70,23 @@ function Sidebar({ route }: { route: Route }) {
       </a>
       <nav className="main-nav" aria-label="Main">
         <a href="#/" aria-current={onCharacter || onShop || onCodex || onPractice ? undefined : 'page'}>
-          <NavIcon name="library" />
+          <Icon name="library" />
           {strings.nav.library}
         </a>
         <a href={hrefs.character} aria-current={onCharacter ? 'page' : undefined}>
-          <NavIcon name="character" />
+          <Icon name="character" />
           {strings.nav.character}
         </a>
         <a href={hrefs.shop} aria-current={onShop ? 'page' : undefined}>
-          <NavIcon name="shop" />
+          <Icon name="shop" />
           {strings.nav.shop}
         </a>
         <a href={hrefs.codex} aria-current={onCodex ? 'page' : undefined}>
-          <NavIcon name="codex" />
+          <Icon name="codex" />
           {strings.nav.codex}
         </a>
         <a href={hrefs.practice} aria-current={onPractice ? 'page' : undefined}>
-          <NavIcon name="practice" />
+          <Icon name="practice" />
           {strings.nav.practice}
         </a>
       </nav>
@@ -125,7 +109,7 @@ function Toasts() {
 }
 
 function Screens({ route }: { route: Route }) {
-  if (route.view === 'character') return <CharacterView />;
+  if (route.view === 'character') return <CharacterView tab={route.tab} slot={route.slot} />;
   if (route.view === 'shop') return <ShopView />;
   if (route.view === 'practice') {
     if (route.game === 'runner') return <RunnerView />;

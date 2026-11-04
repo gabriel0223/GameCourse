@@ -1,14 +1,22 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import type { GameStatus } from './domain/types';
+import { SLOTS } from './domain/wardrobe';
+import type { Slot } from './domain/wardrobe';
 
 export type Route =
   | { view: 'library'; list: GameStatus }
   | { view: 'search'; query: string }
   | { view: 'game'; id: string }
-  | { view: 'character' }
+  | { view: 'character'; tab: CharacterTab; slot: Slot | null }
   | { view: 'shop' }
   | { view: 'practice'; game: string | null }
   | { view: 'codex'; id: string | null; editing: boolean; at: string | null; path: string | null; quiz: boolean };
+
+export const CHARACTER_TABS = ['overview', 'wardrobe', 'achievements'] as const;
+export type CharacterTab = (typeof CHARACTER_TABS)[number];
+
+// The older tabs still lead somewhere, so saved links keep working.
+const OLD_CHARACTER_TABS: Record<string, CharacterTab> = { profile: 'overview', inventory: 'wardrobe', appearance: 'wardrobe' };
 
 export const CODEX_TABS = ['home', 'paths', 'history', 'glossary'] as const;
 export type CodexTab = (typeof CODEX_TABS)[number];
@@ -21,7 +29,11 @@ const LISTS: GameStatus[] = ['playing', 'backlog', 'finished', 'dropped'];
 export function parseRoute(hash: string): Route {
   const [path, params] = hash.replace(/^#\/?/, '').split('?');
   const parts = path.split('/');
-  if (parts[0] === 'character') return { view: 'character' };
+  if (parts[0] === 'character') {
+    const tab = CHARACTER_TABS.find((item) => item === parts[1]) ?? OLD_CHARACTER_TABS[parts[1]] ?? 'overview';
+    const slot = SLOTS.find((item) => item === new URLSearchParams(params).get('slot')) ?? null;
+    return { view: 'character', tab, slot };
+  }
   if (parts[0] === 'shop') return { view: 'shop' };
   if (parts[0] === 'practice') return { view: 'practice', game: parts[1] ?? null };
   if (parts[0] === 'codex') {
@@ -45,6 +57,8 @@ export function parseRoute(hash: string): Route {
 
 export const hrefs = {
   character: '#/character',
+  characterTab: (tab: CharacterTab) => (tab === 'overview' ? '#/character' : `#/character/${tab}`),
+  characterSlot: (slot: Slot) => `#/character/wardrobe?slot=${slot}`,
   shop: '#/shop',
   practice: '#/practice',
   runner: '#/practice/runner',

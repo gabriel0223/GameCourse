@@ -2,17 +2,21 @@ import { useEffect, useRef } from 'react';
 import type { CodexCategory } from '../content/codex';
 import { useCodex } from '../state/CodexContext';
 import { strings } from '../strings';
+import { Icon } from './Icon';
+import type { IconName } from './Icon';
 import {
+  CHARACTER_TABS,
   CODEX_TABS,
   GUIDE_CHAPTER_IDS,
   codexTabHref,
   goBack,
   goForward,
+  hrefs,
   setCodexQuery,
   useCodexQuery,
   useHistoryArrows,
 } from '../useHashRoute';
-import type { CodexTab, Route } from '../useHashRoute';
+import type { CharacterTab, CodexTab, Route } from '../useHashRoute';
 
 const CATEGORY_TABS: Record<CodexCategory, CodexTab> = {
   genres: 'paths',
@@ -79,6 +83,25 @@ function CodexTabs({ id, path }: { id: string | null; path: string | null }) {
   );
 }
 
+const CHARACTER_ICONS: Record<CharacterTab, IconName> = {
+  overview: 'overview',
+  wardrobe: 'wardrobe',
+  achievements: 'trophy',
+};
+
+function CharacterTabs({ active }: { active: CharacterTab }) {
+  return (
+    <nav className="tabs codex-tabs" aria-label={strings.character.sections}>
+      {CHARACTER_TABS.map((tab) => (
+        <a key={tab} href={hrefs.characterTab(tab)} aria-current={tab === active ? 'page' : undefined}>
+          <Icon name={CHARACTER_ICONS[tab]} />
+          {strings.character.tabs[tab]}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
 function Arrow({ forward = false }: { forward?: boolean }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -105,6 +128,7 @@ export function TopBar({ route }: { route: Route }) {
           <Arrow forward />
         </button>
       </div>
+      {route.view === 'character' && <CharacterTabs active={route.tab} />}
       {route.view === 'codex' && !route.editing && (
         <>
           <CodexTabs id={route.id} path={route.path} />

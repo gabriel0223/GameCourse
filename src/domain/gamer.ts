@@ -30,7 +30,7 @@ export interface GamerStats {
   backlogCount: number;
   genresExplored: number;
   favoriteGenre: WardrobeGenre | null;
-  mostPlayed: { name: string; minutes: number } | null;
+  mostPlayed: { id: string; name: string; minutes: number } | null;
 }
 
 interface Facts {
@@ -50,6 +50,8 @@ interface AchievementRule {
   description: string;
   difficulty: Difficulty;
   earned(facts: Facts): boolean;
+  // Only for goals that can be counted, as [how far she is, how far she needs to go].
+  counter?(facts: Facts): [number, number];
 }
 
 const playedGenre = (genre: WardrobeGenre) => (facts: Facts) =>
@@ -82,6 +84,7 @@ const ACHIEVEMENTS: AchievementRule[] = [
     title: 'Played for 10 hours',
     description: 'Reach 10 hours across all your games.',
     earned: ({ stats }) => stats.minutesPlayed >= 600,
+    counter: ({ stats }) => [Math.floor(stats.minutesPlayed / 60), 10],
   },
   {
     id: 'backlog',
@@ -90,6 +93,7 @@ const ACHIEVEMENTS: AchievementRule[] = [
     title: 'Started a backlog',
     description: 'Keep 5 games in your Backlog.',
     earned: ({ stats }) => stats.backlogCount >= 5,
+    counter: ({ stats }) => [stats.backlogCount, 5],
   },
   {
     id: 'first-finish',
@@ -106,6 +110,7 @@ const ACHIEVEMENTS: AchievementRule[] = [
     title: 'Finished 5 games',
     description: 'See 5 games through to the end.',
     earned: ({ stats }) => stats.gamesFinished >= 5,
+    counter: ({ stats }) => [stats.gamesFinished, 5],
   },
   {
     id: 'long-haul',
@@ -130,6 +135,7 @@ const ACHIEVEMENTS: AchievementRule[] = [
     title: 'Played 3 genres',
     description: 'Log time in 3 different genres.',
     earned: ({ stats }) => stats.genresExplored >= 3,
+    counter: ({ stats }) => [stats.genresExplored, 3],
   },
   {
     id: 'every-genre',
@@ -138,6 +144,7 @@ const ACHIEVEMENTS: AchievementRule[] = [
     title: 'Played every genre',
     description: 'Log time in all 10 genres.',
     earned: ({ stats }) => stats.genresExplored >= WARDROBE_GENRES.length,
+    counter: ({ stats }) => [stats.genresExplored, WARDROBE_GENRES.length],
   },
   {
     id: 'moved-on',
@@ -194,6 +201,7 @@ const ACHIEVEMENTS: AchievementRule[] = [
     title: 'Read every genre entry',
     description: 'Mark all 10 genre guides as read.',
     earned: ({ profile }) => WARDROBE_GENRES.every((genre) => profile.readEntries.includes(genreEntryId(genre))),
+    counter: ({ profile }) => [WARDROBE_GENRES.filter((genre) => profile.readEntries.includes(genreEntryId(genre))).length, 10],
   },
   {
     id: 'time-traveler',
@@ -203,6 +211,7 @@ const ACHIEVEMENTS: AchievementRule[] = [
     description: 'Mark all 9 console generations as read.',
     earned: ({ profile }) =>
       [1, 2, 3, 4, 5, 6, 7, 8, 9].every((generation) => profile.readEntries.includes(`gen-${generation}`)),
+    counter: ({ profile }) => [[1, 2, 3, 4, 5, 6, 7, 8, 9].filter((generation) => profile.readEntries.includes(`gen-${generation}`)).length, 9],
   },
   {
     id: 'first-quiz',
@@ -227,6 +236,7 @@ const ACHIEVEMENTS: AchievementRule[] = [
     title: 'Finished three paths',
     description: 'Pass the quizzes on 3 paths.',
     earned: ({ profile }) => passedCount(profile.quizzes, pathIds) >= 3,
+    counter: ({ profile }) => [passedCount(profile.quizzes, pathIds), 3],
   },
   {
     id: 'six-paths',
@@ -235,6 +245,7 @@ const ACHIEVEMENTS: AchievementRule[] = [
     title: 'Finished six paths',
     description: 'Pass the quizzes on 6 paths.',
     earned: ({ profile }) => passedCount(profile.quizzes, pathIds) >= 6,
+    counter: ({ profile }) => [passedCount(profile.quizzes, pathIds), 6],
   },
   {
     id: 'timeline-quizzes',
@@ -243,6 +254,7 @@ const ACHIEVEMENTS: AchievementRule[] = [
     title: 'Mastered the timeline',
     description: 'Pass the quiz for every era of the timeline.',
     earned: ({ profile }) => passedCount(profile.quizzes, eraIds) === eraIds.length,
+    counter: ({ profile }) => [passedCount(profile.quizzes, eraIds), eraIds.length],
   },
   {
     id: 'first-run',
@@ -259,6 +271,7 @@ const ACHIEVEMENTS: AchievementRule[] = [
     title: 'Hit 25 prompts in a run',
     description: 'Reach a score of 25 in the Endless Runner.',
     earned: ({ profile }) => bestScore(profile.practice, 'runner') >= 25,
+    counter: ({ profile }) => [bestScore(profile.practice, 'runner'), 25],
   },
   {
     id: 'runner-streak',
@@ -267,6 +280,7 @@ const ACHIEVEMENTS: AchievementRule[] = [
     title: 'Hit 15 prompts in a row',
     description: 'Go 15 prompts without pressing a wrong button.',
     earned: ({ profile }) => profile.practice.bestStreak >= 15,
+    counter: ({ profile }) => [profile.practice.bestStreak, 15],
   },
   {
     id: 'all-controls',
@@ -275,6 +289,7 @@ const ACHIEVEMENTS: AchievementRule[] = [
     title: 'Trained on every controller',
     description: 'Finish an Endless Runner run with PlayStation, Xbox, and Keyboard.',
     earned: ({ profile }) => profile.practice.devices.length >= 3,
+    counter: ({ profile }) => [profile.practice.devices.length, 3],
   },
   {
     id: 'runner-60',
@@ -283,6 +298,7 @@ const ACHIEVEMENTS: AchievementRule[] = [
     title: 'Hit 60 prompts in a run',
     description: 'Reach a score of 60 in the Endless Runner.',
     earned: ({ profile }) => bestScore(profile.practice, 'runner') >= 60,
+    counter: ({ profile }) => [bestScore(profile.practice, 'runner'), 60],
   },
 ];
 
@@ -314,7 +330,7 @@ function gamerStats(entries: LibraryEntry[], genres: GenreProgress[]): GamerStat
     backlogCount: entries.filter((entry) => entry.status === 'backlog').length,
     genresExplored: genres.filter((item) => item.minutes > 0).length,
     favoriteGenre: top && top.minutes > 0 ? top.genre : null,
-    mostPlayed: longest ? { name: longest.game.name, minutes: entryMinutes(longest) } : null,
+    mostPlayed: longest ? { id: longest.game.id, name: longest.game.name, minutes: entryMinutes(longest) } : null,
   };
 }
 
@@ -326,7 +342,13 @@ export interface GamerState {
   available: Set<string>;
   owned: Set<string>;
   gold: { earned: number; spent: number; balance: number };
-  achievements: Array<Omit<AchievementRule, 'earned' | 'difficulty'> & { unlocked: boolean; gold: number }>;
+  achievements: Array<
+    Omit<AchievementRule, 'earned' | 'difficulty' | 'counter'> & {
+      unlocked: boolean;
+      gold: number;
+      progress?: { current: number; target: number };
+    }
+  >;
   earnedCount: number;
   paths: Array<Path & { read: number; done: boolean }>;
   equipped: Record<Slot, Piece | null>;
@@ -339,11 +361,15 @@ export function deriveGamer(entries: LibraryEntry[], profile: CharacterProfile):
   const owned = new Set(PIECES.filter((piece) => piece.id in profile.owned).map((piece) => piece.id));
   const stats = gamerStats(entries, genres);
   const facts: Facts = { entries, profile, stats, genres, ownedCount: owned.size };
-  const achievements = ACHIEVEMENTS.map(({ earned, difficulty, ...rule }) => ({
-    ...rule,
-    unlocked: earned(facts),
-    gold: ACHIEVEMENT_GOLD[difficulty],
-  }));
+  const achievements = ACHIEVEMENTS.map(({ earned, difficulty, counter, ...rule }) => {
+    const count = counter?.(facts);
+    return {
+      ...rule,
+      unlocked: earned(facts),
+      gold: ACHIEVEMENT_GOLD[difficulty],
+      ...(count ? { progress: { current: Math.min(count[0], count[1]), target: count[1] } } : {}),
+    };
+  });
   const earnedCount = achievements.filter((item) => item.unlocked).length;
   const paths = ALL_PATHS.map((path) => {
     const read = pathRead(path, profile.readEntries);
@@ -375,4 +401,16 @@ export function deriveGamer(entries: LibraryEntry[], profile: CharacterProfile):
     paths,
     equipped: { accessory: worn('accessory'), top: worn('top'), bottom: worn('bottom') },
   };
+}
+
+// The achievements closest to done, then simple ones she hasn't started.
+export function nextGoals(gamer: GamerState, limit = 3): GamerState['achievements'] {
+  const share = ({ progress }: GamerState['achievements'][number]) =>
+    progress ? progress.current / progress.target : 0;
+  return gamer.achievements
+    .filter((item) => !item.unlocked)
+    .map((item, order) => ({ item, order }))
+    .sort((a, b) => share(b.item) - share(a.item) || a.item.gold - b.item.gold || a.order - b.order)
+    .slice(0, limit)
+    .map(({ item }) => item);
 }

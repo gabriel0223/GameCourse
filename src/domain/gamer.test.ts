@@ -1,6 +1,6 @@
 import { existsSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { ACHIEVEMENT_XP, LEVEL_GOLD, deriveGamer } from './gamer';
+import { ACHIEVEMENT_XP, LEVEL_GOLD, deriveGamer, nextGoals } from './gamer';
 import { changeStatus, logSession, newEntry } from './library';
 import type { Game, LibraryEntry } from './types';
 import { WARDROBE_GENRES, genreEntryId } from './genres';
@@ -187,6 +187,24 @@ describe('gold', () => {
   });
 });
 
+describe('next goals', () => {
+  it('shows counted progress and never goes past the target', () => {
+    const profile = { ...DEFAULT_PROFILE, practice: { ...NEW_PRACTICE, bests: { runner: 40 } } };
+    const state = deriveGamer([], profile);
+    const goal = (id: string) => state.achievements.find((item) => item.id === id)?.progress;
+    expect(goal('runner-60')).toEqual({ current: 40, target: 60 });
+    expect(goal('runner-25')).toEqual({ current: 25, target: 25 });
+  });
+
+  it('picks the unearned goals closest to done', () => {
+    const profile = { ...DEFAULT_PROFILE, practice: { ...NEW_PRACTICE, bestStreak: 14 } };
+    const goals = nextGoals(deriveGamer([], profile));
+    expect(goals).toHaveLength(3);
+    expect(goals[0].id).toBe('runner-streak');
+    expect(goals.every((item) => !item.unlocked)).toBe(true);
+  });
+});
+
 describe('achievements', () => {
   const entries = [
     played('1', ['Platform'], 120),
@@ -207,7 +225,7 @@ describe('achievements', () => {
     expect(stats.backlogCount).toBe(1);
   });
   it('finds the most played game', () => {
-    expect(stats.mostPlayed).toEqual({ name: 'Game 3', minutes: 150 });
+    expect(stats.mostPlayed).toEqual({ id: '3', name: 'Game 3', minutes: 150 });
   });
   it('has no favorite until time is logged', () => {
     expect(deriveGamer([newEntry(game('1', ['Puzzle']), 'backlog', NOW)], DEFAULT_PROFILE).stats.favoriteGenre).toBeNull();
