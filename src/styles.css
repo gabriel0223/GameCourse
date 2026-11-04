@@ -1596,6 +1596,40 @@ input[aria-invalid='true'] {
   min-width: 0;
 }
 
+.character-achievements {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 14px;
+  text-decoration: none;
+}
+
+.character-achievements span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.character-achievements svg {
+  width: 17px;
+  height: 17px;
+  color: var(--gold);
+}
+
+.character-achievements strong {
+  font-family: var(--display);
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.character-achievements:hover strong {
+  color: var(--gold);
+}
+
 .character-level {
   display: flex;
   flex: 0 1 340px;

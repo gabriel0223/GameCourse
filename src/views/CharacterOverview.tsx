@@ -99,6 +99,15 @@ function Journey() {
           ]}
         />
       </div>
+      <a className="character-achievements" href={hrefs.characterTab('achievements')}>
+        <span>
+          <Icon name="trophy" />
+          {t.tabs.achievements}
+        </span>
+        <strong>
+          {gamer.earnedCount} / {gamer.achievements.length}
+        </strong>
+      </a>
     </section>
   );
 }
