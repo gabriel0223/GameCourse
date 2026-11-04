@@ -37,7 +37,11 @@ The IGDB function only answers signed-in users, and only from the site in its `A
 
 Every push to `main` runs the tests, builds the app, and publishes it to GitHub Pages through `.github/workflows/deploy.yml`. In the repo's Settings, Pages needs its source set to GitHub Actions. The Supabase URL and anon key in that workflow are public by design, because they ship in the browser build. Row level security is what protects the data.
 
-Codex editing is turned off with real accounts until an owner check is added in `src/data/index.ts` and write policies are added for `codex_entries` and the `codex-images` bucket.
+Only accounts listed in the `codex_editors` table can edit the Codex. The app hides the editor from everyone else, and database policies block their writes. To add an editor, run this in the SQL editor:
+
+```sql
+insert into public.codex_editors (user_id) values ('THEIR_USER_ID');
+```
 
 The Twitch secret must only be stored in Supabase secrets, never in `.env` or the repo.
 

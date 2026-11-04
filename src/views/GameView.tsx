@@ -1,9 +1,9 @@
 import { useEffect, useId, useState } from 'react';
 import type { CSSProperties, FormEvent } from 'react';
 import { Cover } from '../components/GameCard';
+import { Star } from '../components/Star';
 import { catalog } from '../data';
-import { GENRE_COLORS, WARDROBE_GENRES, pickMainGenre } from '../domain/genres';
-import type { WardrobeGenre } from '../domain/genres';
+import { GENRE_COLORS, pickGenres } from '../domain/genres';
 import type { Game, LibraryEntry } from '../domain/types';
 import { XP_PER_HOUR, entryMinutes } from '../domain/xp';
 import { formatDay, formatDuration, todayLocal } from '../format';
@@ -138,9 +138,17 @@ function RatingPicker({ entry }: { entry: LibraryEntry }) {
     <section className="rating-section">
       <div className="rating-heading">
         <h2>{t.ratingTitle}</h2>
-        <span className="rating-value">{entry.rating ? t.ratingValue(entry.rating) : t.ratingPrompt}</span>
+        <span className="rating-value">
+          {lit > 0 ? (
+            <>
+              <strong>{lit}</strong>/10
+            </>
+          ) : (
+            t.ratingPrompt
+          )}
+        </span>
       </div>
-      <div className="rating-scale" role="group" aria-label={t.ratingTitle} onMouseLeave={() => setPreview(null)}>
+      <div className="rating-scale" role="group" aria-label={t.ratingTitle} onPointerLeave={() => setPreview(null)}>
         {RATINGS.map((rating) => (
           <button
             key={rating}
@@ -148,14 +156,32 @@ function RatingPicker({ entry }: { entry: LibraryEntry }) {
             className={rating <= lit ? 'rating-lit' : undefined}
             aria-label={t.ratingOption(rating)}
             aria-pressed={entry.rating === rating}
-            onMouseEnter={() => setPreview(rating)}
-            onClick={() => setRating(entry, entry.rating === rating ? null : rating)}
+            onPointerEnter={(event) => event.pointerType === 'mouse' && setPreview(rating)}
+            onClick={() => setRating(entry, rating)}
           >
-            {rating}
+            <Star />
           </button>
         ))}
       </div>
+      {entry.rating !== null && (
+        <button className="rating-remove" type="button" onClick={() => setRating(entry, null)}>
+          {t.ratingRemove}
+        </button>
+      )}
     </section>
+  );
+}
+
+function CriticScore({ score, reviews }: { score: number; reviews?: number | null }) {
+  const band = score >= 75 ? 'high' : score >= 50 ? 'mid' : 'low';
+  return (
+    <span className="critic">
+      <span className={`critic-score critic-${band}`}>{score}</span>
+      <span>
+        {t.criticLabel}
+        {reviews ? <span className="critic-reviews"> · {t.criticReviews(reviews)}</span> : null}
+      </span>
+    </span>
   );
 }
 
@@ -245,25 +271,24 @@ function History({ entry }: { entry: LibraryEntry }) {
 }
 
 export function GameView({ id }: { id: string }) {
-  const { find, setMainGenre, loading } = useLibrary();
+  const { find, loading } = useLibrary();
   const entry = find(id);
   const [fetched, setFetched] = useState<Game | null | undefined>(undefined);
 
   useEffect(() => {
     let current = true;
     setFetched(undefined);
-    if (!loading && !entry) {
-      catalog
-        .get(id)
-        .then((game) => current && setFetched(game))
-        .catch(() => current && setFetched(null));
-    }
+    // Saved games need this too, because their copy can be older than the critic score.
+    catalog
+      .get(id)
+      .then((game) => current && setFetched(game))
+      .catch(() => current && setFetched(null));
     return () => {
       current = false;
     };
-  }, [id, loading, entry]);
+  }, [id]);
 
-  const game = entry?.game ?? fetched;
+  const game = loading ? undefined : (entry?.game ?? fetched);
   if (game === undefined) return <main className="page" aria-busy="true" />;
   if (game === null) {
     return (
@@ -273,8 +298,10 @@ export function GameView({ id }: { id: string }) {
     );
   }
 
-  const genre: WardrobeGenre = entry?.mainGenre ?? pickMainGenre(game.genres, game.themes);
+  const genres = pickGenres(game.genres, game.themes);
+  const genre = genres[0];
   const genreStyle = { '--genre': GENRE_COLORS[genre] } as CSSProperties;
+  const critic = fetched ?? game;
   return (
     <main className="game-page" style={genreStyle}>
       <header className="game-hero">
@@ -285,18 +312,30 @@ export function GameView({ id }: { id: string }) {
         <div className="game-hero-row">
           <Cover game={game} genreColor={GENRE_COLORS[genre]} />
           <div className="game-title">
-            <p className="game-genre">{genre}</p>
+            <p className="game-genre">
+              {genres.map((item) => (
+                <span key={item} style={{ color: GENRE_COLORS[item] }}>
+                  {item}
+                </span>
+              ))}
+            </p>
             <h1>{game.name}</h1>
             {game.summary && <p className="summary">{game.summary}</p>}
-            {entry && (
+            {(entry || critic.criticScore) && (
               <p className="game-state">
-                <span className={`status-badge status-${entry.status}`}>{strings.lists[entry.status]}</span>
-                <span>
-                  {t.played} <strong>{formatDuration(entryMinutes(entry))}</strong>
-                </span>
-                {entry.status === 'finished' && entry.rating && (
+                {critic.criticScore ? (
+                  <CriticScore score={critic.criticScore} reviews={critic.criticReviews} />
+                ) : null}
+                {entry && <span className={`status-badge status-${entry.status}`}>{strings.lists[entry.status]}</span>}
+                {entry && (
                   <span>
-                    {t.ratingTitle} <strong>{t.ratingValue(entry.rating)}</strong>
+                    {t.played} <strong>{formatDuration(entryMinutes(entry))}</strong>
+                  </span>
+                )}
+                {entry?.status === 'finished' && entry.rating && (
+                  <span className="game-state-rating" aria-label={`${t.ratingTitle}: ${t.ratingValue(entry.rating)}`}>
+                    <Star />
+                    <strong>{entry.rating}</strong>
                   </span>
                 )}
               </p>
@@ -319,21 +358,6 @@ export function GameView({ id }: { id: string }) {
             <Fact label={t.platforms} values={game.platforms} />
             <Fact label={t.igdbGenres} values={game.genres} />
           </dl>
-          {entry && (
-            <label className="genre-picker">
-              {t.mainGenre}
-              <select
-                value={entry.mainGenre}
-                onChange={(event) => setMainGenre(entry, event.target.value as WardrobeGenre)}
-              >
-                {WARDROBE_GENRES.map((item) => (
-                  <option key={item} value={item}>
-                    {item}
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
         </aside>
       </div>
     </main>

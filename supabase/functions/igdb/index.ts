@@ -17,7 +17,8 @@ const cors = {
 
 const FIELDS =
   'name,summary,first_release_date,cover.url,genres.name,themes.name,platforms.name,' +
-  'involved_companies.developer,involved_companies.publisher,involved_companies.company.name';
+  'involved_companies.developer,involved_companies.publisher,involved_companies.company.name,' +
+  'aggregated_rating,aggregated_rating_count';
 
 const SEARCH_FIELDS = `${FIELDS},total_rating_count,version_parent,game_type`;
 
@@ -35,6 +36,8 @@ interface IgdbGame {
   themes?: IgdbName[];
   platforms?: IgdbName[];
   involved_companies?: Array<{ developer: boolean; publisher: boolean; company: IgdbName }>;
+  aggregated_rating?: number;
+  aggregated_rating_count?: number;
   total_rating_count?: number;
   version_parent?: number;
   game_type?: number;
@@ -82,6 +85,8 @@ function toGame(game: IgdbGame) {
     themes: names(game.themes),
     summary: game.summary ?? null,
     coverUrl: game.cover ? `https:${game.cover.url.replace('t_thumb', 't_cover_big')}` : null,
+    criticScore: game.aggregated_rating ? Math.round(game.aggregated_rating) : null,
+    criticReviews: game.aggregated_rating_count ?? null,
   };
 }
 
@@ -148,7 +153,7 @@ Deno.serve(async (request) => {
     if (action === 'search' && typeof query === 'string' && query.trim()) {
       result = await searchGames(query.trim().slice(0, 100));
     } else if (action === 'game' && /^\d+$/.test(String(id))) {
-      result = await cached(`game:${id}`, async () => {
+      result = await cached(`game2:${id}`, async () => {
         const games = await igdb(`fields ${FIELDS}; where id = ${id}; limit 1;`);
         return games[0] ? toGame(games[0]) : null;
       });

@@ -47,10 +47,13 @@ const RULES: Array<[WardrobeGenre, string[]]> = [
   ['Adventure', ['adventure', 'point-and-click', 'visual novel']],
 ];
 
-export function pickMainGenre(genres: string[], themes: string[]): WardrobeGenre {
+// A game can belong to several genres. The first one is its main genre.
+export function pickGenres(genres: string[], themes: string[]): WardrobeGenre[] {
   const tags = new Set([...genres, ...themes].map((tag) => tag.toLowerCase()));
-  for (const [genre, matches] of RULES) {
-    if (matches.some((match) => tags.has(match))) return genre;
-  }
-  return 'Adventure';
+  const found = RULES.filter(([, matches]) => matches.some((match) => tags.has(match))).map(([genre]) => genre);
+  return found.length > 0 ? found : ['Adventure'];
+}
+
+export function pickMainGenre(genres: string[], themes: string[]): WardrobeGenre {
+  return pickGenres(genres, themes)[0];
 }

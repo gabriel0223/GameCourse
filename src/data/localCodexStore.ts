@@ -36,6 +36,9 @@ function toDataUrl(image: Blob): Promise<string> {
 }
 
 export const localCodexStore: CodexStore = {
+  async canEdit() {
+    return true;
+  },
   async list() {
     try {
       return await run('readonly', (store) => store.getAll() as IDBRequest<CodexEntry[]>);

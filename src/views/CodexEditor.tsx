@@ -9,7 +9,7 @@ import type { CodexCategory, CodexImage } from '../content/codex';
 import { emptyBlock, findProblem, fromDraft, newConsoleDraft, newDraft, newEventDraft, toDraft } from '../content/drafts';
 import type { Block, BlockKind, Draft } from '../content/drafts';
 import { TIMELINE_GROUPS } from '../content/timeline';
-import { canEditCodex, codexStore, isDemo } from '../data';
+import { codexStore, isDemo } from '../data';
 import { copiedPageImage, pastedImage, prepareImage } from '../imageUpload';
 import { useCodex } from '../state/CodexContext';
 import { useLibrary } from '../state/LibraryContext';
@@ -296,7 +296,7 @@ function BlockList({ blocks, selected, onChange, onReorder, onRemove, onAdd }: B
 
 export function CodexEditor({ id }: { id: string }) {
   const { notify } = useLibrary();
-  const { drafts, find, isEdited, ready, restore, save } = useCodex();
+  const { canEdit, drafts, find, isEdited, ready, restore, save } = useCodex();
   const [draftId] = useState(() => (id.startsWith('new') ? `custom-${crypto.randomUUID()}` : id));
   const storedDraft = drafts.get(id);
   const [draft, setDraft] = useState<Draft | null>(storedDraft ?? null);
@@ -337,7 +337,7 @@ export function CodexEditor({ id }: { id: string }) {
 
   // An image pasted outside every image box becomes a new block, after the one being edited.
   useEffect(() => {
-    if (!canEditCodex || mode !== 'edit') return;
+    if (!canEdit || mode !== 'edit') return;
     async function paste(event: ClipboardEvent) {
       const file = pastedImage(event.clipboardData);
       if (!file || event.defaultPrevented) return;
@@ -362,9 +362,9 @@ export function CodexEditor({ id }: { id: string }) {
     }
     document.addEventListener('paste', paste);
     return () => document.removeEventListener('paste', paste);
-  }, [mode, notify]);
+  }, [canEdit, mode, notify]);
 
-  if (!canEditCodex) {
+  if (ready && !canEdit) {
     return (
       <main className="page">
         <p className="notice">{strings.codex.notFound}</p>

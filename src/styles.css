@@ -573,13 +573,27 @@ input[aria-invalid='true'] {
   position: absolute;
   top: 8px;
   right: 8px;
-  padding: 2px 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px 2px 6px;
   border-radius: 8px;
   background: rgb(9 8 15 / 82%);
   color: var(--text);
   font-size: 13px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
+}
+
+.game-card-rating svg,
+.game-state-rating svg {
+  width: 14px;
+  height: 14px;
+  fill: var(--gold);
+}
+
+.game-card-more {
+  color: var(--muted);
 }
 
 .game-card .cover {
@@ -748,6 +762,64 @@ input[aria-invalid='true'] {
   margin: 0;
   color: var(--soft);
   font-size: 18px;
+}
+
+.game-genre {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 8px;
+}
+
+.game-genre span + span::before {
+  margin-right: 8px;
+  color: var(--muted);
+  content: '·';
+}
+
+.game-state-rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.game-state-rating svg {
+  width: 16px;
+  height: 16px;
+}
+
+.critic {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.critic-score {
+  display: inline-grid;
+  place-items: center;
+  min-width: 36px;
+  height: 36px;
+  padding: 0 6px;
+  border-radius: 8px;
+  color: #0b0a12;
+  font-family: var(--display);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.critic-high {
+  background: #6fd98f;
+}
+
+.critic-mid {
+  background: #f2cf63;
+}
+
+.critic-low {
+  background: #f0708a;
+}
+
+.critic-reviews {
+  color: var(--muted);
 }
 
 .game-state {
@@ -944,35 +1016,67 @@ input[aria-invalid='true'] {
 }
 
 .rating-value {
-  color: var(--soft);
-  font-weight: 600;
+  color: var(--muted);
   font-variant-numeric: tabular-nums;
+}
+
+.rating-value strong {
+  color: var(--text);
+  font-family: var(--display);
+  font-size: 22px;
 }
 
 .rating-scale {
   display: grid;
-  grid-template-columns: repeat(10, minmax(0, 1fr));
-  gap: 4px;
+  grid-template-columns: repeat(10, minmax(0, 40px));
+  gap: 2px;
 }
 
 .rating-scale button {
-  min-height: 46px;
-  padding: 0;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  min-height: 28px;
+  padding: 2px;
   border: none;
-  border-radius: 8px;
-  background: var(--raised);
-  color: var(--soft);
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
+  background: transparent;
+  color: var(--muted);
   cursor: pointer;
-  transition:
-    background 0.1s ease-out,
-    color 0.1s ease-out;
+  transition: transform 0.1s ease-out;
+}
+
+.rating-scale svg {
+  width: 100%;
+  height: 100%;
+  fill: transparent;
+  stroke: currentColor;
+  stroke-width: 1.5;
+}
+
+.rating-scale button:hover {
+  transform: scale(1.14);
 }
 
 .rating-scale button.rating-lit {
-  background: var(--text);
-  color: var(--ground);
+  color: var(--gold);
+}
+
+.rating-scale button.rating-lit svg {
+  fill: currentColor;
+}
+
+.rating-remove {
+  align-self: flex-start;
+  padding: 2px 0;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.rating-remove:hover {
+  color: var(--text);
 }
 
 .history {
@@ -1020,14 +1124,6 @@ input[aria-invalid='true'] {
 
 .facts dd {
   margin: 0;
-}
-
-.genre-picker {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  color: var(--muted);
-  font-size: 14px;
 }
 
 /* Character */
@@ -3814,7 +3910,11 @@ textarea:hover {
     animation: none;
   }
   .xp-bar span,
+  .rating-scale button,
   .game-card .cover {
     transition: none;
+  }
+  .rating-scale button:hover {
+    transform: none;
   }
 }

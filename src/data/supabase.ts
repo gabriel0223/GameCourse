@@ -104,6 +104,11 @@ async function withSignedImages(entry: CodexEntry): Promise<CodexEntry> {
 }
 
 export const supabaseCodexStore: CodexStore = {
+  // This only decides what the app shows. The database enforces the same rule.
+  async canEdit() {
+    const { data, error } = await required().from('codex_editors').select('user_id').maybeSingle();
+    return !error && Boolean(data);
+  },
   async list() {
     const { data, error } = await required().from('codex_entries').select('entry');
     if (error) throw error;

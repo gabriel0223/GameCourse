@@ -5,7 +5,6 @@ import { GLOSSARY } from '../content/codex';
 import { TIMELINE_GROUPS } from '../content/timeline';
 import { timelineOrder } from '../content/timelineOrder';
 import type { CodexCategory, CodexEntry, CodexImage, CodexSection } from '../content/codex';
-import { canEditCodex } from '../data';
 import { GENRE_COLORS } from '../domain/genres';
 import { formatDuration } from '../format';
 import { useCodex } from '../state/CodexContext';
@@ -111,7 +110,7 @@ function GuideList({ entries, read }: { entries: CodexEntry[]; read: string[] })
 
 export function CodexView({ tab }: { tab: CodexTab }) {
   const { profile } = useLibrary();
-  const { entries: allEntries } = useCodex();
+  const { canEdit, entries: allEntries } = useCodex();
   const [query, setQuery] = useState(() => currentVisit().query ?? '');
   const needle = query.trim().toLowerCase();
 
@@ -149,7 +148,7 @@ export function CodexView({ tab }: { tab: CodexTab }) {
     <main className="page">
       <header className="page-header">
         <h1>{t.title}</h1>
-        {canEditCodex && (
+        {canEdit && (
           <a className="button button-link" href={hrefs.codexNew}>
             {t.newGuide}
           </a>
@@ -478,7 +477,7 @@ function ConsolePanel({ entry }: { entry: CodexEntry }) {
 }
 
 export function Article({ entry, preview = false }: { entry: CodexEntry; preview?: boolean }) {
-  const { find } = useCodex();
+  const { canEdit, find } = useCodex();
   const related = (entry.related ?? []).flatMap((relatedId) => find(relatedId) ?? []);
   const onTimeline = Boolean(entry.timeline);
   const hasSide = Boolean(entry.genre || entry.console || entry.examples?.length || related.length || onTimeline);
@@ -506,7 +505,7 @@ export function Article({ entry, preview = false }: { entry: CodexEntry; preview
               )}
               <h1>{entry.title}</h1>
               <p>{entry.summary}</p>
-              {!preview && canEditCodex && (
+              {!preview && canEdit && (
                 <a className="button button-link article-hero-actions" href={hrefs.codexEdit(entry.id)}>
                   {t.edit}
                 </a>

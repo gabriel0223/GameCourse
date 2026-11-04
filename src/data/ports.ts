@@ -17,6 +17,7 @@ export interface LibraryStore {
 }
 
 export interface CodexStore {
+  canEdit(): Promise<boolean>;
   list(): Promise<CodexEntry[]>;
   save(entry: CodexEntry): Promise<void>;
   remove(id: string): Promise<void>;

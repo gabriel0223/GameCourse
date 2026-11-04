@@ -13,6 +13,9 @@ export interface Game {
   themes: string[];
   summary: string | null;
   coverUrl: string | null;
+  // From IGDB, out of 100. Games saved before this existed don't have them.
+  criticScore?: number | null;
+  criticReviews?: number | null;
 }
 
 export interface PlaySession {
@@ -24,6 +27,7 @@ export interface PlaySession {
 export interface LibraryEntry {
   game: Game;
   status: GameStatus;
+  // Saved when the game is added. Genres on screen come from the game itself.
   mainGenre: WardrobeGenre;
   sessions: PlaySession[];
   finishedAt: string | null;

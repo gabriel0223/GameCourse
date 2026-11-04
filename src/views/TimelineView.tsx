@@ -1,7 +1,6 @@
 import type { CSSProperties } from 'react';
 import { TIMELINE_GROUPS } from '../content/timeline';
 import { timelineOrder } from '../content/timelineOrder';
-import { canEditCodex } from '../data';
 import { useCodex } from '../state/CodexContext';
 import { useLibrary } from '../state/LibraryContext';
 import { strings } from '../strings';
@@ -11,7 +10,7 @@ import { EntryArt, ReadMark } from './CodexView';
 const t = strings.codex;
 
 export function TimelineView() {
-  const { entries } = useCodex();
+  const { canEdit, entries } = useCodex();
   const { profile } = useLibrary();
   const ordered = timelineOrder(entries);
 
@@ -23,7 +22,7 @@ export function TimelineView() {
     <main className="page">
       <header className="page-header">
         <h1>{t.timeline.title}</h1>
-        {canEditCodex && (
+        {canEdit && (
           <a className="button button-link" href={hrefs.codexNewEvent}>
             {t.timeline.addEvent}
           </a>

@@ -1,4 +1,4 @@
-import { WARDROBE_GENRES, genreEntryId } from './genres';
+import { WARDROBE_GENRES, genreEntryId, pickGenres } from './genres';
 import { bestScore } from './practice';
 import type { WardrobeGenre } from './genres';
 import type { LibraryEntry } from './types';
@@ -242,7 +242,7 @@ const ACHIEVEMENTS: AchievementRule[] = [
 
 function genreProgress(entries: LibraryEntry[]): GenreProgress[] {
   return WARDROBE_GENRES.map((genre) => {
-    const own = entries.filter((entry) => entry.mainGenre === genre);
+    const own = entries.filter((entry) => pickGenres(entry.game.genres, entry.game.themes).includes(genre));
     const level = levelFromXp(totalXp(own));
     const nextPiece =
       PIECES.filter((piece) => piece.genre === genre && piece.shopLevel > level.level).sort(

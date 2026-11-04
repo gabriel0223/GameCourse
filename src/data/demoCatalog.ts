@@ -48,6 +48,13 @@ const GAMES: Game[] = [
   game('slay', 'Slay the Spire', 2019, [PC, 'Switch', 'PS4', 'Xbox One'], ['Mega Crit'], ['Mega Crit'], ['Card & Board Game', 'Strategy', 'Indie'], [], 'Build a deck of cards as you climb a changing tower.'),
 ];
 
+// Sample numbers, so the preview can show each critic score color.
+const SAMPLE_CRITICS: Record<string, [number, number]> = {
+  'demo-hollow': [90, 41],
+  'demo-unpacking': [72, 18],
+  'demo-cuphead': [46, 9],
+};
+
 export const demoCatalog: GameCatalog = {
   async suggestions() {
     return GAMES.slice(0, 8);
@@ -57,6 +64,9 @@ export const demoCatalog: GameCatalog = {
     return GAMES.filter((item) => item.name.toLowerCase().includes(needle));
   },
   async get(id) {
-    return GAMES.find((item) => item.id === id) ?? null;
+    const found = GAMES.find((item) => item.id === id);
+    if (!found) return null;
+    const [criticScore, criticReviews] = SAMPLE_CRITICS[id] ?? [null, null];
+    return { ...found, criticScore, criticReviews };
   },
 };

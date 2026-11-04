@@ -1,5 +1,4 @@
 import { pickMainGenre } from './genres';
-import type { WardrobeGenre } from './genres';
 import type { Game, GameStatus, LibraryEntry, PlaySession } from './types';
 
 export function newEntry(game: Game, status: GameStatus, now: string): LibraryEntry {
@@ -45,8 +44,4 @@ export function changeStatus(entry: LibraryEntry, status: GameStatus, now: strin
 // Going back to Playing keeps the rating, so finishing again doesn't lose it.
 export function rateGame(entry: LibraryEntry, rating: number | null, now: string): LibraryEntry {
   return { ...entry, rating, updatedAt: now };
-}
-
-export function changeMainGenre(entry: LibraryEntry, mainGenre: WardrobeGenre, now: string): LibraryEntry {
-  return { ...entry, mainGenre, updatedAt: now };
 }

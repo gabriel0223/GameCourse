@@ -1,6 +1,5 @@
 import type { CSSProperties } from 'react';
 import { TIMELINE_GROUPS } from '../content/timeline';
-import { canEditCodex } from '../data';
 import { useCodex } from '../state/CodexContext';
 import { strings } from '../strings';
 import { hrefs } from '../useHashRoute';
@@ -10,7 +9,7 @@ const t = strings.codex;
 const GROUPS = TIMELINE_GROUPS.filter((group) => group.generation > 0);
 
 export function ConsolesView() {
-  const { entries } = useCodex();
+  const { canEdit, entries } = useCodex();
   const ordered = consoleOrder(entries);
 
   function jump(generation: number) {
@@ -21,7 +20,7 @@ export function ConsolesView() {
     <main className="page">
       <header className="page-header">
         <h1>{t.consoles.title}</h1>
-        {canEditCodex && (
+        {canEdit && (
           <a className="button button-link" href={hrefs.codexNewConsole}>
             {t.consoles.add}
           </a>

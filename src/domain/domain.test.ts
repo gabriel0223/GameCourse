@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { pickMainGenre } from './genres';
+import { pickGenres, pickMainGenre } from './genres';
 import { changeStatus, logSession, newEntry, rateGame, removeSession } from './library';
 import type { Game, PlaySession } from './types';
 import { entryXp, levelFromXp, totalXp, xpToNextLevel } from './xp';
@@ -93,6 +93,16 @@ describe('status rules', () => {
   it('removes a logged session and its XP', () => {
     const played = logSession(newEntry(game, 'backlog', NOW), session('a', 60), NOW);
     expect(entryXp(removeSession(played, 'a', NOW))).toBe(0);
+  });
+});
+
+describe('multiple genres', () => {
+  it('finds every genre, with the main one first', () => {
+    expect(pickGenres(['Adventure', 'Role-playing (RPG)', 'Indie'], ['Horror'])).toEqual(['Horror', 'RPG', 'Adventure']);
+  });
+  it('lists a genre once, and falls back to Adventure', () => {
+    expect(pickGenres(['Racing', 'Sport'], [])).toEqual(['Racing and Sports']);
+    expect(pickGenres(['Indie'], [])).toEqual(['Adventure']);
   });
 });
 

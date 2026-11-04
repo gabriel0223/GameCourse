@@ -9,6 +9,7 @@ import { codexStore } from '../data';
 interface CodexValue {
   entries: CodexEntry[];
   ready: boolean;
+  canEdit: boolean;
   find(id: string): CodexEntry | undefined;
   isEdited(id: string): boolean;
   save(entry: CodexEntry): Promise<void>;
@@ -20,16 +21,16 @@ const CodexContext = createContext<CodexValue | null>(null);
 
 export function CodexProvider({ children }: { children: ReactNode }) {
   const [saved, setSaved] = useState<CodexEntry[]>([]);
+  const [canEdit, setCanEdit] = useState(false);
   const [ready, setReady] = useState(false);
   // Unsaved edits survive moving around the app during a visit.
   const drafts = useRef(new Map<string, Draft>());
 
   useEffect(() => {
-    codexStore
-      .list()
-      .then(setSaved)
-      .catch(() => setSaved([]))
-      .finally(() => setReady(true));
+    Promise.all([
+      codexStore.list().then(setSaved, () => setSaved([])),
+      codexStore.canEdit().then(setCanEdit, () => setCanEdit(false)),
+    ]).finally(() => setReady(true));
   }, []);
 
   const save = useCallback(async (entry: CodexEntry) => {
@@ -47,13 +48,14 @@ export function CodexProvider({ children }: { children: ReactNode }) {
     return {
       entries,
       ready,
+      canEdit,
       find: (id) => entries.find((entry) => entry.id === id),
       isEdited: (id) => saved.some((entry) => entry.id === id),
       save,
       restore,
       drafts: drafts.current,
     };
-  }, [ready, restore, save, saved]);
+  }, [canEdit, ready, restore, save, saved]);
 
   return <CodexContext.Provider value={value}>{children}</CodexContext.Provider>;
 }

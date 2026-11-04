@@ -63,10 +63,13 @@ describe('wardrobe', () => {
     expect(inShop(150).sort()).toEqual(['acc-platform', 'top-platform']);
     expect(inShop(420)).toHaveLength(3);
   });
-  it('uses her chosen main genre', () => {
-    const entry = { ...played('1', ['Platform'], 150), mainGenre: 'Puzzle' as const };
-    expect(deriveGamer([entry], DEFAULT_PROFILE).available.has('top-puzzle')).toBe(true);
-    expect(deriveGamer([entry], DEFAULT_PROFILE).available.has('acc-platform')).toBe(false);
+  it('counts a game toward each of its genres', () => {
+    const { genres, stats } = deriveGamer([played('1', ['Platform', 'Puzzle'], 150)], DEFAULT_PROFILE);
+    const minutes = (genre: string) => genres.find((item) => item.genre === genre)?.minutes;
+    expect(minutes('Platformer')).toBe(150);
+    expect(minutes('Puzzle')).toBe(150);
+    expect(stats.minutesPlayed).toBe(150);
+    expect(stats.genresExplored).toBe(2);
   });
   it('ignores equipped pieces she does not own', () => {
     const equipped = { ...DEFAULT_PROFILE.equipped, bottom: 'bottom-rpg' };
