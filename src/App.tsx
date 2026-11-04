@@ -53,11 +53,12 @@ function PlayerCard() {
   const { progress } = gamer;
   const percent = Math.round((progress.intoLevel / progress.needed) * 100);
   return (
-    <a className="player" href={hrefs.character} aria-label={`${strings.nav.character}, ${strings.level} ${progress.level}`}>
+    <a className="player" href={hrefs.character} aria-label={`${profile.characterName || strings.nav.character}, ${strings.level} ${progress.level}`}>
       <span className="player-avatar">
         <Sprite profile={profile} equipped={gamer.equipped} scale={3} />
       </span>
       <span className="player-stats">
+        {profile.characterName && <span className="player-name">{profile.characterName}</span>}
         <span className="player-level">
           {strings.level} {progress.level}
           <GoldAmount amount={gamer.gold.balance} />

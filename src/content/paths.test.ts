@@ -22,6 +22,12 @@ describe('paths', () => {
     for (const path of PATHS) expect(originalArt(path.art ?? '')).toBeTruthy();
   });
 
+  it('adds new guides to the roles and people paths automatically', () => {
+    expect(PATHS.find((path) => path.id === 'roles')?.entryIds).toContain('role-qa');
+    expect(PATHS.find((path) => path.id === 'people')?.entryIds).toContain('person-kojima');
+    expect(homeOf(entry('person-kojima'))?.id).toBe('people');
+  });
+
   it('covers every built-in entry', () => {
     const covered = new Set(ALL_PATHS.flatMap((path) => path.entryIds));
     expect(CODEX_ENTRIES.filter((item) => !covered.has(item.id))).toEqual([]);
@@ -61,11 +67,13 @@ describe('paths', () => {
     expect(passed.gold.earned - achievementGold).toBe(total * PATH_GOLD_PER_STOP);
   });
 
-  it('still finishes an era by reading it', () => {
+  it('finishes an era by passing its quiz, not by reading it', () => {
     const era = ERAS.find((item) => item.generation === 4);
     if (!era) throw new Error('missing era');
-    const state = deriveGamer([], { ...DEFAULT_PROFILE, readEntries: era.entryIds });
-    expect(state.paths.find((item) => item.id === era.id)?.done).toBe(true);
+    const read = deriveGamer([], { ...DEFAULT_PROFILE, readEntries: era.entryIds });
+    expect(read.paths.find((item) => item.id === era.id)?.done).toBe(false);
+    const passed = deriveGamer([], { ...DEFAULT_PROFILE, quizzes: applyQuiz({}, era.id, 5, 6) });
+    expect(passed.paths.find((item) => item.id === era.id)?.done).toBe(true);
   });
 
   it('keeps a pass after a worse attempt, and keeps the best score', () => {
@@ -82,6 +90,9 @@ describe('paths', () => {
     expect(earned(applyQuiz({}, 'playing', 6, 6))).toEqual(['first-quiz', 'perfect-quiz']);
     const all = PATHS.reduce((records, path) => applyQuiz(records, path.id, path.entryIds.length - 1, path.entryIds.length), {} as QuizRecords);
     expect(earned(all)).toEqual(expect.arrayContaining(['three-paths', 'six-paths']));
+    const eras = ERAS.reduce((records, era) => applyQuiz(records, era.id, 5, 6), {} as QuizRecords);
+    expect(earned(eras)).toContain('timeline-quizzes');
+    expect(earned(eras)).not.toContain('three-paths');
   });
 
   it('features paths in progress first', () => {

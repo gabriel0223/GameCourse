@@ -13,6 +13,15 @@ export interface QuizDeckQuestion extends QuizQuestion {
   options: string[];
 }
 
+const q = (
+  prompt: string,
+  correct: string,
+  wrong: [string, string, string],
+  explanation: string,
+  stop: string,
+  source: string,
+): QuizQuestion => ({ prompt, correct, wrong, explanation, stop, source });
+
 export const QUIZZES: Record<string, QuizQuestion[]> = {
   playing: [
     {
@@ -353,6 +362,111 @@ export const QUIZZES: Record<string, QuizQuestion[]> = {
       stop: 'event-steam-deck',
       source: 'Proton lets many Windows games run',
     },
+  ],
+  roles: [
+    q('What is a game engine?', 'The software foundation a game is built on', ['The team that tests a game', 'The part of a PC that runs games', 'The company that pays for a game'], 'An engine handles things like graphics, physics, and sound, so a team doesn’t start from nothing.', 'role-programmer', 'the software foundation'),
+    q('What is balancing?', 'Carefully tuning numbers until a game feels right', ['Keeping a project within its budget', 'Testing a game on different consoles', 'Splitting work evenly across a team'], 'A small change to one number can transform how a game feels.', 'role-designer', 'this careful tuning is called balancing'),
+    q('What does a level designer decide?', 'Where you play, from layouts to enemy placement', ['How much a game costs', 'What the main character looks like', 'Which music plays in each scene'], 'A game designer decides what a character can do, and a level designer decides where you will do it.', 'role-level-designer', 'decides where you will do it'),
+    q('What is a blockout?', 'A rough version of a level made from plain shapes', ['A scene that blocks you from going back', 'A list of bugs that stop a release', 'A schedule for the final months'], 'It lets a team test how a space plays before artists make it beautiful.', 'role-level-designer', 'often called a blockout'),
+    q('Why do branching stories take so much work?', 'Each decision can need new scenes', ['They must be recorded in several languages', 'They can only be written by one person', 'They need a special game engine'], 'Choices multiply the work, because every path has to be written.', 'role-narrative', 'each decision can need new scenes'),
+    q('What does a concept artist do?', 'Sketches characters and places before they are built', ['Turns finished sketches into code', 'Writes the game’s main idea', 'Paints the box art after release'], 'Those early drawings guide the whole team.', 'role-artist', 'Concept artists sketch characters and places'),
+    q('Why is game animation harder to time than film animation?', 'It has to respond to you instantly', ['It uses far fewer colors', 'It can only be drawn by hand', 'It has to match a recorded audience'], 'If a jump takes too long to start, the controls feel slow.', 'role-animator', 'has to respond to you instantly'),
+    q('What is a big difference between game music and most film scores?', 'Game music often reacts to what you are doing', ['Game music never uses real instruments', 'Game music must stay under one minute', 'Game music can’t have a main theme'], 'In many games, the music changes the moment a fight begins.', 'role-audio', 'game music often has to react to what you are doing'),
+    q('What is a producer’s main job?', 'Keeping development on track', ['Writing most of the code', 'Designing the main character', 'Testing the final build'], 'Producers plan schedules, solve problems, and help the team make decisions.', 'role-producer', 'keeps a game’s development on track'),
+    q('What does a QA tester do after finding a bug?', 'Reports exactly how to make it happen', ['Fixes the code directly', 'Removes that part of the game', 'Tells players to avoid it'], 'A clear report helps a programmer find the cause.', 'role-qa', 'report exactly how to make each one happen'),
+  ],
+  people: [
+    q('What idea led Ralph Baer to invent the home console?', 'People should be able to do more with a TV than watch it', ['Arcades were too far away from most homes', 'Computers needed a cheaper screen', 'Radio could be used to send games'], 'He began sketching a device for playing games on an ordinary TV in 1966.', 'person-baer', 'do more with a television than watch it'),
+    q('What did Nolan Bushnell start after selling Atari?', 'Pizza Time Theatre, later known as Chuck E. Cheese', ['Nintendo of America', 'The first Xbox team', 'A movie studio for game films'], 'He combined pizza, arcade games, and animatronics.', 'person-bushnell', 'better known as Chuck E. Cheese'),
+    q('What does “lateral thinking with withered technology” mean?', 'Using cheap, familiar parts in fresh new ways', ['Replacing old consoles as fast as possible', 'Designing games with no technology at all', 'Always waiting for the newest chips'], 'It explains why the simple Game Boy beat more powerful rivals.', 'person-yokoi', 'using cheap, well-understood parts in fresh new ways'),
+    q('Which game gave Shigeru Miyamoto his first big chance?', 'Donkey Kong', ['Super Mario 64', 'Pong', 'Metroid'], 'He was asked to design a replacement after Radar Scope failed in the US.', 'person-miyamoto', 'The result was Donkey Kong'),
+    q('Why is Mystery House important?', 'It’s credited as the first graphic adventure game', ['It was the first game with online play', 'It was the first game on a CD-ROM', 'It was the first game made by Nintendo'], 'Roberta Williams thought text adventures could be better with pictures.', 'person-williams', 'the first graphic adventure game'),
+    q('Why did Sid Meier’s name start appearing in game titles?', 'To convince his fans to try something new', ['He had paid for the games himself', 'A law required it at the time', 'To avoid a legal fight with another Sid'], 'It began with Pirates! in 1987, and the idea stuck.', 'person-meier', 'would convince his fans to try something new'),
+    q('What studio did Hironobu Sakaguchi found after leaving Square?', 'Mistwalker', ['FromSoftware', 'Maxis', 'Firaxis'], 'Mistwalker went on to make RPGs such as Blue Dragon and Lost Odyssey.', 'person-sakaguchi', 'his own studio, Mistwalker'),
+    q('How did Will Wright get the idea for SimCity?', 'He enjoyed building in a level editor more than playing', ['A city asked him to plan its roads', 'He read a book about Roman cities', 'His publisher asked for a sports game'], 'He noticed this while making Raid on Bungeling Bay.', 'person-wright', 'he enjoyed building islands more than playing the game itself'),
+    q('How did hardware limits shape Metal Gear?', 'They inspired a game about avoiding being seen', ['They forced it to be a text adventure', 'They removed its story entirely', 'They made it an online-only game'], 'The MSX2 couldn’t show many enemies or bullets at once.', 'person-kojima', 'the player would avoid being seen'),
+    q('What did John Carmack do with id’s older games?', 'Released their source code for others to learn from', ['Deleted them to protect his technology', 'Sold them to Nintendo', 'Remade them all for virtual reality'], 'That included the code for Doom.', 'person-carmack', 'id released the source code'),
+    q('What question drove Satoru Iwata at Nintendo?', 'How to reach people who didn’t play games', ['How to build the strongest console', 'How to buy a rival company', 'How to leave the hardware business'], 'That thinking led to Nintendo DS, Brain Age, and Wii.', 'person-iwata', 'reach people who didn’t play games'),
+    q('What was Hidetaka Miyazaki doing before he joined FromSoftware?', 'Working as an account manager at Oracle', ['Programming arcade games at Sega', 'Teaching history in a school', 'Directing films in Tokyo'], 'He changed careers and joined at the age of 29.', 'person-miyazaki', 'an account manager at Oracle'),
+  ],
+  'era-0': [
+    q('What made Tennis for Two special?', 'It was designed for fun, for two people, using controllers', ['It was the first game on any screen', 'It could be played on a home TV', 'It sold millions of copies'], 'Earlier programs existed, but this one was made for a general audience to enjoy.', 'event-tennis-for-two', 'It was designed for fun'),
+    q('Where was Spacewar! created?', 'MIT', ['Atari', 'Brookhaven National Laboratory', 'Nintendo'], 'A group of young programmers wanted to show what the PDP-1 computer could do.', 'event-spacewar', 'MIT received a PDP-1'),
+    q('What was the Brown Box?', 'Ralph Baer’s prototype for playing games on a TV', ['The first arcade cabinet', 'A computer at MIT', 'Atari’s first home console'], 'It got its nickname from the wood-grain tape covering it, and it became the Odyssey.', 'event-brown-box', 'the nickname the Brown Box'),
+    q('Why didn’t Computer Space become a mass hit?', 'Its controls and instructions confused people', ['It only worked in Japan', 'It was too expensive to play', 'It was never released'], 'Nolan Bushnell learned from that, and his next game barely needed instructions.', 'event-computer-space', 'long instructions confused people'),
+  ],
+  'era-1': [
+    q('What caused a smaller market crash in 1977?', 'Stores filled with nearly identical machines', ['A shortage of televisions', 'A ban on arcade games', 'The failure of cartridges'], 'Cheap chips made consoles easy to build, so buyers lost interest.', 'gen-1', 'Stores filled with nearly identical machines'),
+    q('What did Magnavox Odyssey families tape to their TV screens?', 'Plastic overlays', ['Score sheets', 'Colored light filters', 'Printed instructions'], 'The machine could only display a few white squares and a line, so overlays did much of the work.', 'event-odyssey', 'plastic overlays that families taped'),
+    q('According to the famous story, why did the Pong prototype stop working?', 'Its coin box was overflowing', ['The tavern lost power', 'Someone spilled a drink on it', 'Its screen burned out'], 'Allan Alcorn found the problem when he opened the machine.', 'event-pong', 'its coin box was overflowing'),
+    q('Which store sold Home Pong for Christmas 1975?', 'Sears', ['Toys R Us', 'Woolworth', 'Macy’s'], 'Toy stores turned Atari down, so it went to the sporting goods department at Sears.', 'console-home-pong', 'Sears ordered 150,000 units'),
+  ],
+  'era-2': [
+    q('What change turned a console into a platform?', 'Cartridges', ['Color graphics', 'Built-in games', 'Joysticks'], 'A console could now keep getting new games for years.', 'gen-2', 'Cartridges changed that'),
+    q('What did Warren Robinett hide in Adventure?', 'A secret room containing his name', ['A second game', 'A phone number', 'A map of Atari’s offices'], 'Atari didn’t credit its programmers, so he credited himself.', 'event-atari-2600', 'he hid a secret room'),
+    q('Why did Space Invaders speed up as you played?', 'The hardware moved faster with fewer aliens to draw', ['The designer programmed a timer', 'Players paid for faster levels', 'The cabinet heated up over time'], 'It was a technical limit, and Tomohiro Nishikado decided to keep it.', 'event-space-invaders', 'faster as there were fewer left to draw'),
+    q('What did Activision prove?', 'A company could release games for a console it didn’t make', ['Consoles could work without cartridges', 'Arcades could run on home TVs', 'Programmers didn’t need credit'], 'That made it the first third-party developer.', 'event-activision', 'release games for a console it did not make'),
+    q('What everyday activity did Toru Iwatani build Pac-Man around?', 'Eating', ['Walking', 'Shopping', 'Cooking'], 'He wanted something that would also appeal to people who avoided arcades.', 'event-pac-man', 'built his game around eating'),
+    q('Where did the 1983 crash mainly hit?', 'North America', ['Japan', 'Europe', 'Brazil'], 'Japan’s market kept growing, which opened the door for Nintendo.', 'event-crash', 'The crash mainly hit North America'),
+    q('Who is widely recognized as a father of the game cartridge?', 'Jerry Lawson', ['Ralph Baer', 'Nolan Bushnell', 'Gunpei Yokoi'], 'He led the team behind the Fairchild Channel F.', 'console-channel-f', 'a father of the game cartridge'),
+  ],
+  'era-3': [
+    q('What did Nintendo’s lockout chip do?', 'It meant publishers needed Nintendo’s approval', ['It stopped children from playing at night', 'It saved progress on a cartridge', 'It made games run faster'], 'Nintendo kept strict control of what appeared on its platform.', 'gen-3', 'A lockout chip meant publishers needed its approval'),
+    q('What did Nintendo make when it began in 1889?', 'Playing cards', ['Toys', 'Televisions', 'Bicycles'], 'It later moved into toys, Game & Watch handhelds, and arcade games.', 'event-famicom', 'a maker of playing cards'),
+    q('Where was Tetris created?', 'Moscow', ['Tokyo', 'New York', 'Paris'], 'Alexey Pajitnov made it at the Soviet Academy of Sciences.', 'event-tetris', 'Academy of Sciences in Moscow'),
+    q('What is World 1-1 of Super Mario Bros. famous for?', 'Teaching you to play without instructions', ['Being the longest level in the game', 'Having no enemies at all', 'Being designed by a player'], 'Its first screen shows how enemies, jumps, and mushrooms work.', 'event-nes-mario', 'without using any instructions'),
+    q('What inspired The Legend of Zelda?', 'Shigeru Miyamoto’s childhood exploring the countryside', ['A famous film about pirates', 'A popular Japanese board game', 'A novel by F. Scott Fitzgerald'], 'He wanted players to feel what he felt in the forests and caves near his home.', 'event-zelda', 'his childhood in the Japanese countryside'),
+    q('What rule makes the Final Fantasy series unusual?', 'Each main entry has a new world and cast', ['Every game has the same hero', 'Each game is made by a new company', 'Every game is played in real time'], 'That rule let the series reinvent itself again and again.', 'event-final-fantasy', 'each main entry has a new world and cast'),
+    q('What’s true about blowing into NES cartridges?', 'Nintendo warned against it', ['It was the official way to clean them', 'It made games run faster', 'It only worked in Japan'], 'It became a playground ritual, but it probably did more harm than good.', 'console-nes', 'Nintendo warned against it'),
+  ],
+  'era-4': [
+    q('What was Sega’s slogan against Nintendo?', 'Genesis does what Nintendon’t', ['Do the Math', 'Now you’re playing with power', 'Play it loud'], 'It made Sega the cool alternative.', 'gen-4', 'Genesis does what Nintendon’t'),
+    q('Which game did Nintendo bundle with Game Boy in the West?', 'Tetris', ['Super Mario Land', 'Pokémon', 'Metroid'], 'Henk Rogers convinced Nintendo it would attract people beyond young boys.', 'event-game-boy', 'bundle Tetris in the West'),
+    q('How was Sonic’s feel different from Mario’s?', 'Sonic was about momentum and attitude', ['Sonic was slower and more careful', 'Sonic was played from above', 'Sonic had no jumping'], 'Mario was precise, while Sonic was built around speed.', 'event-sonic', 'Sonic was about momentum and attitude'),
+    q('How did Doom spread so quickly?', 'Its first episode was shareware', ['It came free with every PC', 'It was sold only in arcades', 'It launched on every console'], 'Players could copy it freely and buy the rest.', 'event-doom', 'The first episode was shareware'),
+    q('Why was the ESRB created?', 'To give games age ratings', ['To decide which games were best', 'To set the price of consoles', 'To test games for bugs'], 'The industry created it after US Senate hearings, facing the threat of regulation.', 'event-esrb', 'gave games age ratings'),
+    q('What could the Super NES’s Mode 7 do?', 'Rotate and scale a background', ['Play music from a CD', 'Connect to the internet', 'Show two screens'], 'It created the pseudo-3D tracks of F-Zero and Super Mario Kart.', 'console-snes', 'Mode 7 could rotate and scale'),
+  ],
+  'era-5': [
+    q('What was the big change of this generation?', 'Moving from flat sprites to 3D polygons', ['Moving from color to black and white', 'Moving from TVs to handhelds', 'Moving from discs to cartridges'], 'Developers had to solve problems like how a camera should follow a character.', 'gen-5', 'from flat sprites to 3D polygons'),
+    q('How did Sony answer Sega’s 399-dollar Saturn at E3?', 'Steve Race said only “299” and walked off', ['Sony offered a free game', 'Sony delayed PlayStation', 'Sony cancelled its show'], 'It’s still one of the most famous moments in the history of the show.', 'event-playstation', 'said only 299'),
+    q('Why did catching all 151 Pokémon require a friend?', 'Each version had exclusive creatures', ['The game needed two players at once', 'Some creatures cost real money', 'The final battle was a team fight'], 'Trading over a cable made the game social.', 'event-pokemon', 'Each version had exclusive creatures'),
+    q('What let players move Mario gently or quickly in Super Mario 64?', 'The analog stick', ['The D-pad', 'A motion sensor', 'Two shoulder buttons'], 'The game was built alongside the Nintendo 64 controller.', 'event-mario-64', 'its analog stick let players move Mario'),
+    q('What was Nintendo 64’s big mistake?', 'Staying with cartridges', ['Leaving out a controller', 'Launching without Mario', 'Using a touch screen'], 'They loaded instantly, but they held far less than a CD.', 'console-n64', 'The big mistake was staying with cartridges'),
+  ],
+  'era-6': [
+    q('What was the real long-term success of the original Xbox?', 'Xbox Live', ['Its first controller', 'Its DVD remote', 'Its handheld version'], 'It gave console players a unified online service with friends lists and voice chat.', 'gen-6', 'Its real long-term success was Xbox Live'),
+    q('Why was PlayStation 2 so attractive in many homes?', 'It could also play DVD movies', ['It came with a free TV', 'It was the cheapest console ever', 'It only played online games'], 'Standalone DVD players were still expensive.', 'event-playstation-2', 'their first DVD player'),
+    q('What did Sega announce on January 31, 2001?', 'It would stop making consoles', ['It would buy Nintendo', 'Dreamcast 2 was coming', 'Sonic would be retired'], 'It chose to focus on games instead.', 'event-sega-exits', 'it would stop making consoles'),
+    q('How did Microsoft get Halo for Xbox?', 'It bought Bungie', ['It paid Sony for the rights', 'It built the game alone in a year', 'It won a contest'], 'Halo: Combat Evolved became a launch title.', 'event-xbox-halo', 'It bought Bungie'),
+    q('Which game forced many players to install Steam?', 'Half-Life 2', ['Doom', 'Portal', 'World of Warcraft'], 'It required Steam to run, even for buyers of a physical copy.', 'event-steam', 'Half-Life 2, which required Steam'),
+    q('What was the Corrupted Blood incident?', 'A bug that spread a virtual plague', ['A hacked World of Warcraft server', 'A fight between two big guilds', 'A banned expansion'], 'It was later studied by real epidemiologists.', 'event-wow', 'caused a virtual plague'),
+    q('What did the original Xbox include as standard that was new for a major console?', 'A built-in hard drive', ['A touch screen', 'A motion sensor', 'A cartridge slot'], 'It let games save more data, and music could be copied onto it.', 'console-xbox', 'built-in hard drive as standard'),
+  ],
+  'era-7': [
+    q('Which idea did Xbox 360 help make standard?', 'Achievements', ['Memory cards', 'Motion controls', 'Two-screen play'], 'Players could now earn them across every game.', 'gen-7', 'an idea Xbox 360 helped make standard'),
+    q('Who was Wii mainly designed to reach?', 'People who didn’t play games', ['Competitive PC players', 'Arcade owners', 'Game developers'], 'Satoru Iwata’s team chose not to fight a race for power.', 'event-wii', 'people who didn’t play games at all'),
+    q('What made Angry Birds such a good fit for phones?', 'It turned a slingshot into a finger gesture', ['It used the phone’s camera', 'It required two players', 'It was a free port of a console game'], 'Touch screens encouraged simple, inventive designs.', 'event-app-store', 'turning a slingshot into a satisfying finger gesture'),
+    q('How was Minecraft sold early on?', 'Cheaply, while it was still in development', ['Only in stores', 'Only on Xbox', 'Free, with no way to pay'], 'Players paid to join the process, and their videos did the marketing.', 'event-minecraft', 'selling it cheaply while it was still in development'),
+    q('How was Twitch different from television?', 'Audiences and hosts could interact', ['It only showed old shows', 'Viewers had to pay per minute', 'It had no live programs'], 'Viewers could talk back through chat.', 'event-twitch', 'audiences and hosts could interact'),
+    q('What was the Red Ring of Death?', 'A hardware failure on early Xbox 360 consoles', ['A hard mode in Halo 3', 'A virus spread through Xbox Live', 'A boss in Mass Effect'], 'Microsoft spent more than a billion dollars on repairs.', 'console-xbox-360', 'known as the Red Ring of Death'),
+  ],
+  'era-8': [
+    q('What does it mean for a game to be a service?', 'It keeps changing over time', ['It can only be rented', 'It’s made by a telephone company', 'It has no single-player mode'], 'Seasons, events, and in-game purchases keep players coming back.', 'gen-8', 'Games increasingly became services that changed over time'),
+    q('Who started the modern VR wave with a Kickstarter?', 'Palmer Luckey', ['John Hanke', 'Gabe Newell', 'Satoru Iwata'], 'His Oculus Rift prototype raised about 2.4 million dollars in 2012.', 'event-vr', 'Palmer Luckey'),
+    q('Which earlier game provided the map behind Pokémon Go?', 'Ingress', ['Minecraft', 'Fortnite', 'Pokémon Red'], 'Its map of real-world landmarks became the base for PokéStops and gyms.', 'event-pokemon-go', 'Ingress’s map of real-world landmarks'),
+    q('What was the clear idea behind Nintendo Switch?', 'A console for the TV that you can carry anywhere', ['A console with two screens', 'A console controlled by your voice', 'A console that streams every game'], 'It could slide into a dock, then be carried anywhere.', 'event-switch', 'slide into a dock to play on a TV'),
+    q('How does Fortnite earn money without charging to play?', 'Cosmetic items and a Battle Pass', ['Ads between matches', 'A monthly fee to log in', 'Paid weapons that win matches'], 'Many later games copied that model.', 'event-fortnite', 'Epic sold cosmetic items'),
+    q('Which Wii U idea did Switch build itself around?', 'Off-TV play', ['Motion bowling', 'Two-screen books', 'Voice commands'], 'In hindsight, Wii U was a rough draft of Switch.', 'console-wii-u', 'took its off-TV idea'),
+  ],
+  'era-9': [
+    q('What was this generation’s biggest change?', 'Fast storage that cut loading times', ['A return to cartridges', 'Motion controls on every console', 'The end of online play'], 'It was less visible than earlier leaps, but it changed how worlds could be built.', 'gen-9', 'Solid-state drives cut loading times dramatically'),
+    q('Why were new consoles so hard to buy in 2020?', 'Chip shortages and scalpers', ['Sony stopped making them', 'Stores refused to stock them', 'They were sold only online in Japan'], 'Many people spent over a year trying to buy one.', 'event-ps5-xbox', 'scalpers used bots'),
+    q('What does Valve’s Deck Verified program tell you?', 'How well each game works on Steam Deck', ['Which games are on sale', 'Who owns a real Steam Deck', 'How long each game lasts'], 'It lets players quickly see what will run well.', 'event-steam-deck', 'Deck Verified program'),
+    q('What did Sony fear about Microsoft buying Activision Blizzard?', 'Call of Duty could leave PlayStation', ['Xbox would stop making consoles', 'PlayStation prices would be set by Microsoft', 'Candy Crush would be shut down'], 'Microsoft signed long-term agreements to keep it on other platforms.', 'event-activision-microsoft', 'keep Call of Duty away from PlayStation'),
+    q('How do Switch 2’s Joy-Con attach?', 'With magnets', ['With rails', 'With a cable', 'With screws'], 'They can also work like a mouse.', 'event-switch-2', 'attach with magnets'),
+    q('What unusual thing happened to console prices in this generation?', 'They rose years after launch', ['They fell to nearly nothing', 'They were set by governments', 'Consoles became free with games'], 'For most of gaming history, consoles became cheaper as they aged.', 'event-prices-2026', 'Consoles got more expensive years after launch'),
+    q('Which game comes built into every PS5?', 'Astro’s Playroom', ['Demon’s Souls', 'Ghost of Yōtei', 'Fortnite'], 'It was created to show off the DualSense.', 'console-ps5', 'built into every console'),
   ],
 };
 

@@ -1,4 +1,4 @@
-import { ALL_PATHS, pathRead } from '../content/paths';
+import { ALL_PATHS, ERAS, PATHS, pathRead } from '../content/paths';
 import type { Path } from '../content/paths';
 import { WARDROBE_GENRES, genreEntryId, pickGenres } from './genres';
 import { bestScore } from './practice';
@@ -54,6 +54,9 @@ interface AchievementRule {
 
 const playedGenre = (genre: WardrobeGenre) => (facts: Facts) =>
   facts.genres.some((item) => item.genre === genre && item.minutes > 0);
+
+const pathIds = PATHS.map((path) => path.id);
+const eraIds = ERAS.map((era) => era.id);
 
 const ACHIEVEMENTS: AchievementRule[] = [
   {
@@ -206,15 +209,15 @@ const ACHIEVEMENTS: AchievementRule[] = [
     difficulty: 'easy',
     group: 'Codex',
     title: 'Passed your first quiz',
-    description: 'Pass the quiz at the end of any path.',
-    earned: ({ profile }) => passedCount(profile.quizzes) >= 1,
+    description: 'Pass any path or era quiz.',
+    earned: ({ profile }) => passedCount(profile.quizzes, [...pathIds, ...eraIds]) >= 1,
   },
   {
     id: 'perfect-quiz',
     difficulty: 'medium',
     group: 'Codex',
     title: 'Got a perfect score',
-    description: 'Answer every question in a path quiz correctly.',
+    description: 'Answer every question in a quiz correctly.',
     earned: ({ profile }) => hasPerfectQuiz(profile.quizzes),
   },
   {
@@ -223,7 +226,7 @@ const ACHIEVEMENTS: AchievementRule[] = [
     group: 'Codex',
     title: 'Finished three paths',
     description: 'Pass the quizzes on 3 paths.',
-    earned: ({ profile }) => passedCount(profile.quizzes) >= 3,
+    earned: ({ profile }) => passedCount(profile.quizzes, pathIds) >= 3,
   },
   {
     id: 'six-paths',
@@ -231,7 +234,15 @@ const ACHIEVEMENTS: AchievementRule[] = [
     group: 'Codex',
     title: 'Finished six paths',
     description: 'Pass the quizzes on 6 paths.',
-    earned: ({ profile }) => passedCount(profile.quizzes) >= 6,
+    earned: ({ profile }) => passedCount(profile.quizzes, pathIds) >= 6,
+  },
+  {
+    id: 'timeline-quizzes',
+    difficulty: 'hard',
+    group: 'Codex',
+    title: 'Mastered the timeline',
+    description: 'Pass the quiz for every era of the timeline.',
+    earned: ({ profile }) => passedCount(profile.quizzes, eraIds) === eraIds.length,
   },
   {
     id: 'first-run',
@@ -336,9 +347,8 @@ export function deriveGamer(entries: LibraryEntry[], profile: CharacterProfile):
   const earnedCount = achievements.filter((item) => item.unlocked).length;
   const paths = ALL_PATHS.map((path) => {
     const read = pathRead(path, profile.readEntries);
-    // A path is finished by its quiz. Reading only tracks her place, but an era has no quiz.
-    const done = path.kind === 'path' ? Boolean(profile.quizzes[path.id]?.passed) : read === path.entryIds.length;
-    return { ...path, read, done };
+    // Only a quiz finishes a path or an era. Reading just tracks her place.
+    return { ...path, read, done: Boolean(profile.quizzes[path.id]?.passed) };
   });
   const worn = (slot: Slot) => {
     const piece = PIECES.find((item) => item.id === profile.equipped[slot]);

@@ -1,8 +1,14 @@
 const MAX_SIZE = 1600;
 const QUALITY = 0.86;
 
+export const MAX_GIF_BYTES = 15 * 1024 * 1024;
+
+export const isGifTooLarge = (file: File) => file.type === 'image/gif' && file.size > MAX_GIF_BYTES;
+
 // Large photos are shrunk before saving, which keeps guides quick to open.
+// A GIF is saved as it is, because redrawing it would keep only its first frame.
 export async function prepareImage(file: File): Promise<Blob> {
+  if (file.type === 'image/gif') return file;
   const bitmap = await createImageBitmap(file);
   const scale = Math.min(1, MAX_SIZE / Math.max(bitmap.width, bitmap.height));
   const canvas = document.createElement('canvas');

@@ -155,6 +155,7 @@ export const HAIRSTYLES = [
 ];
 
 export interface CharacterProfile {
+  characterName: string;
   skin: string;
   hairStyle: string;
   hairColor: string;
@@ -168,7 +169,12 @@ export interface CharacterProfile {
   practice: PracticeRecord;
 }
 
+export const NAME_LIMIT = 24;
+
+export const cleanName = (name: string) => name.trim().replace(/\s+/g, ' ').slice(0, NAME_LIMIT);
+
 export const DEFAULT_PROFILE: CharacterProfile = {
+  characterName: '',
   skin: 'fair',
   hairStyle: 'ponytail',
   hairColor: 'plum',

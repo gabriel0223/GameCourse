@@ -26,7 +26,8 @@ export function applyQuiz(records: QuizRecords, pathId: string, score: number, t
   };
 }
 
-export const passedCount = (records: QuizRecords) => Object.values(records).filter((item) => item.passed).length;
+export const passedCount = (records: QuizRecords, ids: string[]) =>
+  ids.filter((id) => records[id]?.passed).length;
 
 export const hasPerfectQuiz = (records: QuizRecords) =>
   Object.values(records).some((item) => item.best === item.total);

@@ -4219,6 +4219,82 @@ a.button {
   margin: 14px 0;
 }
 
+.era-quiz {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 12px 0 0 96px;
+  padding: 10px 14px 10px 10px;
+  border: 1px solid color-mix(in srgb, var(--gold) 45%, var(--line));
+  border-radius: 10px;
+  text-decoration: none;
+}
+
+.era-quiz:hover,
+.era-quiz:focus-visible {
+  background: var(--surface);
+}
+
+.era-quiz-icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--gold) 16%, transparent);
+  color: var(--gold);
+}
+
+.era-quiz[data-passed='true'] .era-quiz-icon {
+  background: var(--gold);
+  color: var(--on-gold);
+}
+
+.era-quiz-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.era-quiz-copy {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 12px;
+  min-width: 0;
+}
+
+.era-quiz-copy strong {
+  font-weight: 600;
+}
+
+.era-quiz-copy span {
+  color: var(--muted);
+  font-size: 15px;
+}
+
+.era-quiz[data-passed='true'] .era-quiz-copy span {
+  color: var(--gold);
+}
+
+.player-name {
+  overflow: hidden;
+  color: var(--soft);
+  font-size: 14px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.character-name {
+  max-width: 320px;
+}
+
+.character-name input {
+  width: 100%;
+  margin-top: 10px;
+}
+
 .path-hero .path-best {
   margin: 0 0 14px;
   color: var(--text);
@@ -4898,7 +4974,8 @@ a.button {
   .top-bar .codex-search {
     flex-basis: 100%;
   }
-  .console-strip {
+  .console-strip,
+  .era-quiz {
     margin-left: 0;
   }
 }

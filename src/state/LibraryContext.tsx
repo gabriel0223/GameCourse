@@ -8,7 +8,7 @@ import type { Game, GameStatus, LibraryEntry } from '../domain/types';
 import { applyRun, loadPractice } from '../domain/practice';
 import { applyQuiz } from '../domain/quiz';
 import type { FinishedRun, RunReward } from '../domain/practice';
-import { DEFAULT_PROFILE, PIECES } from '../domain/wardrobe';
+import { DEFAULT_PROFILE, PIECES, cleanName } from '../domain/wardrobe';
 import type { CharacterProfile, Piece, Slot } from '../domain/wardrobe';
 import { strings } from '../strings';
 
@@ -36,6 +36,7 @@ interface LibraryValue {
   equip(slot: Slot, pieceId: string | null): void;
   setAppearance(change: Partial<Pick<CharacterProfile, 'skin' | 'hairStyle' | 'hairColor'>>): void;
   setRead(entryId: string, read: boolean): void;
+  setCharacterName(name: string): void;
   recordQuiz(pathId: string, score: number, total: number): void;
   recordRun(run: FinishedRun): RunReward;
   notify(text: string, tone: Toast['tone']): void;
@@ -195,6 +196,13 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
         const { practice, reward } = applyRun(current.practice, run, today);
         putProfile({ ...current, practice });
         return reward;
+      },
+      setCharacterName: (name) => {
+        const current = latestProfile.current;
+        const characterName = cleanName(name);
+        if (characterName === current.characterName) return;
+        putProfile({ ...current, characterName });
+        notify(strings.character.nameSaved, 'plain');
       },
       recordQuiz: (pathId, score, total) => {
         const current = latestProfile.current;

@@ -20,6 +20,8 @@ const CATEGORY_TABS: Record<CodexCategory, CodexTab> = {
   consoles: 'history',
   playing: 'paths',
   industry: 'paths',
+  roles: 'paths',
+  people: 'paths',
 };
 
 function activeTab(id: string | null, path: string | null, category: CodexCategory | undefined): CodexTab | null {

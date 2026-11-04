@@ -9,6 +9,7 @@ import { useCodex } from '../state/CodexContext';
 import { useLibrary } from '../state/LibraryContext';
 import { strings } from '../strings';
 import { hrefs } from '../useHashRoute';
+import { pathHref } from './CodexView';
 
 const t = strings.codex.quiz;
 
@@ -35,9 +36,13 @@ function Results({
   const score = total - misses.length;
   const needed = passMark(total);
   const passed = score >= needed;
+  const era = path.kind === 'era';
+  const home = pathHref(path);
+  const backLabel = era ? t.backEra : t.back;
+  const stopHref = (stop: string) => (era ? hrefs.codexEntry(stop) : hrefs.pathStop(stop, path.id));
   return (
     <section className="quiz">
-      <h2>{passed ? (firstPass ? t.passed : t.passedAgain) : t.failed}</h2>
+      <h2>{passed ? (firstPass ? (era ? t.eraPassed : t.passed) : t.passedAgain) : t.failed}</h2>
       <p className="quiz-score">{t.score(score, total)}</p>
       {!passed && <p className="quiz-result-note">{t.needed(needed, total)}</p>}
       {firstPass && (
@@ -51,7 +56,7 @@ function Results({
           <ul className="example-list">
             {misses.map((question) => (
               <li key={question.stop}>
-                <a href={hrefs.pathStop(question.stop, path.id)}>{find(question.stop)?.title ?? question.stop}</a>
+                <a href={stopHref(question.stop)}>{find(question.stop)?.title ?? question.stop}</a>
               </li>
             ))}
           </ul>
@@ -59,8 +64,8 @@ function Results({
       )}
       <div className="quiz-actions">
         {passed ? (
-          <a className="button button-primary" href={hrefs.path(path.id)}>
-            {t.back}
+          <a className="button button-primary" href={home}>
+            {backLabel}
           </a>
         ) : (
           <button className="button button-primary" type="button" onClick={onRetry}>
@@ -74,8 +79,8 @@ function Results({
             </button>
           )
         ) : (
-          <a className="button button-link" href={hrefs.path(path.id)}>
-            {t.back}
+          <a className="button button-link" href={home}>
+            {backLabel}
           </a>
         )}
       </div>
@@ -165,7 +170,7 @@ export function QuizView({ id }: { id: string | null }) {
   return (
     <main className="page">
       {path && (
-        <a className="back" href={hrefs.path(path.id)}>
+        <a className="back" href={pathHref(path)}>
           {path.title}
         </a>
       )}

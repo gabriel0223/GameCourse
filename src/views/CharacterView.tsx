@@ -5,7 +5,7 @@ import { hrefs } from '../useHashRoute';
 import { ACHIEVEMENT_XP } from '../domain/gamer';
 import type { AchievementGroup } from '../domain/gamer';
 import { GENRE_COLORS } from '../domain/genres';
-import { HAIRSTYLES, HAIR_COLORS, PIECES, SKIN_TONES, SLOTS, findPiece } from '../domain/wardrobe';
+import { HAIRSTYLES, HAIR_COLORS, NAME_LIMIT, PIECES, SKIN_TONES, SLOTS, cleanName, findPiece } from '../domain/wardrobe';
 import type { Piece, Slot } from '../domain/wardrobe';
 import { formatDuration } from '../format';
 import { useLibrary } from '../state/LibraryContext';
@@ -29,10 +29,13 @@ export function LockIcon() {
   );
 }
 
-function CheckIcon() {
+function TrophyIcon() {
   return (
-    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-      <path d="M3 8.5 6.5 12 13 4.5" />
+    <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+      <path
+        fillRule="evenodd"
+        d="M4 2h8v1h2.5v2.2a3 3 0 0 1-2.8 2.9A4 4 0 0 1 9 10.3V12h2v2H5v-2h2v-1.7a4 4 0 0 1-2.7-2.2 3 3 0 0 1-2.8-2.9V3H4V2Zm0 2.5H3v.7c0 .7.4 1.2 1 1.4V4.5Zm8 0v2.1c.6-.2 1-.7 1-1.4v-.7h-1Z"
+      />
     </svg>
   );
 }
@@ -57,7 +60,7 @@ function EquipmentPanel({ selected, onSlot }: { selected: Piece | null; onSlot(s
   return (
     <section className="character-side" aria-label={t.title}>
       <div className="character-heading">
-        <h1>{t.title}</h1>
+        <h1>{profile.characterName || t.title}</h1>
       </div>
       <div className="character-stage-row">
         <div className="stage" style={{ '--glow': glow } as CSSProperties}>
@@ -247,10 +250,41 @@ function InventoryTab({ filter, setFilter, selected, setSelected }: InventoryPro
   );
 }
 
+function NameField() {
+  const { profile, setCharacterName } = useLibrary();
+  const [name, setName] = useState(profile.characterName);
+  return (
+    <section>
+      <h2>
+        <label htmlFor="character-name">{t.name}</label>
+      </h2>
+      <div className="character-name">
+        <input
+          id="character-name"
+          type="text"
+          autoComplete="off"
+          maxLength={NAME_LIMIT}
+          placeholder={t.namePlaceholder}
+          value={name}
+          onChange={(event) => setName(event.target.value)}
+          onBlur={() => {
+            setName(cleanName(name));
+            setCharacterName(name);
+          }}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') event.currentTarget.blur();
+          }}
+        />
+      </div>
+    </section>
+  );
+}
+
 function AppearanceTab() {
   const { profile, setAppearance } = useLibrary();
   return (
     <div className="appearance">
+      <NameField />
       <section>
         <h2>{t.hairstyle}</h2>
         <div className="hair-options">
@@ -323,7 +357,9 @@ function AchievementsTab() {
               .filter((item) => item.group === group)
               .map((item) => (
                 <li className="achievement" key={item.id} data-earned={item.unlocked}>
-                  <span className="achievement-mark">{item.unlocked ? <CheckIcon /> : <LockIcon />}</span>
+                  <span className="achievement-mark">
+                    <TrophyIcon />
+                  </span>
                   <span>
                     <span className="achievement-title">
                       {item.title}

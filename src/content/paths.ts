@@ -9,7 +9,7 @@ export const PATH_GOLD_PER_STOP = 15;
 
 export interface Path {
   id: string;
-  // Paths are short courses followed stop by stop. Eras group a stretch of the timeline.
+  // Paths are short courses followed stop by stop. Eras are the same idea, spread along the timeline.
   kind: 'path' | 'era';
   title: string;
   summary: string;
@@ -46,6 +46,8 @@ export const PATHS: Path[] = [
   categoryPath('playing', 'Get comfortable with the controller and the basics.', 'playing-buttons'),
   categoryPath('genres', 'Find out what kinds of games are out there.', 'genre-adventure'),
   categoryPath('industry', 'Learn who makes games and how they reach you.', 'industry-publisher'),
+  categoryPath('roles', 'Meet the jobs behind every game, from programmers to producers.', 'path-roles'),
+  categoryPath('people', 'Meet the people whose ideas changed video games.', 'path-people'),
   withGold({
     id: 'crash-and-comeback',
     kind: 'path',

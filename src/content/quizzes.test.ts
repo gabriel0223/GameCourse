@@ -1,19 +1,26 @@
 import { describe, expect, it } from 'vitest';
 import { passMark } from '../domain/quiz';
 import { findEntry } from './codex';
-import { PATHS } from './paths';
+import { ERAS, PATHS } from './paths';
 import { QUIZZES, quizDeck } from './quizzes';
 
 const clean = (text: string) => text.toLowerCase().replace(/’/g, "'");
 
 describe('quizzes', () => {
-  it('gives every path a quiz with one question per stop', () => {
-    for (const path of PATHS) expect(QUIZZES[path.id]?.length, path.id).toBe(path.entryIds.length);
+  it('gives every path a quiz that covers each stop', () => {
+    for (const path of PATHS) {
+      const stops = new Set(QUIZZES[path.id]?.map((question) => question.stop));
+      expect([...stops].sort(), path.id).toEqual([...path.entryIds].sort());
+    }
   });
 
-  it('covers each stop of a path once', () => {
-    for (const path of PATHS) {
-      expect(QUIZZES[path.id].map((question) => question.stop).sort(), path.id).toEqual([...path.entryIds].sort());
+  it('gives every era a quiz about its timeline, with one console question at most', () => {
+    for (const era of ERAS) {
+      const questions = QUIZZES[era.id] ?? [];
+      const timeline = era.entryIds.filter((id) => !findEntry(id)?.console);
+      for (const stop of timeline) expect(questions.map((item) => item.stop), `${era.id} ${stop}`).toContain(stop);
+      expect(questions.every((item) => era.entryIds.includes(item.stop)), era.id).toBe(true);
+      expect(questions.filter((item) => findEntry(item.stop)?.console).length, era.id).toBeLessThanOrEqual(1);
     }
   });
 

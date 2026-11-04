@@ -841,6 +841,174 @@ def pocket():
     s.oval(134, 34, 138, 38, "#5fd0b6")
 
 
+def code_screen(s, x, y, w, h, rows=5):
+    monitor(s, x, y, w, h)
+    colors = ("#7c9bff", "#5fd0b6", "#ffc857", "#f0708a", "#c9a6ff")
+    for i in range(rows):
+        s.rect(x + 5 + (i % 2) * 4, y + 5 + i * 3, x + 5 + (i % 2) * 4 + 8 + (i * 7) % (w - 16), y + 5 + i * 3, colors[i % 5])
+
+
+@scene("role-programmer")
+def role_programmer():
+    s = Scene("#101a2e", "#23305c", 41)
+    desk(s, 46)
+    code_screen(s, 44, 8, 72, 32, 8)
+    s.character(16, 46, None, frame=4, flip=True)
+    s.rect(60, 44, 100, 45, "#c9c3d8")
+    s.rect(126, 34, 133, 45, "#f4f1fa")
+    s.rect(134, 37, 135, 41, "#f4f1fa")
+
+
+@scene("role-designer")
+def role_designer():
+    s = Scene("#24173f", "#4a2f70", 42)
+    s.rect(30, 8, 120, 44, "#ecebf4")
+    s.rect(30, 44, 120, 45, "#8a8898")
+    for x, y, c in ((40, 14, "#ffc857"), (66, 14, "#5fd0b6"), (92, 14, "#f0708a"), (52, 30, "#7c9bff"), (80, 30, "#c9a6ff")):
+        s.rect(x, y, x + 16, y + 9, c)
+    s.line([(56, 18), (66, 18)], "#14101f")
+    s.line([(82, 18), (92, 18)], "#14101f")
+    s.line([(60, 23), (60, 30)], "#14101f")
+    s.line([(88, 23), (88, 30)], "#14101f")
+    s.ground(50, "#2a1c48", "#4a3a70")
+    s.character(128, 55, None, frame=4)
+
+
+@scene("role-level-designer")
+def role_level_designer():
+    s = Scene("#14222e", "#2a4a5c", 43)
+    for x in range(0, W, 16):
+        s.rect(x, 0, x, H, "#203444")
+    for y in range(0, H, 16):
+        s.rect(0, y, W, y, "#203444")
+    for x0, y0, x1, y1 in ((10, 38, 50, 50), (58, 26, 96, 50), (104, 14, 150, 50)):
+        s.rect(x0, y0, x1, y1, "#c7c5d6")
+        s.rect(x0, y0, x1, y0 + 1, "#f4f1fa")
+    for x, y in ((30, 32), (40, 28), (52, 22), (66, 20), (80, 14), (96, 10)):
+        s.px(x, y, "#ffc857")
+    s.character(20, 38, None, frame=4, flip=True)
+    s.poly([(126, 14), (126, 4), (136, 8)], "#5fd0b6")
+
+
+@scene("role-narrative")
+def role_narrative():
+    s = Scene("#1b1630", "#3a2f55", 44)
+    desk(s, 48)
+    s.rect(30, 22, 74, 48, "#f4efe0")
+    s.rect(52, 22, 53, 48, "#c9c0a8")
+    for y in range(27, 45, 4):
+        s.rect(35, y, 48, y, "#8a8070")
+        s.rect(57, y, 70, y, "#8a8070")
+    s.rect(94, 6, 150, 26, "#ecebf4")
+    s.poly([(104, 26), (100, 34), (114, 26)], "#ecebf4")
+    for x, c in ((102, "#7c9bff"), (118, "#f0708a"), (134, "#5fd0b6")):
+        s.rect(x, 12, x + 11, 13, c)
+        s.rect(x, 17, x + 8, 18, c)
+    s.character(112, 48, None, frame=4)
+
+
+@scene("role-artist")
+def role_artist():
+    s = Scene("#20283f", "#46506a", 45)
+    s.ground(50, "#2e3650", "#4a5470")
+    s.line([(54, 50), (62, 8)], "#8a5a36", 2)
+    s.line([(106, 50), (98, 8)], "#8a5a36", 2)
+    s.rect(46, 10, 114, 40, "#f4efe0")
+    s.oval(84, 13, 96, 25, "#ffc857")
+    s.rect(50, 28, 110, 36, "#5fd0b6")
+    s.poly([(52, 28), (66, 16), (82, 28)], "#7c9bff")
+    s.character(124, 55, None, frame=4)
+    for i, c in enumerate(("#f0708a", "#ffc857", "#5fd0b6", "#7c9bff")):
+        s.oval(14 + i * 6, 44, 18 + i * 6, 48, c)
+
+
+@scene("role-animator")
+def role_animator():
+    s = Scene("#26122e", "#57264a", 46)
+    for i, frame in enumerate((0, 1, 2, 3)):
+        x = 8 + i * 37
+        s.rect(x, 12, x + 32, 46, "#f4efe0")
+        s.rect(x + 2, 14, x + 30, 44, "#1c1830")
+        s.character(x + 9, 42, None, frame=frame)
+    s.rect(0, 50, W, 53, "#14101f")
+    for x in range(4, W, 8):
+        s.rect(x, 51, x + 3, 52, "#c9a6ff")
+
+
+@scene("role-audio")
+def role_audio():
+    s = Scene("#0e1a30", "#23405c", 47)
+    desk(s, 48)
+    for x in range(14, 96, 6):
+        h = 6 + (x * 7) % 22
+        s.rect(x, 34 - h // 2, x + 3, 34 + h // 2, "#5fd0b6")
+    s.rect(104, 16, 150, 48, "#14101f")
+    s.oval(114, 19, 128, 33, "#2c2840")
+    s.oval(118, 23, 124, 29, "#62c7f2")
+    s.oval(134, 34, 146, 46, "#2c2840")
+    s.oval(138, 38, 142, 42, "#f0708a")
+    for x, y in ((30, 8), (52, 12), (74, 6)):
+        s.rect(x, y, x + 1, y + 6, "#ffc857")
+        s.oval(x - 3, y + 5, x + 1, y + 8, "#ffc857")
+
+
+@scene("role-producer")
+def role_producer():
+    s = Scene("#16243a", "#2f4a62", 48)
+    s.rect(24, 6, 120, 44, "#ecebf4")
+    s.rect(24, 44, 120, 45, "#8a8898")
+    for i, (x, w, c) in enumerate(((30, 30, "#7c9bff"), (44, 34, "#5fd0b6"), (62, 28, "#ffc857"), (80, 34, "#f0708a"))):
+        s.rect(x, 12 + i * 7, x + w, 15 + i * 7, c)
+    s.rect(92, 8, 93, 42, "#e8475f")
+    s.ground(50, "#20344a", "#3f5a78")
+    s.character(130, 55, None, frame=4)
+
+
+@scene("role-qa")
+def role_qa():
+    s = Scene("#1a2410", "#3a4f20", 49)
+    desk(s, 48)
+    monitor(s, 18, 8, 66, 34, "#2a3a60")
+    s.rect(30, 26, 60, 30, "#58c75a")
+    s.rect(38, 16, 44, 22, "#f0708a")
+    s.rect(50, 14, 52, 24, "#ffc857")
+    s.rect(58, 18, 72, 20, "#c9a6ff")
+    # a magnifying glass over a bug
+    s.d.ellipse([92, 10, 124, 42], outline=rgb("#ecebf4"), width=3)
+    s.line([(120, 38), (136, 46)], "#c7c5d6", 3)
+    s.oval(102, 22, 114, 32, "#e8475f")
+    s.rect(107, 18, 108, 22, "#14101f")
+    for y in (24, 28):
+        s.line([(99, y), (102, y)], "#14101f")
+        s.line([(114, y), (117, y)], "#14101f")
+
+
+@scene("path-roles")
+def path_roles():
+    s = Scene("#1a1a3a", "#3f3f7c", 50)
+    desk(s, 46)
+    code_screen(s, 8, 12, 40, 26)
+    code_screen(s, 112, 12, 40, 26)
+    s.rect(58, 6, 102, 34, "#ecebf4")
+    for x, c in ((62, "#7c9bff"), (76, "#5fd0b6"), (90, "#ffc857")):
+        s.rect(x, 12, x + 9, 19, c)
+    s.character(30, 46, None, frame=4)
+    s.character(72, 46, None, frame=4, hair=("ponytail", "blonde"))
+    s.character(124, 46, None, frame=4, flip=True, skin="tan", hair=("ponytail", "black"))
+
+
+@scene("path-people")
+def path_people():
+    s = Scene("#2a160c", "#5c2d18", 51)
+    s.ground(50, "#3a2014", "#6a3f24")
+    for x, c in ((8, "#ffc857"), (46, "#7c9bff"), (84, "#5fd0b6"), (122, "#f0708a")):
+        s.rect(x, 8, x + 30, 40, "#a8703f")
+        s.rect(x + 2, 10, x + 28, 38, "#1c1420")
+        s.oval(x + 9, 14, x + 21, 26, c)
+        s.poly([(x + 5, 38), (x + 8, 28), (x + 22, 28), (x + 25, 38)], c)
+        s.rect(x + 12, 42, x + 18, 44, "#ffc857")
+
+
 GLYPHS = {
     "0": ["111", "101", "101", "101", "111"],
     "1": ["010", "110", "010", "010", "111"],
@@ -1135,6 +1303,12 @@ if __name__ == "__main__":
         consoles = source.read()
     for slug, era, year in re.findall(r"machine\(\n\s+'([\w-]+)',\n\s+(\d+),\n\s+(\d+),", consoles):
         images[f"console-{slug}"] = console_scene(slug, int(era), year).im
+    for slug, year, era in (
+        ("baer", "1972", 1), ("bushnell", "1972", 1), ("yokoi", "1980", 2), ("miyamoto", "1981", 2),
+        ("williams", "1980", 2), ("meier", "1991", 4), ("sakaguchi", "1987", 3), ("wright", "1989", 3),
+        ("kojima", "1987", 3), ("carmack", "1993", 5), ("iwata", "2006", 7), ("miyazaki", "2009", 7),
+    ):
+        images[f"person-{slug}"] = history_scene(year, era).im
     for name, im in images.items():
         im.convert("RGB").save(os.path.join(OUT, f"{name}.png"), optimize=True)
     if REVIEW:

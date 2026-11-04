@@ -2,8 +2,11 @@ import type { CSSProperties } from 'react';
 import { PathMeter } from '../components/PathMeter';
 import type { CodexEntry } from '../content/codex';
 import { ERAS } from '../content/paths';
+import type { Path } from '../content/paths';
+import { QUIZZES } from '../content/quizzes';
 import { TIMELINE_GROUPS } from '../content/timeline';
 import { consoleOrder, timelineOrder } from '../content/timelineOrder';
+import { passMark } from '../domain/quiz';
 import { useCodex } from '../state/CodexContext';
 import { useLibrary } from '../state/LibraryContext';
 import { strings } from '../strings';
@@ -35,6 +38,32 @@ function ConsoleStrip({ consoles, read }: { consoles: CodexEntry[]; read: string
         ))}
       </ul>
     </div>
+  );
+}
+
+function EraQuiz({ era }: { era: Path }) {
+  const { profile } = useLibrary();
+  const quiz = QUIZZES[era.id];
+  const record = profile.quizzes[era.id];
+  if (!quiz) return null;
+  return (
+    <a className="era-quiz" href={hrefs.pathQuiz(era.id)} data-passed={Boolean(record?.passed)}>
+      <span className="era-quiz-icon">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M5.5 2.5H4A1.5 1.5 0 0 0 2.5 4v8.5A1.5 1.5 0 0 0 4 14h8a1.5 1.5 0 0 0 1.5-1.5V4A1.5 1.5 0 0 0 12 2.5h-1.5" />
+          <rect x="5.5" y="1.5" width="5" height="2.5" rx="0.75" />
+          <path d="m5.5 9 2 2 3.2-3.8" />
+        </svg>
+      </span>
+      <span className="era-quiz-copy">
+        <strong>{t.paths.eraQuiz(era.title)}</strong>
+        <span>
+          {record?.passed
+            ? t.paths.quizPassed(record.best, record.total)
+            : t.paths.quizRow(quiz.length, passMark(quiz.length))}
+        </span>
+      </span>
+    </a>
   );
 }
 
@@ -121,6 +150,7 @@ export function TimelineView({ at }: { at: string | null }) {
               consoles={consoles.filter((entry) => entry.console?.generation === group.generation)}
               read={profile.readEntries}
             />
+            {era && <EraQuiz era={era} />}
           </section>
         );
       })}

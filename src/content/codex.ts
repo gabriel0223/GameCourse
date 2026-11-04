@@ -3,9 +3,11 @@ import type { WardrobeGenre } from '../domain/genres';
 import { strings } from '../strings';
 import { CONSOLE_ENTRIES } from './consoles';
 import { ENTRY_GAMES } from './entryGames';
+import { PEOPLE_ENTRIES } from './people';
+import { ROLE_ENTRIES } from './roles';
 import { TIMELINE_ENTRIES } from './timeline';
 
-export type CodexCategory = 'genres' | 'industry' | 'playing' | 'history' | 'consoles';
+export type CodexCategory = 'genres' | 'industry' | 'playing' | 'history' | 'consoles' | 'roles' | 'people';
 
 export interface TimelinePoint {
   kind: 'generation' | 'event';
@@ -389,7 +391,13 @@ const withGames = (entry: CodexEntry): CodexEntry => {
   return games ? { ...entry, sections: [...entry.sections, { heading: strings.codex.entryGames, games }] } : entry;
 };
 
-export const CODEX_ENTRIES: CodexEntry[] = [...GUIDES, ...TIMELINE_ENTRIES, ...CONSOLE_ENTRIES].map(withGames);
+export const CODEX_ENTRIES: CodexEntry[] = [
+  ...GUIDES,
+  ...ROLE_ENTRIES,
+  ...PEOPLE_ENTRIES,
+  ...TIMELINE_ENTRIES,
+  ...CONSOLE_ENTRIES,
+].map(withGames);
 
 export const GLOSSARY: GlossaryTerm[] = [
   { term: 'Aggro', definition: 'When an enemy notices you and starts attacking.' },

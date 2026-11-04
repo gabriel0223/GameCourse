@@ -10,7 +10,7 @@ import { emptyBlock, findProblem, fromDraft, newConsoleDraft, newDraft, newEvent
 import type { Block, BlockKind, Draft } from '../content/drafts';
 import { TIMELINE_GROUPS } from '../content/timeline';
 import { codexStore, isDemo } from '../data';
-import { copiedPageImage, pastedImage, prepareImage } from '../imageUpload';
+import { copiedPageImage, isGifTooLarge, pastedImage, prepareImage } from '../imageUpload';
 import { useCodex } from '../state/CodexContext';
 import { useLibrary } from '../state/LibraryContext';
 import { strings } from '../strings';
@@ -56,6 +56,10 @@ function ImageField({ id, image, fallback, withCaption, onChange }: ImageFieldPr
   async function addFile(file: File) {
     if (!file.type.startsWith('image/')) {
       setError(t.imageTypeError);
+      return false;
+    }
+    if (isGifTooLarge(file)) {
+      setError(t.gifTooLarge);
       return false;
     }
     setBusy(true);
@@ -597,6 +601,8 @@ export function CodexEditor({ id }: { id: string }) {
               >
                 <option value="playing">{strings.codex.categories.playing}</option>
                 <option value="industry">{strings.codex.categories.industry}</option>
+                <option value="roles">{strings.codex.categories.roles}</option>
+                <option value="people">{strings.codex.categories.people}</option>
               </select>
             </label>
           )}
