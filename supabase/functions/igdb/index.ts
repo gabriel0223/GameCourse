@@ -1,4 +1,4 @@
-import { createClient } from 'npm:@supabase/supabase-js@2.45.4';
+import { isUserToken } from './auth.ts';
 import { rankGames } from './rank.ts';
 
 const CLIENT_ID = Deno.env.get('TWITCH_CLIENT_ID') ?? '';
@@ -7,7 +7,15 @@ const ALLOWED_ORIGIN = Deno.env.get('APP_ORIGIN') ?? 'https://gabriel0223.github
 const CACHE_DAYS = 7;
 const SEARCH_RESULTS = 24;
 
-const db = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
+// Plain requests instead of the Supabase library, because this function starts
+// fresh on most requests and loading that library slows every start.
+const CACHE_URL = `${Deno.env.get('SUPABASE_URL') ?? ''}/rest/v1/igdb_cache`;
+const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+const cacheHeaders = {
+  apikey: SERVICE_KEY,
+  Authorization: `Bearer ${SERVICE_KEY}`,
+  'Content-Type': 'application/json',
+};
 
 const cors = {
   'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
@@ -90,12 +98,39 @@ function toGame(game: IgdbGame) {
   };
 }
 
+// A broken cache only makes things slower, so neither step can fail a request.
+async function readCache<T>(key: string): Promise<T | undefined> {
+  try {
+    const url = `${CACHE_URL}?cache_key=eq.${encodeURIComponent(key)}&select=payload,fetched_at`;
+    const response = await fetch(url, { headers: cacheHeaders });
+    if (!response.ok) throw new Error(`Cache read failed: ${response.status}`);
+    const [row] = await response.json();
+    const fresh = row && Date.now() - new Date(row.fetched_at).getTime() < CACHE_DAYS * 86_400_000;
+    return fresh ? (row.payload as T) : undefined;
+  } catch (error) {
+    console.error(error);
+    return undefined;
+  }
+}
+
+async function writeCache(key: string, payload: unknown): Promise<void> {
+  try {
+    const response = await fetch(`${CACHE_URL}?on_conflict=cache_key`, {
+      method: 'POST',
+      headers: { ...cacheHeaders, Prefer: 'resolution=merge-duplicates,return=minimal' },
+      body: JSON.stringify({ cache_key: key, payload, fetched_at: new Date().toISOString() }),
+    });
+    if (!response.ok) throw new Error(`Cache write failed: ${response.status}`);
+  } catch (error) {
+    console.error(error);
+  }
+}
+
 async function cached<T>(key: string, load: () => Promise<T>): Promise<T> {
-  const { data } = await db.from('igdb_cache').select('payload, fetched_at').eq('cache_key', key).maybeSingle();
-  const fresh = data && Date.now() - new Date(data.fetched_at).getTime() < CACHE_DAYS * 86_400_000;
-  if (fresh) return data.payload as T;
+  const saved = await readCache<T>(key);
+  if (saved !== undefined) return saved;
   const payload = await load();
-  await db.from('igdb_cache').upsert({ cache_key: key, payload, fetched_at: new Date().toISOString() });
+  await writeCache(key, payload);
   return payload;
 }
 
@@ -106,9 +141,9 @@ function quote(text: string): string {
 // IGDB's search is fuzzy and can miss an exact title, so a title lookup runs beside it.
 // One lookup can fail and search still works, but a partial result is never cached.
 async function searchGames(text: string) {
-  const key = `search2:${text.toLowerCase()}`;
-  const { data } = await db.from('igdb_cache').select('payload, fetched_at').eq('cache_key', key).maybeSingle();
-  if (data && Date.now() - new Date(data.fetched_at).getTime() < CACHE_DAYS * 86_400_000) return data.payload;
+  const key = `search3:${text.toLowerCase()}`;
+  const saved = await readCache<unknown>(key);
+  if (saved !== undefined) return saved;
 
   const lookups = await Promise.allSettled([
     igdb(
@@ -122,25 +157,15 @@ async function searchGames(text: string) {
   if (found.length === 0) throw new Error('Both IGDB lookups failed');
 
   const payload = rankGames(found, text, SEARCH_RESULTS).map(toGame);
-  if (found.length === lookups.length) {
-    await db.from('igdb_cache').upsert({ cache_key: key, payload, fetched_at: new Date().toISOString() });
-  }
+  if (found.length === lookups.length) await writeCache(key, payload);
   return payload;
-}
-
-// The anon key is public, so a valid key alone doesn't prove it's a real user.
-async function isSignedIn(request: Request): Promise<boolean> {
-  const jwt = request.headers.get('Authorization')?.replace(/^Bearer\s+/i, '');
-  if (!jwt) return false;
-  const { data, error } = await db.auth.getUser(jwt);
-  return !error && Boolean(data.user);
 }
 
 Deno.serve(async (request) => {
   if (request.method === 'OPTIONS') return new Response('ok', { headers: cors });
 
   try {
-    if (!(await isSignedIn(request))) {
+    if (!isUserToken(request.headers.get('Authorization'))) {
       return new Response(JSON.stringify({ error: 'Sign in required' }), {
         status: 401,
         headers: { ...cors, 'Content-Type': 'application/json' },

@@ -2,7 +2,7 @@ import { useEffect, useId, useState } from 'react';
 import type { CSSProperties, FormEvent } from 'react';
 import { Cover } from '../components/GameCard';
 import { Star } from '../components/Star';
-import { catalog } from '../data';
+import { catalog, seenGame } from '../data';
 import { GENRE_COLORS, pickGenres } from '../domain/genres';
 import type { Game, LibraryEntry } from '../domain/types';
 import { XP_PER_HOUR, entryMinutes } from '../domain/xp';
@@ -175,13 +175,13 @@ function RatingPicker({ entry }: { entry: LibraryEntry }) {
 function CriticScore({ score, reviews }: { score: number; reviews?: number | null }) {
   const band = score >= 75 ? 'high' : score >= 50 ? 'mid' : 'low';
   return (
-    <span className="critic">
-      <span className={`critic-score critic-${band}`}>{score}</span>
-      <span>
-        {t.criticLabel}
-        {reviews ? <span className="critic-reviews"> · {t.criticReviews(reviews)}</span> : null}
-      </span>
-    </span>
+    <div>
+      <dt>{t.criticLabel}</dt>
+      <dd className="critic">
+        <span className={`critic-score critic-${band}`}>{score}</span>
+        {reviews ? <span className="critic-reviews">{t.criticReviews(reviews)}</span> : null}
+      </dd>
+    </div>
   );
 }
 
@@ -273,16 +273,17 @@ function History({ entry }: { entry: LibraryEntry }) {
 export function GameView({ id }: { id: string }) {
   const { find, loading } = useLibrary();
   const entry = find(id);
-  const [fetched, setFetched] = useState<Game | null | undefined>(undefined);
+  const [fetched, setFetched] = useState<Game | null | undefined>(() => seenGame(id));
 
   useEffect(() => {
     let current = true;
-    setFetched(undefined);
-    // Saved games need this too, because their copy can be older than the critic score.
+    setFetched(seenGame(id));
+    // The page shows what's already known, and this fills in anything newer.
+    // Saved games need it too, because their copy can be older than the critic score.
     catalog
       .get(id)
-      .then((game) => current && setFetched(game))
-      .catch(() => current && setFetched(null));
+      .then((game) => current && setFetched((known) => game ?? known ?? null))
+      .catch(() => current && setFetched((known) => known ?? null));
     return () => {
       current = false;
     };
@@ -321,18 +322,13 @@ export function GameView({ id }: { id: string }) {
             </p>
             <h1>{game.name}</h1>
             {game.summary && <p className="summary">{game.summary}</p>}
-            {(entry || critic.criticScore) && (
+            {entry && (
               <p className="game-state">
-                {critic.criticScore ? (
-                  <CriticScore score={critic.criticScore} reviews={critic.criticReviews} />
-                ) : null}
-                {entry && <span className={`status-badge status-${entry.status}`}>{strings.lists[entry.status]}</span>}
-                {entry && (
-                  <span>
-                    {t.played} <strong>{formatDuration(entryMinutes(entry))}</strong>
-                  </span>
-                )}
-                {entry?.status === 'finished' && entry.rating && (
+                <span className={`status-badge status-${entry.status}`}>{strings.lists[entry.status]}</span>
+                <span>
+                  {t.played} <strong>{formatDuration(entryMinutes(entry))}</strong>
+                </span>
+                {entry.status === 'finished' && entry.rating && (
                   <span className="game-state-rating" aria-label={`${t.ratingTitle}: ${t.ratingValue(entry.rating)}`}>
                     <Star />
                     <strong>{entry.rating}</strong>
@@ -352,6 +348,7 @@ export function GameView({ id }: { id: string }) {
         </div>
         <aside className="game-details">
           <dl className="facts">
+            {critic.criticScore ? <CriticScore score={critic.criticScore} reviews={critic.criticReviews} /> : null}
             <Fact label={t.released} values={game.year ? [game.year] : []} />
             <Fact label={t.developer} values={game.developers} />
             <Fact label={t.publisher} values={game.publishers} />

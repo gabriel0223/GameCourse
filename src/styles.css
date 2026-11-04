@@ -787,10 +787,11 @@ input[aria-invalid='true'] {
   height: 16px;
 }
 
-.critic {
-  display: inline-flex;
+.facts .critic {
+  display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+  margin-top: 4px;
 }
 
 .critic-score {
