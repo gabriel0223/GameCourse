@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import type { CodexEntry, CodexImage, CodexSection } from '../content/codex';
 import type { WardrobeGenre } from '../domain/genres';
-import type { Game, GameLookup, GameStatus, LibraryEntry, PlaySession } from '../domain/types';
+import type { Game, GameDetails, GameLookup, GameStatus, LibraryEntry, PlaySession } from '../domain/types';
 import type { CharacterProfile } from '../domain/wardrobe';
 import type { CodexStore, GameCatalog, LibraryStore } from './ports';
 
@@ -164,5 +164,6 @@ export const igdbCatalog: GameCatalog = {
   suggestions: () => callIgdb<Game[]>('suggestions', { action: 'suggestions' }),
   search: (query) => callIgdb<Game[]>(searchKey(query), { action: 'search', query }),
   get: (id) => callIgdb<Game | null>(`game2:${id}`, { action: 'game', id }),
+  details: (id) => callIgdb<GameDetails | null>(`details1:${id}`, { action: 'details', id }),
   lookup: (games) => callIgdb<Array<Game | null>>(lookupKey(games), { action: 'lookup', games }),
 };

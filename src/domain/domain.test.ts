@@ -1,3 +1,4 @@
+import { formatPlaytime } from '../format';
 import { describe, expect, it } from 'vitest';
 import { pickGenres, pickMainGenre } from './genres';
 import { changeStatus, logSession, newEntry, rateGame, removeSession } from './library';
@@ -120,5 +121,14 @@ describe('rating', () => {
   it('gives no XP', () => {
     const entry = newEntry(game, 'finished', NOW);
     expect(entryXp(rateGame(entry, 10, NOW))).toBe(entryXp(entry));
+  });
+});
+
+describe('formatPlaytime', () => {
+  it('rounds long games to the hour and short ones to five minutes', () => {
+    expect(formatPlaytime(12.4 * 3600)).toBe('12h');
+    expect(formatPlaytime(12.6 * 3600)).toBe('13h');
+    expect(formatPlaytime(32 * 60)).toBe('30m');
+    expect(formatPlaytime(60)).toBe('5m');
   });
 });

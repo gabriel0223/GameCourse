@@ -5,6 +5,13 @@ export function formatDuration(totalMinutes: number): string {
   return minutes === 0 ? `${hours}h` : `${hours}h ${minutes}m`;
 }
 
+// Players' reports are rough, so minutes would promise too much past the first hour.
+export function formatPlaytime(seconds: number): string {
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 60) return formatDuration(Math.max(5, Math.round(minutes / 5) * 5));
+  return formatDuration(Math.round(minutes / 60) * 60);
+}
+
 export function formatDay(day: string): string {
   const [year, month, date] = day.split('-').map(Number);
   return new Date(year, month - 1, date).toLocaleDateString('en', {

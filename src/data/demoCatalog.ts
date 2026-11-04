@@ -69,6 +69,15 @@ export const demoCatalog: GameCatalog = {
     const [criticScore, criticReviews] = SAMPLE_CRITICS[id] ?? [null, null];
     return { ...found, criticScore, criticReviews };
   },
+  async details(id) {
+    if (!GAMES.some((item) => item.id === id)) return null;
+    return {
+      screenshots: [],
+      artworks: [],
+      similar: GAMES.filter((item) => item.id !== id).slice(0, 6),
+      timeToBeat: { hastily: 8 * 3600, normally: 14 * 3600, completely: 31 * 3600 },
+    };
+  },
   async lookup(games) {
     return games.map(({ name }) => GAMES.find((item) => item.name.toLowerCase() === name.toLowerCase()) ?? null);
   },

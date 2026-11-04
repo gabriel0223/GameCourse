@@ -1,12 +1,13 @@
 import { useEffect, useId, useState } from 'react';
 import type { CSSProperties, FormEvent } from 'react';
-import { Cover } from '../components/GameCard';
+import { Cover, GameCard } from '../components/GameCard';
+import { ImageGallery } from '../components/ImageGallery';
 import { Star } from '../components/Star';
 import { catalog, seenGame } from '../data';
 import { GENRE_COLORS, pickGenres } from '../domain/genres';
-import type { Game, LibraryEntry } from '../domain/types';
+import type { Game, GameDetails, LibraryEntry, TimeToBeat } from '../domain/types';
 import { XP_PER_HOUR, entryMinutes } from '../domain/xp';
-import { formatDay, formatDuration, todayLocal } from '../format';
+import { formatDay, formatDuration, formatPlaytime, todayLocal } from '../format';
 import { useLibrary } from '../state/LibraryContext';
 import { strings } from '../strings';
 import { getPreviousHash } from '../useHashRoute';
@@ -15,12 +16,35 @@ const t = strings.game;
 const QUICK_MINUTES = [15, 30, 60, 120];
 const MINUTE_STEP = 15;
 const RATINGS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+const SIMILAR_SHOWN = 6;
 
 function Fact({ label, values }: { label: string; values: Array<string | number> }) {
   return (
     <div>
       <dt>{label}</dt>
       <dd>{values.length > 0 ? values.join(', ') : t.unknown}</dd>
+    </div>
+  );
+}
+
+function BeatTime({ times }: { times: TimeToBeat }) {
+  const rows: Array<[string, number | null]> = [
+    [t.beatRushed, times.hastily],
+    [t.beatNormal, times.normally],
+    [t.beatComplete, times.completely],
+  ];
+  return (
+    <div>
+      <dt>{t.timeToBeat}</dt>
+      <dd className="beat-times">
+        {rows.map(([label, seconds]) =>
+          seconds ? (
+            <span key={label}>
+              {label} <strong>{formatPlaytime(seconds)}</strong>
+            </span>
+          ) : null,
+        )}
+      </dd>
     </div>
   );
 }
@@ -274,16 +298,23 @@ export function GameView({ id }: { id: string }) {
   const { find, loading } = useLibrary();
   const entry = find(id);
   const [fetched, setFetched] = useState<Game | null | undefined>(() => seenGame(id));
+  const [details, setDetails] = useState<GameDetails | null>(null);
 
   useEffect(() => {
     let current = true;
     setFetched(seenGame(id));
+    setDetails(null);
     // The page shows what's already known, and this fills in anything newer.
     // Saved games need it too, because their copy can be older than the critic score.
     catalog
       .get(id)
       .then((game) => current && setFetched((known) => game ?? known ?? null))
       .catch(() => current && setFetched((known) => known ?? null));
+    // Everything this adds is optional, so the page simply goes without it on a failure.
+    catalog
+      .details(id)
+      .then((found) => current && setDetails(found))
+      .catch(() => undefined);
     return () => {
       current = false;
     };
@@ -349,6 +380,7 @@ export function GameView({ id }: { id: string }) {
         <aside className="game-details">
           <dl className="facts">
             {critic.criticScore ? <CriticScore score={critic.criticScore} reviews={critic.criticReviews} /> : null}
+            {details?.timeToBeat && <BeatTime times={details.timeToBeat} />}
             <Fact label={t.released} values={game.year ? [game.year] : []} />
             <Fact label={t.developer} values={game.developers} />
             <Fact label={t.publisher} values={game.publishers} />
@@ -356,6 +388,22 @@ export function GameView({ id }: { id: string }) {
             <Fact label={t.igdbGenres} values={game.genres} />
           </dl>
         </aside>
+        {details && details.screenshots.length > 0 && (
+          <ImageGallery title={t.screenshots} game={game.name} images={details.screenshots} />
+        )}
+        {details && details.artworks.length > 0 && (
+          <ImageGallery title={t.artwork} game={game.name} images={details.artworks} />
+        )}
+        {details && details.similar.length > 0 && (
+          <section className="game-extra">
+            <h2>{t.similar}</h2>
+            <div className="game-grid">
+              {details.similar.slice(0, SIMILAR_SHOWN).map((item) => (
+                <GameCard key={item.id} game={item} entry={find(item.id)} />
+              ))}
+            </div>
+          </section>
+        )}
       </div>
     </main>
   );

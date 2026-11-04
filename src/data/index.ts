@@ -24,6 +24,11 @@ export const catalog: GameCatalog = {
       if (game) seen.set(id, game);
       return game;
     }),
+  details: (id) =>
+    source.details(id).then((details) => {
+      if (details) remember(details.similar);
+      return details;
+    }),
   lookup: (games) =>
     source.lookup(games).then((found) => {
       remember(found.filter((game) => game !== null));

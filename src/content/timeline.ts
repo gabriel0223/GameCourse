@@ -81,7 +81,7 @@ export const TIMELINE_ENTRIES: CodexEntry[] = [
     ],
     games: [
       { name: 'Pong', year: 1972 },
-      { name: 'Table Tennis', year: 1972 },
+      { name: 'Tennis on the Magnavox Odyssey' },
       { name: 'Home Pong variations' },
     ],
   }),

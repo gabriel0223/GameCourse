@@ -32,8 +32,27 @@ const FIELDS =
 
 const SEARCH_FIELDS = `${FIELDS},total_rating_count,version_parent,game_type`;
 
+const IMAGE_FIELDS = ['image_id', 'width', 'height'];
+const DETAIL_FIELDS = [
+  ...IMAGE_FIELDS.map((field) => `screenshots.${field}`),
+  ...IMAGE_FIELDS.map((field) => `artworks.${field}`),
+  ...FIELDS.split(',').map((field) => `similar_games.${field}`),
+].join(',');
+
 interface IgdbName {
   name: string;
+}
+
+interface IgdbImage {
+  image_id: string;
+  width?: number;
+  height?: number;
+}
+
+interface IgdbTimeToBeat {
+  hastily?: number;
+  normally?: number;
+  completely?: number;
 }
 
 interface IgdbGame {
@@ -51,6 +70,9 @@ interface IgdbGame {
   total_rating_count?: number;
   version_parent?: number;
   game_type?: number;
+  screenshots?: IgdbImage[];
+  artworks?: IgdbImage[];
+  similar_games?: IgdbGame[];
 }
 
 const isLookup = (item: unknown): item is GameLookup => {
@@ -73,8 +95,8 @@ async function accessToken(): Promise<string> {
   return token.value;
 }
 
-async function igdb(query: string): Promise<IgdbGame[]> {
-  const response = await fetch('https://api.igdb.com/v4/games', {
+async function igdb<T = IgdbGame>(query: string, endpoint = 'games'): Promise<T[]> {
+  const response = await fetch(`https://api.igdb.com/v4/${endpoint}`, {
     method: 'POST',
     headers: { 'Client-ID': CLIENT_ID, Authorization: `Bearer ${await accessToken()}` },
     body: query,
@@ -102,6 +124,23 @@ function toGame(game: IgdbGame) {
     coverUrl: game.cover ? `https:${game.cover.url.replace('t_thumb', 't_cover_big')}` : null,
     criticScore: game.aggregated_rating ? Math.round(game.aggregated_rating) : null,
     criticReviews: game.aggregated_rating_count ?? null,
+  };
+}
+
+function toImages(list?: IgdbImage[]) {
+  return (list ?? []).map((image) => ({
+    id: image.image_id,
+    width: image.width ?? null,
+    height: image.height ?? null,
+  }));
+}
+
+function toTimeToBeat(times?: IgdbTimeToBeat) {
+  if (!times?.hastily && !times?.normally && !times?.completely) return null;
+  return {
+    hastily: times.hastily ?? null,
+    normally: times.normally ?? null,
+    completely: times.completely ?? null,
   };
 }
 
@@ -188,6 +227,31 @@ async function lookupGames(lookups: GameLookup[]) {
   });
 }
 
+// Time to beat is a separate IGDB endpoint. The page is still useful without it,
+// so it can fail on its own, but a partial answer is never cached.
+async function gameDetails(id: string) {
+  const key = `details1:${id}`;
+  const saved = await readCache<unknown>(key);
+  if (saved !== undefined) return saved;
+
+  const [game, times] = await Promise.allSettled([
+    igdb(`fields ${DETAIL_FIELDS}; where id = ${id}; limit 1;`),
+    igdb<IgdbTimeToBeat>(`fields hastily,normally,completely; where game_id = ${id}; limit 1;`, 'game_time_to_beats'),
+  ]);
+  if (game.status === 'rejected') throw game.reason;
+  if (times.status === 'rejected') console.error(times.reason);
+
+  const found = game.value[0];
+  const payload = found && {
+    screenshots: toImages(found.screenshots),
+    artworks: toImages(found.artworks),
+    similar: (found.similar_games ?? []).map(toGame),
+    timeToBeat: times.status === 'fulfilled' ? toTimeToBeat(times.value[0]) : null,
+  };
+  if (times.status === 'fulfilled') await writeCache(key, payload ?? null);
+  return payload ?? null;
+}
+
 Deno.serve(async (request) => {
   if (request.method === 'OPTIONS') return new Response('ok', { headers: cors });
 
@@ -209,6 +273,8 @@ Deno.serve(async (request) => {
         const games = await igdb(`fields ${FIELDS}; where id = ${id}; limit 1;`);
         return games[0] ? toGame(games[0]) : null;
       });
+    } else if (action === 'details' && /^\d+$/.test(String(id))) {
+      result = await gameDetails(String(id));
     } else if (
       action === 'lookup' &&
       Array.isArray(games) &&

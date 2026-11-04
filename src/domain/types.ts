@@ -18,6 +18,27 @@ export interface Game {
   criticReviews?: number | null;
 }
 
+export interface GameImage {
+  id: string;
+  width: number | null;
+  height: number | null;
+}
+
+// Seconds, from players' reports. A game can have any mix of these, or none.
+export interface TimeToBeat {
+  hastily: number | null;
+  normally: number | null;
+  completely: number | null;
+}
+
+// Loaded with a game's page, not saved in her library.
+export interface GameDetails {
+  screenshots: GameImage[];
+  artworks: GameImage[];
+  similar: Game[];
+  timeToBeat: TimeToBeat | null;
+}
+
 // A game named in the Codex. The year tells it apart from remakes.
 export interface GameLookup {
   name: string;
