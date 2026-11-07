@@ -33,6 +33,7 @@ import { SearchView } from './views/SearchView';
 
 // The 3D engine is large, so it only loads when this game opens.
 const JetView = lazy(() => import('./views/JetView').then((module) => ({ default: module.JetView })));
+const CupidView = lazy(() => import('./views/CupidView').then((module) => ({ default: module.CupidView })));
 
 function PlayerCard() {
   const { gamer, profile } = useLibrary();
@@ -123,6 +124,13 @@ function Screens({ route }: { route: Route }) {
   }
   if (route.view === 'practice') {
     if (route.game === 'runner') return <RunnerView />;
+    if (route.game === 'cupid') {
+      return (
+        <Suspense fallback={<main className="page" aria-busy="true" />}>
+          <CupidView />
+        </Suspense>
+      );
+    }
     if (route.game === 'jet') {
       return (
         <Suspense fallback={<main className="page" aria-busy="true" />}>

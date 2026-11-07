@@ -65,3 +65,30 @@ export function jetControls(scheme: JetScheme): ControlGuide {
     tip: a.padTip,
   };
 }
+
+export function cupidControls(scheme: JetScheme): ControlGuide {
+  const a = t.cupid;
+  if (scheme === 'mouse') {
+    return {
+      rows: [
+        row(a.move, 'W', 'A', 'S', 'D'),
+        row(a.aim, 'Mouse'),
+        row(a.draw, 'Hold left mouse'),
+        row(a.dash, 'Space', 'Right mouse'),
+        row(t.pause, t.keyPause),
+      ],
+      tip: a.mouseTip,
+    };
+  }
+  const xbox = scheme === 'xbox';
+  return {
+    rows: [
+      row(a.move, 'Left stick'),
+      row(a.aim, 'Right stick'),
+      row(a.draw, `Hold ${xbox ? 'RT' : 'R2'}`, xbox ? 'RB' : 'R1'),
+      row(a.dash, xbox ? 'LB' : 'L1', xbox ? 'LT' : 'L2'),
+      row(t.pause, t.padPause[xbox ? 'xbox' : 'playstation']),
+    ],
+    tip: a.padTip,
+  };
+}

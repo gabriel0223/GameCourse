@@ -35,7 +35,7 @@ const SAMPLE: Friend = {
     changedHair: true,
     readEntries: ['genre-rpg', 'genre-platformer', 'playing-dualsense'],
     quizzes: { 'crash-and-comeback': { best: 9, total: 10, attempts: 1, passed: true } },
-    practice: { ...DEFAULT_PROFILE.practice, runs: 14, xp: 90, bests: { runner: 67, jet: 12 } },
+    practice: { ...DEFAULT_PROFILE.practice, runs: 14, xp: 90, bests: { runner: 67, jet: 12, cupid: 1480 } },
   },
   entries: [
     entry('stardew', 'playing', 22, null, 1),

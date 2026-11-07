@@ -48,8 +48,8 @@ export function applyRun(record: PracticeRecord, run: FinishedRun, day: string):
     return { practice: record, reward: { xp: 0, newBest: false, limitReached: false, best: oldBest, previousBest: oldBest } };
   }
   const dayXp = record.day === day ? record.dayXp : 0;
-  // Shooting down a drone takes far longer than clearing a prompt.
-  const earned = run.game === 'jet' ? run.score * 3 : Math.ceil(run.score / 2);
+  // Shooting down a drone takes far longer than clearing a prompt, and Love Attack scores in the hundreds.
+  const earned = run.game === 'jet' ? run.score * 3 : run.game === 'cupid' ? Math.ceil(run.score / 60) : Math.ceil(run.score / 2);
   const wanted = Math.min(RUN_XP_CAP, earned);
   const xp = Math.min(wanted, DAILY_PRACTICE_XP - dayXp);
   const best = Math.max(oldBest, run.score);

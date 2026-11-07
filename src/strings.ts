@@ -195,6 +195,16 @@ export const strings = {
           'It starts with the four main buttons, then adds more as your score grows, and it gets faster the whole way. See how far you can go, then try to beat your best score.',
         ],
       },
+      cupid: {
+        title: 'Love Attack',
+        skill: 'Moving and aiming at the same time',
+        summary: 'Turn grumpy clouds happy with a heart bow.',
+        about: [
+          'Most action games ask your thumbs to do two jobs at once: one stick moves you, and the other aims. Keeping them apart, so walking doesn’t pull your aim and aiming doesn’t stop your feet, is one of the hardest things for new players.',
+          'Grumpy clouds float into the arena and try to bump into you. Hold R2 to draw your heart bow and let go to shoot. A quick tap shoots fast but weak, and a full draw flies faster, hits harder, and goes right through a crowd. You walk slower while drawing, so pick your moment.',
+          'Popping clouds in a row raises your combo and multiplies your points, and a miss resets the progress toward the next step. Getting bumped costs a heart and the whole combo. Dash through danger with L1, since you can’t be hurt mid-dash.',
+        ],
+      },
       jet: {
         title: 'Sunset Ace',
         skill: 'Moving and tracking targets in 3D',
@@ -205,6 +215,34 @@ export const strings = {
           'If a red warning appears, a missile is chasing you. Wait until it’s close, then bank hard and pull away. One hit ends the flight, and so does the water. Every drone you shoot down adds to your score.',
         ],
       },
+    },
+    cupid: {
+      start: 'Start',
+      canvasLabel: 'Love Attack game',
+      wave: (wave: number) => `Wave ${wave}`,
+      firstWave: 'Make the grumpy clouds happy',
+      cleared: 'Wave clear!',
+      healed: '+1 heart',
+      full: 'FULL',
+      go: 'Go!',
+      getReady: 'Get ready',
+      best: (score: number) => `Best ${score}`,
+      mouseNote: 'Your mouse aims. Hold the left button to draw the bow, and let go to shoot.',
+      hintsOption: 'Show control reminders',
+      prototype: 'Prototype',
+      schemes: {
+        playstation: { name: 'PlayStation', summary: 'Left stick moves, right stick aims, and R2 draws the bow.' },
+        xbox: { name: 'Xbox', summary: 'The same layout with RT. Works on a DualSense too.' },
+        mouse: { name: 'Mouse and keyboard', summary: 'WASD moves, the mouse aims, and the left button draws.' },
+      },
+      hints: {
+        playstation: 'Left stick move  ·  Right stick aim  ·  Hold R2 draw, let go shoot  ·  L1 dash  ·  Options controls',
+        xbox: 'Left stick move  ·  Right stick aim  ·  Hold RT draw, let go shoot  ·  LB dash  ·  Menu controls',
+        mouse: 'WASD move  ·  Mouse aim  ·  Hold left click draw, let go shoot  ·  Space dash  ·  Esc controls',
+      },
+      wavesReached: 'Wave reached',
+      bestCombo: 'Best combo',
+      accuracy: 'Accuracy %',
     },
     jet: {
       start: 'Take off',
@@ -244,6 +282,14 @@ export const strings = {
       runner: {
         obstacle: 'Press what’s on each obstacle',
         fromScore: (score: number) => `Added at score ${score}`,
+      },
+      cupid: {
+        move: 'Move',
+        aim: 'Aim',
+        draw: 'Draw the bow, then let go to shoot',
+        dash: 'Dash (you can’t be hurt mid-dash)',
+        padTip: 'Keep your right thumb on the stick and your aim follows it. Let go of the stick and your aim stays where it was.',
+        mouseTip: 'Point the mouse where you want to shoot. You don’t need to click on the clouds, just aim and let go.',
       },
       jet: {
         pitch: 'Nose up and down',

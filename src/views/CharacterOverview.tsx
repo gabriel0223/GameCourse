@@ -96,6 +96,7 @@ function Journey() {
             { label: t.stats.runs, value: String(profile.practice.runs) },
             { label: strings.practice.games.runner.title, value: score('runner') },
             { label: strings.practice.games.jet.title, value: score('jet') },
+            { label: strings.practice.games.cupid.title, value: score('cupid') },
           ]}
         />
       </div>

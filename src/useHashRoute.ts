@@ -80,6 +80,7 @@ export const hrefs = {
   practice: '#/practice',
   runner: '#/practice/runner',
   jet: '#/practice/jet',
+  cupid: '#/practice/cupid',
   codex: '#/codex',
   codexEntry: (id: string) => `#/codex/${encodeURIComponent(id)}`,
   codexEdit: (id: string) => `#/codex/${encodeURIComponent(id)}/edit`,

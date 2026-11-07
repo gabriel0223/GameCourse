@@ -2786,6 +2786,11 @@ a.practice-card:focus-visible {
   pointer-events: none;
 }
 
+.cupid-mouse,
+.cupid-mouse canvas {
+  cursor: none;
+}
+
 .controls-guide {
   grid-column: 1 / -1;
   padding: 16px 18px;

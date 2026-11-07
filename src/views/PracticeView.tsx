@@ -1,3 +1,4 @@
+import cupidPicture from '../assets/practice/cupid.png';
 import jetPicture from '../assets/practice/jet.png';
 import runnerPicture from '../assets/practice/runner.png';
 import { FriendBests } from '../components/FriendBits';
@@ -10,6 +11,7 @@ const t = strings.practice;
 const GAMES = [
   { id: 'runner', href: hrefs.runner, picture: runnerPicture, ...t.games.runner },
   { id: 'jet', href: hrefs.jet, picture: jetPicture, ...t.games.jet },
+  { id: 'cupid', href: hrefs.cupid, picture: cupidPicture, ...t.games.cupid },
 ];
 
 export function PracticeView() {
