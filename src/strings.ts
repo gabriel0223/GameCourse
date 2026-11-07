@@ -230,6 +230,8 @@ export const strings = {
       mouseNote: 'Your mouse aims. Hold the left button to draw the bow, and let go to shoot.',
       hintsOption: 'Show control reminders',
       prototype: 'Prototype',
+      playAs: 'Play as',
+      heroes: { bear: 'White bear', self: 'Your character' },
       schemes: {
         playstation: { name: 'PlayStation', summary: 'Left stick moves, right stick aims, and R2 draws the bow.' },
         xbox: { name: 'Xbox', summary: 'The same layout with RT. Works on a DualSense too.' },

@@ -19,6 +19,7 @@ import { cupidControls } from '../practice/controls';
 import { PAD_PAUSE } from '../practice/devices';
 import { PadReader, usePadConfirm, usePadStatus } from '../practice/gamepad';
 import { loadVolume, saveVolume } from '../practice/jetAudio';
+import bearSprite from '../assets/practice/bear.png';
 import { useLibrary } from '../state/LibraryContext';
 import { strings } from '../strings';
 import { hrefs } from '../useHashRoute';
@@ -28,13 +29,18 @@ const game = t.games.cupid;
 const GAME_ID = 'cupid';
 const SCHEMES: CupidScheme[] = ['playstation', 'xbox', 'mouse'];
 
+type Hero = 'bear' | 'self';
+const HEROES: Hero[] = ['bear', 'self'];
+
 // Remembered for the visit, so a new run keeps the same setup.
 let lastScheme: CupidScheme = 'playstation';
 let lastHints = true;
+let lastHero: Hero = 'bear';
 
 interface Setup {
   scheme: CupidScheme;
   hints: boolean;
+  hero: Hero;
 }
 
 interface Finished {
@@ -60,14 +66,18 @@ function ArenaStage({ setup, onFinish }: { setup: Setup; onFinish(result: Finish
   const bestAtStart = useRef(bestScore(profile.practice, GAME_ID));
 
   // Her outfit is read once, so a run keeps one look from start to finish.
-  const layerNames = useRef(
-    [
+  const layerUrls = useRef(
+    setup.hero === 'bear'
+      ? [bearSprite]
+      : [
       `base-${profile.skin}`,
       gamer.equipped.bottom?.id,
       gamer.equipped.top?.id,
       `hair-${profile.hairStyle}-${profile.hairColor}`,
       gamer.equipped.accessory?.id,
-    ].filter((name): name is string => Boolean(name && spriteUrl(name))),
+        ]
+          .filter((name): name is string => Boolean(name && spriteUrl(name)))
+          .map(spriteUrl),
   );
 
   useEffect(() => {
@@ -79,9 +89,9 @@ function ArenaStage({ setup, onFinish }: { setup: Setup; onFinish(result: Finish
     overlay.height = HUD_H * 2;
     context.scale(2, 2);
 
-    const layers = layerNames.current.map((name) => {
+    const layers = layerUrls.current.map((url) => {
       const image = new Image();
-      image.src = spriteUrl(name);
+      image.src = url;
       return image;
     });
     const scene = createCupidScene(element, layers);
@@ -285,6 +295,7 @@ function SetupPanel({ onStart }: { onStart(setup: Setup): void }) {
   const { profile } = useLibrary();
   const [scheme, setScheme] = useState(lastScheme);
   const [hints, setHints] = useState(lastHints);
+  const [hero, setHero] = useState(lastHero);
   const [volume, setVolume] = useState(loadVolume);
   const pad = usePadStatus();
   const usesPad = scheme !== 'mouse';
@@ -293,8 +304,9 @@ function SetupPanel({ onStart }: { onStart(setup: Setup): void }) {
   const start = useCallback(() => {
     lastScheme = scheme;
     lastHints = hints;
-    onStart({ scheme, hints });
-  }, [hints, onStart, scheme]);
+    lastHero = hero;
+    onStart({ scheme, hints, hero });
+  }, [hero, hints, onStart, scheme]);
   usePadConfirm(usesPad && pad.connected, start);
 
   let note: string = t.cupid.mouseNote;
@@ -340,6 +352,15 @@ function SetupPanel({ onStart }: { onStart(setup: Setup): void }) {
         <p className="runner-status" role="status" data-ready={ready}>
           {note}
         </p>
+        <fieldset className="cupid-hero">
+          <legend>{t.cupid.playAs}</legend>
+          {HEROES.map((item) => (
+            <label className="check-field" key={item}>
+              <input type="radio" name="cupid-hero" checked={hero === item} onChange={() => setHero(item)} />
+              {t.cupid.heroes[item]}
+            </label>
+          ))}
+        </fieldset>
         <label className="check-field">
           <input type="checkbox" checked={hints} onChange={(event) => setHints(event.target.checked)} />
           {t.cupid.hintsOption}

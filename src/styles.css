@@ -2791,6 +2791,22 @@ a.practice-card:focus-visible {
   cursor: none;
 }
 
+.cupid-hero {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.cupid-hero legend {
+  margin-bottom: 6px;
+  color: var(--soft);
+  font-size: 13px;
+  font-weight: 700;
+}
+
 .controls-guide {
   grid-column: 1 / -1;
   padding: 16px 18px;
