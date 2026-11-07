@@ -7,6 +7,7 @@ import { GoldAmount } from './components/GoldAmount';
 import { Icon } from './components/Icon';
 import { Sprite } from './components/Sprite';
 import { TopBar } from './components/TopBar';
+import { FriendsProvider } from './state/FriendsContext';
 import { LibraryProvider, useLibrary } from './state/LibraryContext';
 import { strings } from './strings';
 import { GUIDE_CHAPTER_IDS, hrefs, useHashRoute } from './useHashRoute';
@@ -24,6 +25,7 @@ import { QuizView } from './views/QuizView';
 import { ConsolesView } from './views/ConsolesView';
 import { TimelineView } from './views/TimelineView';
 import { LibraryView } from './views/LibraryView';
+import { FriendProfileView, FriendsView } from './views/FriendsView';
 import { PracticeView } from './views/PracticeView';
 import { RunnerView } from './views/RunnerView';
 import { ShopView } from './views/ShopView';
@@ -63,13 +65,14 @@ function Sidebar({ route }: { route: Route }) {
   const onShop = route.view === 'shop';
   const onPractice = route.view === 'practice';
   const onCodex = route.view === 'codex';
+  const onFriends = route.view === 'friends';
   return (
     <aside className="sidebar">
       <a className="brand" href="#/">
         {strings.appName}
       </a>
       <nav className="main-nav" aria-label="Main">
-        <a href="#/" aria-current={onCharacter || onShop || onCodex || onPractice ? undefined : 'page'}>
+        <a href="#/" aria-current={onCharacter || onShop || onCodex || onPractice || onFriends ? undefined : 'page'}>
           <Icon name="library" />
           {strings.nav.library}
         </a>
@@ -88,6 +91,10 @@ function Sidebar({ route }: { route: Route }) {
         <a href={hrefs.practice} aria-current={onPractice ? 'page' : undefined}>
           <Icon name="practice" />
           {strings.nav.practice}
+        </a>
+        <a href={hrefs.friends} aria-current={onFriends ? 'page' : undefined}>
+          <Icon name="friends" />
+          {strings.nav.friends}
         </a>
       </nav>
       <PlayerCard />
@@ -111,6 +118,9 @@ function Toasts() {
 function Screens({ route }: { route: Route }) {
   if (route.view === 'character') return <CharacterView tab={route.tab} slot={route.slot} />;
   if (route.view === 'shop') return <ShopView />;
+  if (route.view === 'friends') {
+    return route.id ? <FriendProfileView id={route.id} tab={route.tab} list={route.list} /> : <FriendsView />;
+  }
   if (route.view === 'practice') {
     if (route.game === 'runner') return <RunnerView />;
     if (route.game === 'jet') {
@@ -184,24 +194,26 @@ function AppShell() {
   const route = useHashRoute();
   return (
     <LibraryProvider>
-      <CodexProvider>
-        <div className="shell">
-          <Sidebar route={route} />
-          <div className="content">
-            {isDemo && <p className="demo-banner">{strings.demoBanner}</p>}
-            <TopBar route={route} />
-            <Screens route={route} />
-            {!isDemo && (
-              <footer className="footer">
-                <span>{strings.igdbCredit}</span>
-                <button className="button button-quiet" type="button" onClick={() => supabase?.auth.signOut()}>
-                  {strings.auth.signOut}
-                </button>
-              </footer>
-            )}
+      <FriendsProvider>
+        <CodexProvider>
+          <div className="shell">
+            <Sidebar route={route} />
+            <div className="content">
+              {isDemo && <p className="demo-banner">{strings.demoBanner}</p>}
+              <TopBar route={route} />
+              <Screens route={route} />
+              {!isDemo && (
+                <footer className="footer">
+                  <span>{strings.igdbCredit}</span>
+                  <button className="button button-quiet" type="button" onClick={() => supabase?.auth.signOut()}>
+                    {strings.auth.signOut}
+                  </button>
+                </footer>
+              )}
+            </div>
           </div>
-        </div>
-      </CodexProvider>
+        </CodexProvider>
+      </FriendsProvider>
       <Toasts />
     </LibraryProvider>
   );

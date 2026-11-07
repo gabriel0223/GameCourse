@@ -3,7 +3,9 @@ import type { CodexEntry, CodexImage, CodexSection } from '../content/codex';
 import type { WardrobeGenre } from '../domain/genres';
 import type { Game, GameDetails, GameLookup, GameStatus, LibraryEntry, PlaySession } from '../domain/types';
 import type { CharacterProfile } from '../domain/wardrobe';
-import type { CodexStore, GameCatalog, LibraryStore } from './ports';
+import type { Friend } from '../domain/friends';
+import { restoreProfile } from '../domain/wardrobe';
+import type { CodexStore, FriendStore, GameCatalog, LibraryStore } from './ports';
 
 const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
@@ -81,6 +83,24 @@ export const supabaseStore: LibraryStore = {
       .from('profiles')
       .upsert({ user_id: auth.user.id, profile, updated_at: new Date().toISOString() });
     if (error) throw error;
+  },
+};
+
+// Both functions skip the signed-in user, so this is everyone else.
+export const supabaseFriends: FriendStore = {
+  async list() {
+    const client = required();
+    const [people, games] = await Promise.all([client.rpc('friend_profiles'), client.rpc('friend_library')]);
+    if (people.error) throw people.error;
+    if (games.error) throw games.error;
+    const friends = new Map<string, Friend>();
+    for (const row of people.data as Array<{ user_id: string; profile: CharacterProfile | null }>) {
+      friends.set(row.user_id, { id: row.user_id, profile: restoreProfile(row.profile), entries: [] });
+    }
+    for (const row of games.data as Array<EntryRow & { user_id: string }>) {
+      friends.get(row.user_id)?.entries.push(toEntry(row));
+    }
+    return [...friends.values()];
   },
 };
 

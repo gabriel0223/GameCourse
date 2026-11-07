@@ -5,10 +5,10 @@ import { deriveGamer } from '../domain/gamer';
 import type { GamerState } from '../domain/gamer';
 import { changeStatus, logSession, newEntry, rateGame, removeSession } from '../domain/library';
 import type { Game, GameStatus, LibraryEntry } from '../domain/types';
-import { applyRun, loadPractice } from '../domain/practice';
+import { applyRun } from '../domain/practice';
 import { applyQuiz } from '../domain/quiz';
 import type { FinishedRun, RunReward } from '../domain/practice';
-import { DEFAULT_PROFILE, PIECES, cleanName } from '../domain/wardrobe';
+import { DEFAULT_PROFILE, PIECES, cleanName, restoreProfile } from '../domain/wardrobe';
 import type { CharacterProfile, Piece, Slot } from '../domain/wardrobe';
 import { strings } from '../strings';
 
@@ -61,9 +61,7 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
     Promise.all([store.list(), store.loadProfile()])
       .then(([savedEntries, savedProfile]) => {
         setEntries(savedEntries);
-        if (savedProfile) {
-          setProfile({ ...DEFAULT_PROFILE, ...savedProfile, practice: loadPractice(savedProfile.practice) });
-        }
+        if (savedProfile) setProfile(restoreProfile(savedProfile));
       })
       .catch(() => setLoadFailed(true))
       .finally(() => setLoading(false));

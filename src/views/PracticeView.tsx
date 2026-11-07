@@ -1,5 +1,6 @@
 import jetPicture from '../assets/practice/jet.png';
 import runnerPicture from '../assets/practice/runner.png';
+import { FriendBests } from '../components/FriendBits';
 import { bestScore } from '../domain/practice';
 import { useLibrary } from '../state/LibraryContext';
 import { strings } from '../strings';
@@ -34,6 +35,7 @@ export function PracticeView() {
                 <span className="practice-best">
                   <small>{t.bestLabel}</small>
                   <b>{bestScore(profile.practice, game.id) || t.noBest}</b>
+                  <FriendBests game={game.id} />
                 </span>
                 <span className="button button-primary">{t.play}</span>
               </span>

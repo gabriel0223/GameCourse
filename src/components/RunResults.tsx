@@ -2,10 +2,12 @@ import { useEffect, useRef } from 'react';
 import type { RunReward } from '../domain/practice';
 import { usePadConfirm } from '../practice/gamepad';
 import { strings } from '../strings';
+import { RivalNote } from './FriendBits';
 
 const t = strings.practice;
 
 interface RunResultsProps {
+  game: string;
   score: number;
   stats: Array<{ label: string; value: number }>;
   reward: RunReward;
@@ -15,7 +17,7 @@ interface RunResultsProps {
   onChange(): void;
 }
 
-export function RunResults({ score, stats, reward, note, usesPad, onAgain, onChange }: RunResultsProps) {
+export function RunResults({ game, score, stats, reward, note, usesPad, onAgain, onChange }: RunResultsProps) {
   usePadConfirm(usesPad, onAgain);
   const again = useRef<HTMLButtonElement>(null);
   useEffect(() => again.current?.focus(), []);
@@ -32,6 +34,7 @@ export function RunResults({ score, stats, reward, note, usesPad, onAgain, onCha
           </div>
         ))}
       </dl>
+      <RivalNote game={game} score={score} previousBest={reward.previousBest} />
       {reward.xp > 0 && <p className="runner-xp">{t.xpEarned(reward.xp)}</p>}
       {score < 1 && <p className="shop-note">{t.noXp}</p>}
       {reward.limitReached && <p className="shop-note">{t.dailyLimit}</p>}

@@ -5,7 +5,7 @@ import { Sprite } from '../components/Sprite';
 import { GENRE_COLORS } from '../domain/genres';
 import { SLOTS } from '../domain/wardrobe';
 import type { Piece, Slot } from '../domain/wardrobe';
-import { useLibrary } from '../state/LibraryContext';
+import { usePlayer } from '../state/PlayerContext';
 import { strings } from '../strings';
 import { hrefs } from '../useHashRoute';
 
@@ -17,7 +17,7 @@ interface CharacterStageProps {
 }
 
 export function CharacterStage({ slot = null, preview = null }: CharacterStageProps) {
-  const { gamer, profile } = useLibrary();
+  const { gamer, profile, friend } = usePlayer();
   const favorite = gamer.stats.favoriteGenre;
   const glow = preview ? GENRE_COLORS[preview.genre] : favorite ? GENRE_COLORS[favorite] : '#8b7cf6';
 
@@ -30,18 +30,26 @@ export function CharacterStage({ slot = null, preview = null }: CharacterStagePr
       <div className="equip-slots">
         {SLOTS.map((item) => {
           const piece = gamer.equipped[item];
+          const label = `${t.slots[item]}: ${piece ? piece.name : t.empty}`;
+          const art = piece ? <PieceArt piece={piece} /> : <span className="tile-empty" />;
           return (
             <div className="equip-slot" key={item} data-slot={item}>
               {t.slots[item]}
-              <a
-                className="tile"
-                aria-label={`${t.slots[item]}: ${piece ? piece.name : t.empty}`}
-                href={hrefs.characterSlot(item)}
-                data-equipped={Boolean(piece)}
-                data-selected={item === slot}
-              >
-                {piece ? <PieceArt piece={piece} /> : <span className="tile-empty" />}
-              </a>
+              {friend ? (
+                <span className="tile" role="img" aria-label={label} title={piece?.name} data-equipped={Boolean(piece)}>
+                  {art}
+                </span>
+              ) : (
+                <a
+                  className="tile"
+                  aria-label={label}
+                  href={hrefs.characterSlot(item)}
+                  data-equipped={Boolean(piece)}
+                  data-selected={item === slot}
+                >
+                  {art}
+                </a>
+              )}
             </div>
           );
         })}

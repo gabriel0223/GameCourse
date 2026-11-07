@@ -7,6 +7,7 @@ import type { IconName } from './Icon';
 import {
   CHARACTER_TABS,
   CODEX_TABS,
+  FRIEND_TABS,
   GUIDE_CHAPTER_IDS,
   codexTabHref,
   goBack,
@@ -16,7 +17,7 @@ import {
   useCodexQuery,
   useHistoryArrows,
 } from '../useHashRoute';
-import type { CharacterTab, CodexTab, Route } from '../useHashRoute';
+import type { CharacterTab, CodexTab, FriendTab, Route } from '../useHashRoute';
 
 const CATEGORY_TABS: Record<CodexCategory, CodexTab> = {
   genres: 'paths',
@@ -102,6 +103,25 @@ function CharacterTabs({ active }: { active: CharacterTab }) {
   );
 }
 
+const FRIEND_ICONS: Record<FriendTab, IconName> = {
+  overview: 'overview',
+  library: 'library',
+  achievements: 'trophy',
+};
+
+function FriendTabs({ id, active }: { id: string; active: FriendTab }) {
+  return (
+    <nav className="tabs codex-tabs" aria-label={strings.friends.sections}>
+      {FRIEND_TABS.map((tab) => (
+        <a key={tab} href={hrefs.friend(id, tab)} aria-current={tab === active ? 'page' : undefined}>
+          <Icon name={FRIEND_ICONS[tab]} />
+          {strings.friends.tabs[tab]}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
 function Arrow({ forward = false }: { forward?: boolean }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -129,6 +149,7 @@ export function TopBar({ route }: { route: Route }) {
         </button>
       </div>
       {route.view === 'character' && <CharacterTabs active={route.tab} />}
+      {route.view === 'friends' && route.id && <FriendTabs id={route.id} active={route.tab} />}
       {route.view === 'codex' && !route.editing && (
         <>
           <CodexTabs id={route.id} path={route.path} />

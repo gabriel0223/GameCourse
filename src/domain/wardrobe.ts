@@ -1,5 +1,5 @@
 import type { WardrobeGenre } from './genres';
-import { NEW_PRACTICE } from './practice';
+import { NEW_PRACTICE, loadPractice } from './practice';
 import type { PracticeRecord } from './practice';
 import type { QuizRecords } from './quiz';
 
@@ -187,3 +187,18 @@ export const DEFAULT_PROFILE: CharacterProfile = {
   quizzes: {},
   practice: NEW_PRACTICE,
 };
+
+// Saves from older versions miss newer fields, so they are filled in with defaults.
+export function restoreProfile(saved: Partial<CharacterProfile> | null | undefined): CharacterProfile {
+  if (!saved) return DEFAULT_PROFILE;
+  return { ...DEFAULT_PROFILE, ...saved, practice: loadPractice(saved.practice) };
+}
+
+// Only pieces she owns can be worn, so a stale save can't show something unbought.
+export function wornPieces(profile: CharacterProfile): Record<Slot, Piece | null> {
+  const worn = (slot: Slot) => {
+    const piece = findPiece(profile.equipped[slot]);
+    return piece && piece.id in profile.owned ? piece : null;
+  };
+  return { accessory: worn('accessory'), top: worn('top'), bottom: worn('bottom') };
+}

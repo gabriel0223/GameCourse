@@ -4,7 +4,7 @@ import { Icon } from '../components/Icon';
 import type { IconName } from '../components/Icon';
 import { ACHIEVEMENT_XP, nextGoals } from '../domain/gamer';
 import type { AchievementGroup } from '../domain/gamer';
-import { useLibrary } from '../state/LibraryContext';
+import { usePlayer } from '../state/PlayerContext';
 import { strings } from '../strings';
 import { hrefs } from '../useHashRoute';
 
@@ -30,7 +30,7 @@ const GOAL_LINKS: Record<AchievementGroup, string> = {
 };
 
 function NextUp() {
-  const { gamer } = useLibrary();
+  const { gamer } = usePlayer();
   const goals = nextGoals(gamer);
   return (
     <section className="character-section achievement-next">
@@ -70,7 +70,7 @@ function NextUp() {
 }
 
 export function AchievementsTab() {
-  const { gamer } = useLibrary();
+  const { gamer, friend } = usePlayer();
   const [filter, setFilter] = useState<Filter>('all');
   const shown = (unlocked: boolean) => filter === 'all' || unlocked === (filter === 'earned');
   const percent = Math.round((gamer.earnedCount / gamer.achievements.length) * 100);
@@ -83,7 +83,7 @@ export function AchievementsTab() {
           <i style={{ width: `${percent}%` }} />
         </span>
       </div>
-      {filter !== 'earned' && <NextUp />}
+      {!friend && filter !== 'earned' && <NextUp />}
       <div className="chips">
         {FILTERS.map((item) => (
           <button key={item} type="button" aria-pressed={item === filter} onClick={() => setFilter(item)}>

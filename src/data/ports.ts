@@ -1,4 +1,5 @@
 import type { CodexEntry, CodexImage } from '../content/codex';
+import type { Friend } from '../domain/friends';
 import type { Game, GameDetails, GameLookup, LibraryEntry } from '../domain/types';
 import type { CharacterProfile } from '../domain/wardrobe';
 
@@ -25,4 +26,8 @@ export interface CodexStore {
   save(entry: CodexEntry): Promise<void>;
   remove(id: string): Promise<void>;
   saveImage(image: Blob, name: string): Promise<Pick<CodexImage, 'src' | 'path'>>;
+}
+
+export interface FriendStore {
+  list(): Promise<Friend[]>;
 }

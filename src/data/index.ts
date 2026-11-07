@@ -1,9 +1,10 @@
 import { demoCatalog } from './demoCatalog';
+import { demoFriends } from './demoFriends';
 import { localCodexStore } from './localCodexStore';
 import { localStore } from './localStore';
 import type { Game } from '../domain/types';
-import type { CodexStore, GameCatalog, LibraryStore } from './ports';
-import { igdbCatalog, supabase, supabaseCodexStore, supabaseStore } from './supabase';
+import type { CodexStore, FriendStore, GameCatalog, LibraryStore } from './ports';
+import { igdbCatalog, supabase, supabaseCodexStore, supabaseFriends, supabaseStore } from './supabase';
 
 export const isDemo = !supabase;
 
@@ -38,3 +39,4 @@ export const catalog: GameCatalog = {
 
 export const store: LibraryStore = supabase ? supabaseStore : localStore;
 export const codexStore: CodexStore = supabase ? supabaseCodexStore : localCodexStore;
+export const friendStore: FriendStore = supabase ? supabaseFriends : demoFriends;

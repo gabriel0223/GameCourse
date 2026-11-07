@@ -37,13 +37,15 @@ export interface RunReward {
   newBest: boolean;
   limitReached: boolean;
   best: number;
+  // Her best before this run, so results can tell which friends she just passed.
+  previousBest: number;
 }
 
 export function applyRun(record: PracticeRecord, run: FinishedRun, day: string): { practice: PracticeRecord; reward: RunReward } {
   // A run where she hit nothing doesn't count, so leaving it running earns nothing.
   const oldBest = bestScore(record, run.game);
   if (run.score < 1) {
-    return { practice: record, reward: { xp: 0, newBest: false, limitReached: false, best: oldBest } };
+    return { practice: record, reward: { xp: 0, newBest: false, limitReached: false, best: oldBest, previousBest: oldBest } };
   }
   const dayXp = record.day === day ? record.dayXp : 0;
   // Shooting down a drone takes far longer than clearing a prompt.
@@ -61,6 +63,6 @@ export function applyRun(record: PracticeRecord, run: FinishedRun, day: string):
       day,
       dayXp: dayXp + xp,
     },
-    reward: { xp, newBest: run.score > oldBest, limitReached: xp < wanted, best },
+    reward: { xp, newBest: run.score > oldBest, limitReached: xp < wanted, best, previousBest: oldBest },
   };
 }

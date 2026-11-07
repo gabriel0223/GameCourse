@@ -5,7 +5,7 @@ import type { GamerState } from '../domain/gamer';
 import { bestScore } from '../domain/practice';
 import { formatDuration } from '../format';
 import { useCodex } from '../state/CodexContext';
-import { useLibrary } from '../state/LibraryContext';
+import { usePlayer } from '../state/PlayerContext';
 import { strings } from '../strings';
 import { hrefs } from '../useHashRoute';
 
@@ -47,7 +47,7 @@ const finished = (gamer: GamerState, kind: 'path' | 'era') => {
 };
 
 function Journey() {
-  const { gamer, profile } = useLibrary();
+  const { gamer, profile, friend, links } = usePlayer();
   const { entries } = useCodex();
   const { stats } = gamer;
   const favorite = stats.favoriteGenre;
@@ -56,12 +56,12 @@ function Journey() {
 
   return (
     <section className="character-section">
-      <h2>{t.journey}</h2>
+      <h2>{friend ? strings.friends.journey : t.journey}</h2>
       <div className="journey-grid">
         <JourneyCard
           icon="library"
           title={t.games}
-          href="#/"
+          href={links.library}
           rows={[
             { label: t.stats.hours, value: String(Math.floor(stats.minutesPlayed / 60)) },
             { label: t.stats.finished, value: String(stats.gamesFinished) },
@@ -99,7 +99,7 @@ function Journey() {
           ]}
         />
       </div>
-      <a className="character-achievements" href={hrefs.characterTab('achievements')}>
+      <a className="character-achievements" href={links.achievements}>
         <span>
           <Icon name="trophy" />
           {t.tabs.achievements}
@@ -113,7 +113,7 @@ function Journey() {
 }
 
 function GenreLevels() {
-  const { gamer } = useLibrary();
+  const { gamer } = usePlayer();
   const genres = [...gamer.genres].sort((a, b) => b.total - a.total);
   const played = genres.filter((item) => item.minutes > 0);
   const unplayed = genres.filter((item) => item.minutes === 0);

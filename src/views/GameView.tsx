@@ -1,6 +1,7 @@
 import { useEffect, useId, useState } from 'react';
 import type { CSSProperties, FormEvent } from 'react';
 import { Cover, GameCard } from '../components/GameCard';
+import { GameFriends } from '../components/FriendBits';
 import { ImageGallery } from '../components/ImageGallery';
 import { Star } from '../components/Star';
 import { catalog, seenGame } from '../data';
@@ -380,6 +381,7 @@ export function GameView({ id }: { id: string }) {
       <div className="game-body">
         <div className="game-activity">
           {entry?.status === 'finished' && <RatingPicker entry={entry} />}
+          <GameFriends gameId={game.id} />
           <LogForm game={game} />
           {entry && <History entry={entry} />}
         </div>

@@ -9,6 +9,7 @@ export type Route =
   | { view: 'game'; id: string }
   | { view: 'character'; tab: CharacterTab; slot: Slot | null }
   | { view: 'shop' }
+  | { view: 'friends'; id: string | null; tab: FriendTab; list: GameStatus }
   | { view: 'practice'; game: string | null }
   | { view: 'codex'; id: string | null; editing: boolean; at: string | null; path: string | null; quiz: boolean };
 
@@ -17,6 +18,9 @@ export type CharacterTab = (typeof CHARACTER_TABS)[number];
 
 // The older tabs still lead somewhere, so saved links keep working.
 const OLD_CHARACTER_TABS: Record<string, CharacterTab> = { profile: 'overview', inventory: 'wardrobe', appearance: 'wardrobe' };
+
+export const FRIEND_TABS = ['overview', 'library', 'achievements'] as const;
+export type FriendTab = (typeof FRIEND_TABS)[number];
 
 export const CODEX_TABS = ['home', 'paths', 'history', 'glossary'] as const;
 export type CodexTab = (typeof CODEX_TABS)[number];
@@ -35,6 +39,15 @@ export function parseRoute(hash: string): Route {
     return { view: 'character', tab, slot };
   }
   if (parts[0] === 'shop') return { view: 'shop' };
+  if (parts[0] === 'friends') {
+    const list = LISTS.find((item) => item === new URLSearchParams(params).get('list'));
+    return {
+      view: 'friends',
+      id: parts[1] ? decodeURIComponent(parts[1]) : null,
+      tab: FRIEND_TABS.find((item) => item === parts[2]) ?? 'overview',
+      list: list ?? 'playing',
+    };
+  }
   if (parts[0] === 'practice') return { view: 'practice', game: parts[1] ?? null };
   if (parts[0] === 'codex') {
     const query = new URLSearchParams(params);
@@ -60,6 +73,10 @@ export const hrefs = {
   characterTab: (tab: CharacterTab) => (tab === 'overview' ? '#/character' : `#/character/${tab}`),
   characterSlot: (slot: Slot) => `#/character/wardrobe?slot=${slot}`,
   shop: '#/shop',
+  friends: '#/friends',
+  friend: (id: string, tab: FriendTab = 'overview') =>
+    `#/friends/${encodeURIComponent(id)}${tab === 'overview' ? '' : `/${tab}`}`,
+  friendList: (id: string, list: GameStatus) => `#/friends/${encodeURIComponent(id)}/library?list=${list}`,
   practice: '#/practice',
   runner: '#/practice/runner',
   jet: '#/practice/jet',

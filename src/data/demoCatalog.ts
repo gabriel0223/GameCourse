@@ -25,7 +25,7 @@ const game = (
   coverUrl: null,
 });
 
-const GAMES: Game[] = [
+export const DEMO_GAMES: Game[] = [
   game('stardew', 'Stardew Valley', 2016, [PC, 'Switch', 'PS4', 'Xbox One'], ['ConcernedApe'], ['ConcernedApe'], ['Simulator', 'Indie'], [], 'Take over an old farm, grow crops, and get to know a small town.'),
   game('celeste', 'Celeste', 2018, [PC, 'Switch', 'PS4', 'Xbox One'], ['Maddy Makes Games'], ['Maddy Makes Games'], ['Platform', 'Indie'], [], 'Climb a mountain through tight, demanding platforming challenges.'),
   game('hollow', 'Hollow Knight', 2017, [PC, 'Switch', 'PS4', 'Xbox One'], ['Team Cherry'], ['Team Cherry'], ['Platform', 'Adventure', 'Indie'], [], 'Explore a vast ruined kingdom of insects and fight tough bosses.'),
@@ -57,28 +57,28 @@ const SAMPLE_CRITICS: Record<string, [number, number]> = {
 
 export const demoCatalog: GameCatalog = {
   async suggestions() {
-    return GAMES.slice(0, 8);
+    return DEMO_GAMES.slice(0, 8);
   },
   async search(query) {
     const needle = query.trim().toLowerCase();
-    return GAMES.filter((item) => item.name.toLowerCase().includes(needle));
+    return DEMO_GAMES.filter((item) => item.name.toLowerCase().includes(needle));
   },
   async get(id) {
-    const found = GAMES.find((item) => item.id === id);
+    const found = DEMO_GAMES.find((item) => item.id === id);
     if (!found) return null;
     const [criticScore, criticReviews] = SAMPLE_CRITICS[id] ?? [null, null];
     return { ...found, criticScore, criticReviews };
   },
   async details(id) {
-    if (!GAMES.some((item) => item.id === id)) return null;
+    if (!DEMO_GAMES.some((item) => item.id === id)) return null;
     return {
       screenshots: [],
       artworks: [],
-      similar: GAMES.filter((item) => item.id !== id).slice(0, 6),
+      similar: DEMO_GAMES.filter((item) => item.id !== id).slice(0, 6),
       timeToBeat: { hastily: 8 * 3600, normally: 14 * 3600, completely: 31 * 3600 },
     };
   },
   async lookup(games) {
-    return games.map(({ name }) => GAMES.find((item) => item.name.toLowerCase() === name.toLowerCase()) ?? null);
+    return games.map(({ name }) => DEMO_GAMES.find((item) => item.name.toLowerCase() === name.toLowerCase()) ?? null);
   },
 };

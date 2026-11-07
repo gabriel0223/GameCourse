@@ -49,6 +49,7 @@ The Twitch secret must only be stored in Supabase secrets, never in `.env` or th
 
 - `src/domain`: game rules for XP, levels, lists, and genres, with tests.
 - `src/data`: sample and real data adapters, chosen automatically.
+- Friends: every other account is a friend. Their profiles and games are read through the `friend_profiles` and `friend_library` database functions in `0007_friends.sql`, so the app's own table queries still only see the signed-in user's rows. Preview mode has one sample friend in `src/data/demoFriends.ts`.
 - `src/views` and `src/components`: the screens.
 - `src/strings.ts`: interface text.
 - `src/assets/sprites`: character layers, each a five-frame strip.

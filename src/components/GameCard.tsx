@@ -4,6 +4,7 @@ import type { Game, LibraryEntry } from '../domain/types';
 import { entryMinutes } from '../domain/xp';
 import { formatDuration } from '../format';
 import { strings } from '../strings';
+import { FriendTags } from './FriendBits';
 import { Star } from './Star';
 import { hrefs } from '../useHashRoute';
 
@@ -16,7 +17,8 @@ export function Cover({ game, genreColor }: { game: Game; genreColor: string }) 
   );
 }
 
-export function GameCard({ game, entry }: { game: Game; entry?: LibraryEntry }) {
+// Friend tags are left off where the card already shows a friend's own entry.
+export function GameCard({ game, entry, friends = true }: { game: Game; entry?: LibraryEntry; friends?: boolean }) {
   const genres = pickGenres(game.genres, game.themes);
   const genre = genres[0];
   const minutes = entry ? entryMinutes(entry) : 0;
@@ -40,6 +42,7 @@ export function GameCard({ game, entry }: { game: Game; entry?: LibraryEntry }) 
         </span>
         {detail !== '' && <span>{detail}</span>}
       </span>
+      {friends && <FriendTags gameId={game.id} />}
     </a>
   );
 }

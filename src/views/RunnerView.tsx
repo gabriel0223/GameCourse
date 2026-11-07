@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { CodexLinks } from '../components/CodexLinks';
 import { ControlsGuide } from '../components/ControlsGuide';
 import { PauseMenu } from '../components/PauseMenu';
+import { ScoreBoard } from '../components/FriendBits';
 import { RunResults } from '../components/RunResults';
 import { spriteUrl } from '../components/Sprite';
 import { bestScore } from '../domain/practice';
@@ -200,6 +201,7 @@ function Setup({ onStart }: { onStart(device: Device, hints: boolean): void }) {
           <small>{t.bestLabel}</small>
           <b>{bestScore(profile.practice, GAME_ID) || t.noBest}</b>
         </p>
+        <ScoreBoard game={GAME_ID} ownBest={bestScore(profile.practice, GAME_ID)} />
       </section>
       <section className="runner-choice">
         <h2>{t.chooseController}</h2>
@@ -276,6 +278,7 @@ export function RunnerView() {
       )}
       {phase.name === 'results' && (
         <RunResults
+          game={GAME_ID}
           score={phase.run.score}
           stats={[
             { label: t.bestStreak, value: phase.run.bestStreak },

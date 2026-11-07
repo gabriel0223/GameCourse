@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { CodexLinks } from '../components/CodexLinks';
 import { ControlsGuide } from '../components/ControlsGuide';
 import { PauseMenu } from '../components/PauseMenu';
+import { ScoreBoard } from '../components/FriendBits';
 import { RunResults } from '../components/RunResults';
 import { VolumeSlider } from '../components/VolumeSlider';
 import { bestScore } from '../domain/practice';
@@ -299,6 +300,7 @@ function SetupPanel({ onStart }: { onStart(setup: Setup): void }) {
           <small>{t.bestLabel}</small>
           <b>{bestScore(profile.practice, GAME_ID) || t.noBest}</b>
         </p>
+        <ScoreBoard game={GAME_ID} ownBest={bestScore(profile.practice, GAME_ID)} />
       </section>
       <section className="runner-choice">
         <h2>{t.chooseController}</h2>
@@ -385,6 +387,7 @@ export function JetView() {
       )}
       {phase.name === 'results' && (
         <RunResults
+          game={GAME_ID}
           score={phase.finished.run.score}
           stats={[{ label: t.bestScore, value: phase.reward.best }]}
           reward={phase.reward}
