@@ -77,10 +77,6 @@ export function readHudEvents(hud: HudState, events: CupidEvent[], time: number)
     if (event.type === 'grab') hud.texts.push({ text: `+${event.points}`, at: event.at, born: time, color: GOLD });
     else if (event.type === 'hurt') hud.hurt = time;
     else if (event.type === 'combo') hud.comboBump = time;
-    else if (event.type === 'wave') hud.banner = { text: t.wave(event.wave), detail: event.wave === 1 ? t.firstWave : '', born: time, until: time + 1.8 };
-    else if (event.type === 'cleared') {
-      hud.banner = { text: t.cleared, detail: event.healed ? t.healed : '', born: time, until: time + 2 };
-    }
   }
   hud.texts = hud.texts.filter((item) => time - item.born < 0.9);
 }
@@ -105,8 +101,8 @@ export function drawHud(c: CanvasRenderingContext2D, run: CupidRun, hud: HudStat
   if (MAX_HP > 1) for (let i = 0; i < MAX_HP; i += 1) heart(c, 24 + i * 26, 24, 20, i < run.player.hp);
   label(c, t.grabbed(run.grabbed), 16, MAX_HP > 1 ? 52 : 28, '#FFE3EE', 12);
 
-  // Wave, top center.
-  if (run.wave > 0) label(c, t.wave(run.wave), HUD_W / 2, 26, WHITE, 13, 'center');
+  // Time survived, top center.
+  if (run.status !== 'countdown') label(c, t.clock(run.time), HUD_W / 2, 26, WHITE, 13, 'center');
 
   // Score and combo, top right.
   label(c, String(run.score), HUD_W - 16, 32, WHITE, 24, 'right');
@@ -205,6 +201,7 @@ export function drawHud(c: CanvasRenderingContext2D, run: CupidRun, hud: HudStat
     const count = Math.ceil(run.countdown);
     label(c, count > 0 ? String(count) : t.go, HUD_W / 2, HUD_H / 2 - 20, WHITE, 44, 'center');
     label(c, t.getReady, HUD_W / 2, HUD_H / 2 + 6, '#FFE3EE', 13, 'center');
+    label(c, t.goal, HUD_W / 2, HUD_H / 2 + 26, GOLD, 12, 'center');
   } else if (hud.banner && time < hud.banner.until) {
     const age = time - hud.banner.born;
     const grow = Math.min(1, age / 0.18);

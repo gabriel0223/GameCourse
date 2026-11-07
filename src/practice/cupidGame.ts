@@ -39,10 +39,10 @@ export const MAX_COMBO = 8;
 export const PLUSHIE_POINTS = 100;
 export const PLUSHIE_LIFE = 10;
 const PLUSHIE_RADIUS = 0.5;
-const GRAB_RADIUS = 0.75;
+// Generous on purpose: brushing past a plushie is enough to grab it.
+const GRAB_RADIUS = 1.35;
 const PLUSHIE_GAP = 1.2;
 const SPAWN_TIME = 0.9;
-const WAVE_BREAK = 2.4;
 
 export type EnemyKind = 'puff' | 'spitter' | 'storm';
 
@@ -127,8 +127,6 @@ export type CupidEvent =
   | { type: 'spit'; at: Flat }
   | { type: 'combo'; level: number }
   | { type: 'comboLost' }
-  | { type: 'wave'; wave: number }
-  | { type: 'cleared'; wave: number; healed: boolean }
   | { type: 'over' };
 
 export interface CupidInput {
@@ -147,11 +145,9 @@ export interface CupidRun {
   time: number;
   countdown: number;
   score: number;
-  wave: number;
-  // 'break' is the pause between waves, with the banner on screen.
-  phase: 'break' | 'fight';
-  phaseTimer: number;
-  queue: Array<{ kind: EnemyKind; at: number }>;
+  // Counts down to the next cloud, and to the next big storm.
+  spawnTimer: number;
+  stormTimer: number;
   combo: number;
   comboProgress: number;
   bestCombo: number;
@@ -187,10 +183,8 @@ export function newCupidRun(): CupidRun {
     time: 0,
     countdown: COUNTDOWN,
     score: 0,
-    wave: 0,
-    phase: 'break',
-    phaseTimer: 0.6,
-    queue: [],
+    spawnTimer: 1,
+    stormTimer: STORM_FIRST,
     combo: 1,
     comboProgress: 0,
     bestCombo: 1,
@@ -223,19 +217,16 @@ export function newCupidRun(): CupidRun {
   };
 }
 
-// What each wave sends, and how quickly. Spitters join at wave 3, and a big storm comes every fourth wave.
-export function waveSpawns(wave: number): Array<{ kind: EnemyKind; at: number }> {
-  const kinds: EnemyKind[] = [];
-  const puffs = Math.min(18, 3 + wave * 2);
-  const spitters = wave >= 3 ? Math.min(5, Math.floor((wave - 1) / 2)) : 0;
-  const storms = wave % 4 === 0 ? wave / 4 : 0;
-  for (let i = 0; i < puffs; i += 1) kinds.push('puff');
-  // Spitters and storms are spread through the wave, not bunched at the end.
-  for (let i = 0; i < spitters; i += 1) kinds.splice(Math.round(((i + 1) * kinds.length) / (spitters + 1)), 0, 'spitter');
-  for (let i = 0; i < storms; i += 1) kinds.splice(Math.round(((i + 1) * kinds.length) / (storms + 2)), 0, 'storm');
-  const gap = Math.max(0.45, 1.3 - wave * 0.07);
-  return kinds.map((kind, index) => ({ kind, at: index * gap }));
-}
+// There are no waves. Everything ramps up smoothly with the time she has survived.
+const STORM_FIRST = 45;
+const STORM_GAP = 50;
+// Seconds between clouds: 2.2 at the start, down to 0.6 after about a minute and a half.
+export const spawnGap = (time: number) => Math.max(0.6, 2.2 * 0.985 ** time);
+// How many clouds can be in the arena at once.
+export const cloudLimit = (time: number) => Math.min(16, 3 + Math.floor(time / 12));
+// Spitters start showing up after 30 seconds and become more common, up to one in four.
+export const spitterChance = (time: number) => Math.max(0, Math.min(0.25, (time - 30) / 200));
+const speedUp = (time: number) => Math.min(1.4, time * 0.011);
 
 export const isDashing = (run: CupidRun) => run.time < run.player.dashUntil;
 export const isGuarded = (run: CupidRun) => isDashing(run) || run.time < run.player.hurtUntil;
@@ -391,7 +382,7 @@ function stepPlayer(run: CupidRun, input: CupidInput, delta: number) {
 
 function stepEnemies(run: CupidRun, delta: number, random: () => number) {
   const player = run.player;
-  const speedUp = Math.min(1.4, run.wave * 0.08);
+  const faster = speedUp(run.time);
   for (const enemy of run.enemies) {
     enemy.flash = Math.max(0, enemy.flash - delta);
     if (enemy.spawning > 0) {
@@ -406,7 +397,7 @@ function stepEnemies(run: CupidRun, delta: number, random: () => number) {
       // Keeps its distance and circles, then winds up and spits a slow raindrop.
       const gap = lengthOf(toward);
       const push = gap < 4.5 ? -1 : gap > 6.5 ? 1 : 0;
-      const speed = 2 + speedUp * 0.5;
+      const speed = 2 + faster * 0.5;
       enemy.pos.x += (dir.x * push * 0.8 + side.x * 0.6) * speed * delta;
       enemy.pos.z += (dir.z * push * 0.8 + side.z * 0.6) * speed * delta;
       if (enemy.windup > 0) {
@@ -424,7 +415,7 @@ function stepEnemies(run: CupidRun, delta: number, random: () => number) {
         }
       }
     } else {
-      const speed = enemy.kind === 'storm' ? 1.4 + speedUp * 0.4 : 2.2 + speedUp;
+      const speed = enemy.kind === 'storm' ? 1.4 + faster * 0.4 : 2.2 + faster;
       enemy.pos.x += (dir.x + side.x * wobble) * speed * delta;
       enemy.pos.z += (dir.z + side.z * wobble) * speed * delta;
     }
@@ -536,7 +527,7 @@ function plushieSpot(run: CupidRun, random: () => number): Flat {
   return best;
 }
 
-export const plushieLimit = (wave: number) => (wave >= 5 ? 2 : 1);
+export const plushieLimit = (time: number) => (time >= 75 ? 2 : 1);
 
 function stepPlushies(run: CupidRun, delta: number, random: () => number) {
   const player = run.player;
@@ -560,7 +551,7 @@ function stepPlushies(run: CupidRun, delta: number, random: () => number) {
   }
   if (kept.length < run.plushies.length) run.plushieTimer = Math.max(run.plushieTimer, 1.2);
   run.plushies = kept;
-  if (run.plushies.length < plushieLimit(run.wave)) {
+  if (run.plushies.length < plushieLimit(run.time)) {
     run.plushieTimer -= delta;
     if (run.plushieTimer <= 0) {
       const at = plushieSpot(run, random);
@@ -572,33 +563,22 @@ function stepPlushies(run: CupidRun, delta: number, random: () => number) {
   }
 }
 
-function stepWaves(run: CupidRun, delta: number, random: () => number) {
-  if (run.phase === 'break') {
-    run.phaseTimer -= delta;
-    if (run.phaseTimer <= 0) {
-      run.wave += 1;
-      run.phase = 'fight';
-      run.phaseTimer = 0;
-      run.queue = waveSpawns(run.wave);
-      run.events.push({ type: 'wave', wave: run.wave });
-    }
+function stepSpawns(run: CupidRun, delta: number, random: () => number) {
+  run.stormTimer -= delta;
+  if (run.stormTimer <= 0) {
+    spawnEnemy(run, 'storm', spawnPoint(run, random), random);
+    run.stormTimer = STORM_GAP;
+  }
+  run.spawnTimer -= delta;
+  if (run.spawnTimer > 0) return;
+  // When the arena is full, the next cloud waits for room.
+  if (run.enemies.length >= cloudLimit(run.time)) {
+    run.spawnTimer = 0.25;
     return;
   }
-  run.phaseTimer += delta;
-  while (run.queue.length && run.queue[0].at <= run.phaseTimer) {
-    const next = run.queue.shift()!;
-    spawnEnemy(run, next.kind, spawnPoint(run, random), random);
-  }
-  if (!run.queue.length && !run.enemies.length) {
-    // With more than one heart, every third wave gives one back.
-    const healed = run.wave % 3 === 0 && run.player.hp < MAX_HP;
-    if (healed) run.player.hp += 1;
-    run.events.push({ type: 'cleared', wave: run.wave, healed });
-    run.phase = 'break';
-    run.phaseTimer = WAVE_BREAK;
-    // Raindrops left in the air dry up, so the break is a real breather.
-    run.drops = [];
-  }
+  const kind: EnemyKind = random() < spitterChance(run.time) ? 'spitter' : 'puff';
+  spawnEnemy(run, kind, spawnPoint(run, random), random);
+  run.spawnTimer = spawnGap(run.time);
 }
 
 export function stepCupidRun(run: CupidRun, input: CupidInput, delta: number, random: () => number = Math.random) {
@@ -612,7 +592,7 @@ export function stepCupidRun(run: CupidRun, input: CupidInput, delta: number, ra
   if (run.status !== 'running') return;
   run.time += delta;
   stepPlayer(run, input, delta);
-  stepWaves(run, delta, random);
+  stepSpawns(run, delta, random);
   stepEnemies(run, delta, random);
   if (run.status !== 'running') return;
   stepArrows(run, delta, random);

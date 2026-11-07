@@ -10,7 +10,9 @@ import {
   accuracy,
   newCupidRun,
   stepCupidRun,
-  waveSpawns,
+  cloudLimit,
+  spawnGap,
+  spitterChance,
 } from './cupidGame';
 import type { CupidInput, CupidRun, Enemy, EnemyKind } from './cupidGame';
 
@@ -20,10 +22,10 @@ const fixed = () => 0.5;
 function running(): CupidRun {
   const run = newCupidRun();
   run.status = 'running';
-  // Keeps waves out of the way unless a test wants them.
-  run.phase = 'fight';
-  run.wave = 1;
-  run.queue = [{ kind: 'puff', at: 999 }];
+  // Keeps new clouds and plushies out of the way unless a test wants them.
+  run.spawnTimer = 999;
+  run.stormTimer = 999;
+  run.plushieTimer = 999;
   return run;
 }
 
@@ -187,23 +189,31 @@ describe('Love Attack', () => {
     expect(run.enemies.filter((enemy) => enemy.kind === 'puff')).toHaveLength(2);
   });
 
-  it('grows the waves and brings in new clouds over time', () => {
-    expect(waveSpawns(1).every((item) => item.kind === 'puff')).toBe(true);
-    expect(waveSpawns(3).some((item) => item.kind === 'spitter')).toBe(true);
-    expect(waveSpawns(4).filter((item) => item.kind === 'storm')).toHaveLength(1);
-    expect(waveSpawns(6).length).toBeGreaterThan(waveSpawns(2).length);
+  it('ramps up smoothly with time instead of waves', () => {
+    expect(spawnGap(0)).toBeGreaterThan(2);
+    expect(spawnGap(90)).toBeLessThan(0.7);
+    expect(cloudLimit(0)).toBe(3);
+    expect(cloudLimit(120)).toBeGreaterThan(10);
+    expect(spitterChance(20)).toBe(0);
+    expect(spitterChance(80)).toBeGreaterThan(0.2);
   });
 
-  it('starts the next wave after a clear', () => {
+  it('keeps sending clouds, up to the limit for the time survived', () => {
     const run = newCupidRun();
     run.status = 'running';
-    step(run, {}, 1);
-    expect(run.wave).toBe(1);
-    run.queue = [];
-    run.enemies = [];
+    run.plushieTimer = 999;
+    // She dashes around in circles, so nothing reaches her during the test.
+    for (let i = 0; i < 60 * 8; i += 1) {
+      stepCupidRun(run, { ...idle, dash: true, move: { x: Math.cos(i / 20), z: Math.sin(i / 20) } }, 1 / 60, fixed);
+    }
+    expect(run.enemies.length).toBeGreaterThanOrEqual(3);
+    expect(run.enemies.length).toBeLessThanOrEqual(cloudLimit(run.time));
+  });
+
+  it('grabs a plushie from a step away', () => {
+    const run = running();
+    run.plushies.push({ id: 900, pos: { x: run.player.pos.x + 1.2, z: run.player.pos.z }, life: 5 });
     step(run, {}, 1 / 60);
-    expect(run.phase).toBe('break');
-    step(run, {}, 3);
-    expect(run.wave).toBe(2);
+    expect(run.grabbed).toBe(1);
   });
 });

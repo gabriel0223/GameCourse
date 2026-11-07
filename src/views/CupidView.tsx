@@ -46,7 +46,7 @@ interface Finished {
   run: FinishedRun;
   ending: Ending | null;
   grabbed: number;
-  wave: number;
+  seconds: number;
   bestCombo: number;
   accuracy: number;
 }
@@ -118,7 +118,7 @@ function ArenaStage({ setup, onFinish }: { setup: Setup; onFinish(result: Finish
         run: { game: GAME_ID, device: setup.scheme, score: run.score, bestStreak: 0, mistakes: run.shots - run.landed },
         ending: run.ending,
         grabbed: run.grabbed,
-        wave: run.wave,
+        seconds: Math.floor(run.time),
         bestCombo: run.bestCombo,
         accuracy: accuracy(run),
       });
@@ -186,7 +186,7 @@ function ArenaStage({ setup, onFinish }: { setup: Setup; onFinish(result: Finish
         // The same facts the HUD draws, for screen readers and automated play.
         status.current.dataset.state = run.status;
         status.current.dataset.score = String(run.score);
-        status.current.dataset.wave = String(run.wave);
+        status.current.dataset.time = run.time.toFixed(1);
         status.current.dataset.hp = String(run.player.hp);
         status.current.dataset.combo = String(run.combo);
         status.current.dataset.enemies = String(run.enemies.length);
@@ -434,7 +434,7 @@ export function CupidView() {
           note={phase.finished.ending ? t.cupid.endings[phase.finished.ending] : undefined}
           stats={[
             { label: t.cupid.plushiesGrabbed, value: phase.finished.grabbed },
-            { label: t.cupid.wavesReached, value: phase.finished.wave },
+            { label: t.cupid.survived, value: phase.finished.seconds },
             { label: t.cupid.bestCombo, value: phase.finished.bestCombo },
             { label: t.cupid.accuracy, value: phase.finished.accuracy },
             { label: t.bestScore, value: phase.reward.best },

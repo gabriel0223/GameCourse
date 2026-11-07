@@ -119,12 +119,6 @@ export function createCupidAudio(volume: number): CupidAudio {
           case 'spit':
             tone('sine', 180, 420, now, 0.5, 0.08, 0.2);
             break;
-          case 'wave':
-            tune([0, 2, 4, 7], now, 0.08, 0.14);
-            break;
-          case 'cleared':
-            tune([5, 7, 9, 10, 12], now, 0.07, 0.15);
-            break;
           case 'over':
             tune([7, 4, 2, 0, -3], now + 0.1, 0.13, 0.16);
             break;
