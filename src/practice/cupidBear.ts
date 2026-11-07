@@ -13,6 +13,8 @@ export interface BearPose {
   // The direction to face, in radians around the vertical axis.
   heading: number;
   delta: number;
+  // Seconds since she grabbed a plushie, for a happy hop.
+  cheer: number;
 }
 
 export interface Bear {
@@ -57,23 +59,24 @@ export function createBear(): Bear {
   const body = new THREE.Group();
   turn.add(body);
 
-  body.add(part(ball, fur, 0, 0.6, 0, 0.42, 0.46, 0.4));
-  body.add(part(ball, muzzle, 0.2, 0.55, 0, 0.22, 0.3, 0.3));
-  body.add(part(ball, fur, -0.4, 0.5, 0, 0.1));
+  // Chibi proportions: a small body under a big head, so the face reads from far away.
+  body.add(part(ball, fur, 0, 0.56, 0, 0.36, 0.4, 0.34));
+  body.add(part(ball, muzzle, 0.18, 0.52, 0, 0.19, 0.25, 0.25));
+  body.add(part(ball, fur, -0.34, 0.45, 0, 0.09));
 
   const head = new THREE.Group();
-  head.position.set(0.06, 1.12, 0);
+  head.position.set(0.05, 1.2, 0);
   body.add(head);
-  head.add(part(smooth, fur, 0, 0, 0, 0.4, 0.37, 0.39));
-  head.add(part(ball, muzzle, 0.34, -0.08, 0, 0.2, 0.15, 0.17));
-  head.add(part(smooth, ink, 0.52, -0.04, 0, 0.065, 0.055, 0.075));
+  head.add(part(smooth, fur, 0, 0, 0, 0.53, 0.48, 0.51));
+  head.add(part(ball, muzzle, 0.45, -0.12, 0, 0.21, 0.16, 0.2));
+  head.add(part(smooth, ink, 0.64, -0.07, 0, 0.08, 0.065, 0.09));
   for (const side of [-1, 1]) {
-    head.add(part(smooth, ink, 0.27, 0.07, side * 0.2, 0.05, 0.065, 0.05));
-    head.add(part(box, shine, 0.3, 0.1, side * 0.225, 0.018, 0.022, 0.012));
+    head.add(part(smooth, ink, 0.38, 0.06, side * 0.27, 0.075, 0.1, 0.07));
+    head.add(part(box, shine, 0.43, 0.11, side * 0.29, 0.03, 0.035, 0.02));
     const ear = new THREE.Group();
-    ear.position.set(-0.06, 0.3, side * 0.25);
-    ear.add(part(ball, fur, 0, 0, 0, 0.13, 0.12, 0.08));
-    ear.add(part(ball, pad, 0.035, -0.005, side * 0.02, 0.07, 0.065, 0.04));
+    ear.position.set(-0.1, 0.4, side * 0.33);
+    ear.add(part(ball, fur, 0, 0, 0, 0.16, 0.15, 0.1));
+    ear.add(part(ball, pad, 0.05, -0.01, side * 0.025, 0.09, 0.085, 0.05));
     head.add(ear);
   }
 
@@ -124,7 +127,7 @@ export function createBear(): Bear {
   let stride = 0;
   return {
     group,
-    pose({ time, walk, dashing, drawing, heading: target, delta }) {
+    pose({ time, walk, dashing, drawing, heading: target, delta, cheer }) {
       // Turns quickly but not instantly, so she reads as a creature and not an arrow.
       let gap = target - heading;
       gap = Math.atan2(Math.sin(gap), Math.cos(gap));
@@ -144,6 +147,13 @@ export function createBear(): Bear {
       const bob = Math.abs(Math.sin(stride)) * 0.06 * walk;
       const breathe = Math.sin(time * 2.4) * 0.012 * (1 - walk);
       body.position.y = bob + breathe;
+      // A little hop with both arms up after a grab.
+      const hop = cheer < 0.45 ? Math.sin((cheer / 0.45) * Math.PI) : 0;
+      turn.position.y = hop * 0.45;
+      if (hop > 0 && !drawing) {
+        arms[0].rotation.z = 2.6 * hop;
+        arms[1].rotation.z = 2.6 * hop;
+      }
       body.rotation.z = dashing ? -0.35 : -0.08 * walk;
       // Tipped up a little, so the camera above can see her face.
       head.rotation.z = 0.28 + Math.sin(time * 1.7) * 0.04 * (1 - walk);
@@ -155,6 +165,74 @@ export function createBear(): Bear {
     dispose() {
       for (const geometry of geometries) geometry.dispose();
       for (const material of materials) material.dispose();
+    },
+  };
+}
+
+// The plushies she collects: an original sitting teddy with a red bow, facing the camera.
+export interface TeddyKit {
+  make(): THREE.Group;
+  dispose(): void;
+}
+
+export function createTeddyKit(): TeddyKit {
+  const brown = flat('#A06B44');
+  brown.emissive.set('#2A160C');
+  const tan = flat('#E2BC8E');
+  tan.emissive.set('#2A1E10');
+  const ink = new THREE.MeshBasicMaterial({ color: '#2B1B38' });
+  const shine = new THREE.MeshBasicMaterial({ color: '#FFFFFF' });
+  const bow = flat('#E8476F');
+  const outline = new THREE.MeshBasicMaterial({ color: '#2B1B38', side: THREE.BackSide });
+  const ball = new THREE.IcosahedronGeometry(1, 1);
+  const smooth = new THREE.IcosahedronGeometry(1, 2);
+  const box = new THREE.BoxGeometry(1, 1, 1);
+
+  const part = (parent: THREE.Object3D, geometry: THREE.BufferGeometry, material: THREE.Material, x: number, y: number, z: number, sx: number, sy = sx, sz = sx, edge = false) => {
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.position.set(x, y, z);
+    mesh.scale.set(sx, sy, sz);
+    parent.add(mesh);
+    if (edge) {
+      const shell = new THREE.Mesh(geometry, outline);
+      shell.position.copy(mesh.position);
+      shell.scale.set(sx + 0.05, sy + 0.05, sz + 0.05);
+      parent.add(shell);
+    }
+    return mesh;
+  };
+
+  return {
+    make() {
+      const group = new THREE.Group();
+      const teddy = new THREE.Group();
+      // Leans back a little, so its face looks up at the camera.
+      teddy.rotation.x = -0.35;
+      group.add(teddy);
+      part(teddy, ball, brown, 0, 0.3, 0, 0.3, 0.29, 0.26, true);
+      part(teddy, ball, tan, 0, 0.27, 0.19, 0.17, 0.17, 0.08);
+      for (const side of [-1, 1]) {
+        part(teddy, ball, brown, side * 0.16, 0.1, 0.17, 0.11, 0.09, 0.15, true);
+        part(teddy, ball, tan, side * 0.16, 0.1, 0.31, 0.07, 0.07, 0.03);
+        part(teddy, ball, brown, side * 0.3, 0.33, 0.06, 0.08, 0.14, 0.08, true);
+        part(teddy, ball, brown, side * 0.2, 0.98, 0, 0.1, 0.1, 0.06, true);
+        part(teddy, ball, tan, side * 0.2, 0.98, 0.04, 0.055, 0.055, 0.03);
+        part(teddy, smooth, ink, side * 0.11, 0.78, 0.25, 0.045, 0.045, 0.03);
+        part(teddy, box, shine, side * 0.11 + 0.015, 0.795, 0.275, 0.015, 0.015, 0.01);
+        // The bow's two loops.
+        const loop = part(teddy, box, bow, side * 0.1, 0.55, 0.24, 0.13, 0.08, 0.04);
+        loop.rotation.z = side * 0.35;
+      }
+      part(teddy, smooth, brown, 0, 0.75, 0, 0.3, 0.27, 0.27, true);
+      part(teddy, ball, tan, 0, 0.68, 0.22, 0.12, 0.09, 0.08);
+      part(teddy, smooth, ink, 0, 0.71, 0.3, 0.045, 0.035, 0.03);
+      part(teddy, ball, bow, 0, 0.55, 0.26, 0.05, 0.05, 0.04);
+      group.scale.setScalar(1.25);
+      return group;
+    },
+    dispose() {
+      for (const geometry of [ball, smooth, box]) geometry.dispose();
+      for (const material of [brown, tan, ink, shine, bow, outline]) material.dispose();
     },
   };
 }

@@ -9,7 +9,8 @@ export interface Flat {
 export const ARENA_W = 10;
 export const ARENA_D = 5.6;
 export const COUNTDOWN = 3;
-export const MAX_HP = 3;
+// One mistake ends the run. Raise this to give her more hearts, and the HUD shows them.
+export const MAX_HP = 1;
 
 // Movement
 const MOVE_SPEED = 6;
@@ -34,9 +35,12 @@ const ASSIST_ANGLE = (8 * Math.PI) / 180;
 export const COMBO_STEP = 3;
 export const MAX_COMBO = 8;
 
-const HEART_LIFE = 7;
-const HEART_MAGNET = 2.4;
-const HEART_POINTS = 5;
+// Teddy plushies are the score. Each one cashes in the combo, then the combo starts over.
+export const PLUSHIE_POINTS = 100;
+export const PLUSHIE_LIFE = 10;
+const PLUSHIE_RADIUS = 0.5;
+const GRAB_RADIUS = 0.75;
+const PLUSHIE_GAP = 1.2;
 const SPAWN_TIME = 0.9;
 const WAVE_BREAK = 2.4;
 
@@ -45,14 +49,12 @@ export type EnemyKind = 'puff' | 'spitter' | 'storm';
 interface KindRules {
   hp: number;
   radius: number;
-  points: number;
-  hearts: number;
 }
 
 export const KINDS: Record<EnemyKind, KindRules> = {
-  puff: { hp: 1, radius: 0.65, points: 10, hearts: 1 },
-  spitter: { hp: 2, radius: 0.7, points: 25, hearts: 2 },
-  storm: { hp: 6, radius: 1.25, points: 60, hearts: 3 },
+  puff: { hp: 1, radius: 0.65 },
+  spitter: { hp: 2, radius: 0.7 },
+  storm: { hp: 6, radius: 1.25 },
 };
 
 export interface Player {
@@ -102,26 +104,31 @@ export interface Drop {
   life: number;
 }
 
-export interface HeartPickup {
+export interface Plushie {
   id: number;
   pos: Flat;
   life: number;
 }
 
+export type Ending = 'bumped' | 'rain' | 'plushie';
+
 export type CupidEvent =
   | { type: 'shot'; power: number; full: boolean }
   | { type: 'drawFull' }
   | { type: 'hit'; at: Flat; kind: EnemyKind }
-  | { type: 'pop'; at: Flat; kind: EnemyKind; points: number }
+  | { type: 'pop'; at: Flat; kind: EnemyKind }
   | { type: 'miss' }
   | { type: 'hurt'; at: Flat }
+  | { type: 'plushieHit'; at: Flat }
+  | { type: 'plushie'; at: Flat }
+  | { type: 'plushieGone'; at: Flat }
+  | { type: 'grab'; at: Flat; points: number; combo: number }
   | { type: 'dash' }
   | { type: 'spit'; at: Flat }
-  | { type: 'pickup'; at: Flat; points: number }
   | { type: 'combo'; level: number }
   | { type: 'comboLost' }
   | { type: 'wave'; wave: number }
-  | { type: 'cleared'; wave: number; bonus: number; healed: boolean }
+  | { type: 'cleared'; wave: number; healed: boolean }
   | { type: 'over' };
 
 export interface CupidInput {
@@ -155,7 +162,11 @@ export interface CupidRun {
   arrows: Arrow[];
   enemies: Enemy[];
   drops: Drop[];
-  hearts: HeartPickup[];
+  plushies: Plushie[];
+  // Counts down to the next plushie.
+  plushieTimer: number;
+  grabbed: number;
+  ending: Ending | null;
   nextId: number;
   events: CupidEvent[];
 }
@@ -203,7 +214,10 @@ export function newCupidRun(): CupidRun {
     arrows: [],
     enemies: [],
     drops: [],
-    hearts: [],
+    plushies: [],
+    plushieTimer: 0.8,
+    grabbed: 0,
+    ending: null,
     nextId: 1,
     events: [],
   };
@@ -227,10 +241,6 @@ export const isDashing = (run: CupidRun) => run.time < run.player.dashUntil;
 export const isGuarded = (run: CupidRun) => isDashing(run) || run.time < run.player.hurtUntil;
 export const drawPower = (player: Player) => clamp(player.draw / FULL_DRAW, 0, 1);
 export const accuracy = (run: CupidRun) => (run.shots ? Math.round((run.landed / run.shots) * 100) : 0);
-
-function addScore(run: CupidRun, points: number) {
-  run.score += points;
-}
 
 function spawnPoint(run: CupidRun, random: () => number): Flat {
   // Somewhere along the edge, never right on top of her.
@@ -266,7 +276,13 @@ function spawnEnemy(run: CupidRun, kind: EnemyKind, at: Flat, random: () => numb
   run.nextId += 1;
 }
 
-function hurtPlayer(run: CupidRun, from: Flat) {
+function endRun(run: CupidRun, ending: Ending) {
+  run.status = 'over';
+  run.ending = ending;
+  run.events.push({ type: 'over' });
+}
+
+function hurtPlayer(run: CupidRun, from: Flat, ending: Ending) {
   const player = run.player;
   if (isGuarded(run) || run.status !== 'running') return;
   player.hp -= 1;
@@ -279,10 +295,7 @@ function hurtPlayer(run: CupidRun, from: Flat) {
   if (run.combo > 1 || run.comboProgress > 0) run.events.push({ type: 'comboLost' });
   run.combo = 1;
   run.comboProgress = 0;
-  if (player.hp <= 0) {
-    run.status = 'over';
-    run.events.push({ type: 'over' });
-  }
+  if (player.hp <= 0) endRun(run, ending);
 }
 
 function fire(run: CupidRun, assist: boolean) {
@@ -318,27 +331,15 @@ function fire(run: CupidRun, assist: boolean) {
 }
 
 function popEnemy(run: CupidRun, enemy: Enemy, random: () => number) {
-  const rules = KINDS[enemy.kind];
-  const points = rules.points * run.combo;
-  addScore(run, points);
   run.pops += 1;
-  run.events.push({ type: 'pop', at: { ...enemy.pos }, kind: enemy.kind, points });
-  for (let i = 0; i < rules.hearts; i += 1) {
-    const angle = (i / rules.hearts) * Math.PI * 2 + random();
-    const spread = rules.hearts > 1 ? 0.7 : 0;
-    run.hearts.push({
-      id: run.nextId,
-      pos: { x: enemy.pos.x + Math.cos(angle) * spread, z: enemy.pos.z + Math.sin(angle) * spread },
-      life: HEART_LIFE,
-    });
-    run.nextId += 1;
-  }
+  run.events.push({ type: 'pop', at: { ...enemy.pos }, kind: enemy.kind });
   // A big storm breaks into two small clouds.
   if (enemy.kind === 'storm') {
     for (const side of [-1, 1]) {
       spawnEnemy(run, 'puff', { x: clamp(enemy.pos.x + side * 1.2, -ARENA_W, ARENA_W), z: enemy.pos.z }, random, 0.25);
     }
   }
+  // Pops build the combo, and the next plushie cashes it in.
   run.comboProgress += 1;
   if (run.comboProgress >= COMBO_STEP && run.combo < MAX_COMBO) {
     run.combo += 1;
@@ -451,7 +452,7 @@ function stepEnemies(run: CupidRun, delta: number, random: () => number) {
   }
 
   for (const enemy of live) {
-    if (distance(enemy.pos, player.pos) < KINDS[enemy.kind].radius + PLAYER_RADIUS) hurtPlayer(run, enemy.pos);
+    if (distance(enemy.pos, player.pos) < KINDS[enemy.kind].radius + PLAYER_RADIUS) hurtPlayer(run, enemy.pos, 'bumped');
   }
 }
 
@@ -462,6 +463,15 @@ function stepArrows(run: CupidRun, delta: number, random: () => number) {
     arrow.pos.z += arrow.dir.z * arrow.speed * delta;
     arrow.life -= delta;
     let spent = false;
+    // An arrow that touches a plushie ends the run, even a piercing one.
+    const plushie = run.plushies.find((item) => distance(arrow.pos, item.pos) < PLUSHIE_RADIUS + ARROW_RADIUS);
+    if (plushie) {
+      run.events.push({ type: 'plushieHit', at: { ...plushie.pos } });
+      endRun(run, 'plushie');
+      kept.push(arrow);
+      run.arrows = kept;
+      return;
+    }
     for (const enemy of run.enemies) {
       if (enemy.spawning > 0 || enemy.hp <= 0 || arrow.hits.includes(enemy.id)) continue;
       if (distance(arrow.pos, enemy.pos) > KINDS[enemy.kind].radius + ARROW_RADIUS) continue;
@@ -498,7 +508,7 @@ function stepDrops(run: CupidRun, delta: number) {
     drop.pos.z += drop.vel.z * delta;
     drop.life -= delta;
     if (distance(drop.pos, run.player.pos) < 0.3 + PLAYER_RADIUS && !isGuarded(run)) {
-      hurtPlayer(run, drop.pos);
+      hurtPlayer(run, drop.pos, 'rain');
       continue;
     }
     if (drop.life > 0 && Math.abs(drop.pos.x) < ARENA_W + 2 && Math.abs(drop.pos.z) < ARENA_D + 2) kept.push(drop);
@@ -506,27 +516,60 @@ function stepDrops(run: CupidRun, delta: number) {
   run.drops = kept;
 }
 
-function stepHearts(run: CupidRun, delta: number) {
-  const player = run.player;
-  const kept: HeartPickup[] = [];
-  for (const heart of run.hearts) {
-    heart.life -= delta;
-    const gap = distance(heart.pos, player.pos);
-    if (gap < HEART_MAGNET) {
-      const dir = unit(minus(player.pos, heart.pos));
-      const pull = 9 * (1 - gap / HEART_MAGNET) + 3;
-      heart.pos.x += dir.x * pull * delta;
-      heart.pos.z += dir.z * pull * delta;
+function plushieSpot(run: CupidRun, random: () => number): Flat {
+  // Somewhere open, not right next to her or inside a cloud.
+  let best: Flat = { x: 0, z: 0 };
+  let bestRoom = -1;
+  for (let tries = 0; tries < 16; tries += 1) {
+    const spot = { x: (random() * 2 - 1) * (ARENA_W - 1.5), z: (random() * 2 - 1) * (ARENA_D - 1.2) };
+    const room = Math.min(
+      distance(spot, run.player.pos) - 3,
+      ...run.enemies.map((enemy) => distance(spot, enemy.pos) - KINDS[enemy.kind].radius - PLUSHIE_GAP),
+      ...run.plushies.map((item) => distance(spot, item.pos) - 3),
+    );
+    if (room > 0) return spot;
+    if (room > bestRoom) {
+      best = spot;
+      bestRoom = room;
     }
-    if (distance(heart.pos, player.pos) < 0.55) {
-      const points = HEART_POINTS * run.combo;
-      addScore(run, points);
-      run.events.push({ type: 'pickup', at: { ...heart.pos }, points });
+  }
+  return best;
+}
+
+export const plushieLimit = (wave: number) => (wave >= 5 ? 2 : 1);
+
+function stepPlushies(run: CupidRun, delta: number, random: () => number) {
+  const player = run.player;
+  const kept: Plushie[] = [];
+  for (const plushie of run.plushies) {
+    plushie.life -= delta;
+    if (distance(plushie.pos, player.pos) < GRAB_RADIUS) {
+      const points = PLUSHIE_POINTS * run.combo;
+      run.score += points;
+      run.grabbed += 1;
+      run.events.push({ type: 'grab', at: { ...plushie.pos }, points, combo: run.combo });
+      run.combo = 1;
+      run.comboProgress = 0;
       continue;
     }
-    if (heart.life > 0) kept.push(heart);
+    if (plushie.life <= 0) {
+      run.events.push({ type: 'plushieGone', at: { ...plushie.pos } });
+      continue;
+    }
+    kept.push(plushie);
   }
-  run.hearts = kept;
+  if (kept.length < run.plushies.length) run.plushieTimer = Math.max(run.plushieTimer, 1.2);
+  run.plushies = kept;
+  if (run.plushies.length < plushieLimit(run.wave)) {
+    run.plushieTimer -= delta;
+    if (run.plushieTimer <= 0) {
+      const at = plushieSpot(run, random);
+      run.plushies.push({ id: run.nextId, pos: at, life: PLUSHIE_LIFE });
+      run.nextId += 1;
+      run.plushieTimer = 1.2;
+      run.events.push({ type: 'plushie', at: { ...at } });
+    }
+  }
 }
 
 function stepWaves(run: CupidRun, delta: number, random: () => number) {
@@ -547,12 +590,10 @@ function stepWaves(run: CupidRun, delta: number, random: () => number) {
     spawnEnemy(run, next.kind, spawnPoint(run, random), random);
   }
   if (!run.queue.length && !run.enemies.length) {
-    const bonus = 20 * run.wave;
-    addScore(run, bonus);
-    // Every third wave gives back a heart of health.
+    // With more than one heart, every third wave gives one back.
     const healed = run.wave % 3 === 0 && run.player.hp < MAX_HP;
     if (healed) run.player.hp += 1;
-    run.events.push({ type: 'cleared', wave: run.wave, bonus, healed });
+    run.events.push({ type: 'cleared', wave: run.wave, healed });
     run.phase = 'break';
     run.phaseTimer = WAVE_BREAK;
     // Raindrops left in the air dry up, so the break is a real breather.
@@ -575,8 +616,10 @@ export function stepCupidRun(run: CupidRun, input: CupidInput, delta: number, ra
   stepEnemies(run, delta, random);
   if (run.status !== 'running') return;
   stepArrows(run, delta, random);
+  if (run.status !== 'running') return;
   stepDrops(run, delta);
-  stepHearts(run, delta);
+  if (run.status !== 'running') return;
+  stepPlushies(run, delta, random);
 }
 
 export function toggleCupidPause(run: CupidRun) {

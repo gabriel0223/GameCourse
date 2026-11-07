@@ -5,7 +5,8 @@ import {
   DASH_TIME,
   FULL_DRAW,
   KINDS,
-  MAX_HP,
+  PLUSHIE_LIFE,
+  PLUSHIE_POINTS,
   accuracy,
   newCupidRun,
   stepCupidRun,
@@ -79,35 +80,31 @@ describe('Love Attack', () => {
     expect(full.events.some((event) => event.type === 'drawFull')).toBe(true);
   });
 
-  it('pops a cloud, drops a heart, and scores it with the combo', () => {
+  it('pops a cloud with an arrow', () => {
     const run = running();
     place(run, 'puff', 4, run.player.pos.z);
     shoot(run, { x: 1, z: 0 }, 0.1);
     step(run, {}, 0.6);
     expect(run.enemies).toHaveLength(0);
-    expect(run.score).toBe(KINDS.puff.points);
-    expect(run.hearts).toHaveLength(1);
-    // Walking over the heart collects it.
-    step(run, { move: { x: 1, z: 0 } }, 1);
-    expect(run.hearts).toHaveLength(0);
-    expect(run.score).toBeGreaterThan(KINDS.puff.points);
+    expect(run.pops).toBe(1);
     expect(accuracy(run)).toBe(100);
   });
 
-  it('raises the combo every few pops in a row', () => {
+  it('builds the combo with pops and cashes it in on a plushie', () => {
     const run = running();
-    for (let i = 0; i < COMBO_STEP; i += 1) {
+    run.plushieTimer = 99;
+    for (let i = 0; i < COMBO_STEP * 2; i += 1) {
       place(run, 'puff', 4, run.player.pos.z);
       shoot(run, { x: 1, z: 0 }, 0.1);
       step(run, {}, 0.5);
     }
-    expect(run.combo).toBe(2);
-    // The next pop is worth double.
-    const before = run.score;
-    place(run, 'puff', 4, run.player.pos.z);
-    shoot(run, { x: 1, z: 0 }, 0.1);
-    step(run, {}, 0.3);
-    expect(run.score - before).toBeGreaterThanOrEqual(KINDS.puff.points * 2);
+    expect(run.combo).toBe(3);
+    expect(run.score).toBe(0);
+    run.plushies.push({ id: 900, pos: { x: run.player.pos.x, z: run.player.pos.z + 2 }, life: 5 });
+    step(run, { move: { x: 0, z: 1 } }, 0.5);
+    expect(run.score).toBe(PLUSHIE_POINTS * 3);
+    expect(run.grabbed).toBe(1);
+    expect(run.combo).toBe(1);
   });
 
   it('clears combo progress on a miss but keeps the level', () => {
@@ -121,16 +118,45 @@ describe('Love Attack', () => {
     expect(accuracy(run)).toBe(0);
   });
 
-  it('costs a heart and the whole combo when a cloud touches her', () => {
+  it('ends the run when a cloud bumps her', () => {
     const run = running();
-    run.combo = 4;
     place(run, 'puff', run.player.pos.x + 0.5, run.player.pos.z);
     step(run, {}, 1 / 60);
-    expect(run.player.hp).toBe(MAX_HP - 1);
-    expect(run.combo).toBe(1);
-    // A short grace period stops one touch from taking every heart.
+    expect(run.status).toBe('over');
+    expect(run.ending).toBe('bumped');
+  });
+
+  it('ends the run when an arrow hits a plushie', () => {
+    const run = running();
+    run.plushies.push({ id: 900, pos: { x: run.player.pos.x + 4, z: run.player.pos.z }, life: 5 });
+    // A cloud behind the plushie doesn't help: the plushie is in the way.
+    place(run, 'puff', run.player.pos.x + 7, run.player.pos.z);
+    shoot(run, { x: 1, z: 0 }, FULL_DRAW + 0.05);
     step(run, {}, 0.5);
-    expect(run.player.hp).toBe(MAX_HP - 1);
+    expect(run.status).toBe('over');
+    expect(run.ending).toBe('plushie');
+    expect(run.pops).toBe(0);
+  });
+
+  it('lets a plushie fade away if she leaves it too long', () => {
+    const run = running();
+    run.plushieTimer = 99;
+    run.plushies.push({ id: 900, pos: { x: 6, z: 3 }, life: 1 });
+    step(run, {}, 1.1);
+    expect(run.plushies).toHaveLength(0);
+    expect(run.status).toBe('running');
+  });
+
+  it('places new plushies away from her', () => {
+    const run = running();
+    run.plushieTimer = 0.01;
+    let seed = 7;
+    const varied = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+    for (let i = 0; i < 6; i += 1) stepCupidRun(run, idle, 1 / 60, varied);
+    expect(run.plushies).toHaveLength(1);
+    expect(run.plushies[0].life).toBeGreaterThan(PLUSHIE_LIFE - 0.2);
+    const gap = Math.hypot(run.plushies[0].pos.x - run.player.pos.x, run.plushies[0].pos.z - run.player.pos.z);
+    expect(gap).toBeGreaterThan(3);
   });
 
   it('lets a dash pass through a cloud unharmed', () => {
@@ -138,16 +164,8 @@ describe('Love Attack', () => {
     place(run, 'storm', run.player.pos.x + 2.2, run.player.pos.z);
     step(run, { move: { x: 1, z: 0 }, dash: true }, 1 / 60);
     step(run, { move: { x: 1, z: 0 } }, DASH_TIME - 1 / 60);
-    expect(run.player.hp).toBe(MAX_HP);
+    expect(run.status).toBe('running');
     expect(run.player.pos.x).toBeGreaterThan(2.5);
-  });
-
-  it('ends the run on the last heart', () => {
-    const run = running();
-    run.player.hp = 1;
-    place(run, 'puff', run.player.pos.x, run.player.pos.z);
-    step(run, {}, 1 / 60);
-    expect(run.status).toBe('over');
   });
 
   it('bends a controller arrow toward a cloud just off the aim line', () => {
@@ -176,7 +194,7 @@ describe('Love Attack', () => {
     expect(waveSpawns(6).length).toBeGreaterThan(waveSpawns(2).length);
   });
 
-  it('starts the next wave after a clear, with a bonus', () => {
+  it('starts the next wave after a clear', () => {
     const run = newCupidRun();
     run.status = 'running';
     step(run, {}, 1);
@@ -185,7 +203,6 @@ describe('Love Attack', () => {
     run.enemies = [];
     step(run, {}, 1 / 60);
     expect(run.phase).toBe('break');
-    expect(run.score).toBe(20);
     step(run, {}, 3);
     expect(run.wave).toBe(2);
   });

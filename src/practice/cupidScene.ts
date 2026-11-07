@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { createBear } from './cupidBear';
-import { ARENA_D, ARENA_W, KINDS, drawPower, isDashing } from './cupidGame';
+import { createBear, createTeddyKit } from './cupidBear';
+import { ARENA_D, ARENA_W, KINDS, PLUSHIE_LIFE, drawPower, isDashing } from './cupidGame';
 import type { CupidEvent, CupidRun, EnemyKind, Flat } from './cupidGame';
 
 // Drawn small and scaled up with hard pixels, like Sunset Ace.
@@ -276,14 +276,13 @@ export function createCupidScene(canvas: HTMLCanvasElement, layers: HTMLImageEle
   const dots = new THREE.InstancedMesh(dotGeometry, dotMaterial, DOTS);
   scene.add(dots);
 
-  // Arrows, hearts, and clouds share geometry and get their own pieces as they appear.
+  // Arrows, plushies, and clouds share geometry and get their own pieces as they appear.
   const shaftGeometry = keep(new THREE.BoxGeometry(1, 0.07, 0.07));
   shaftGeometry.translate(-0.25, 0, 0);
   const headGeometry = keep(heartGeometry(0.42, 0.08));
   headGeometry.rotateZ(Math.PI / 2);
   headGeometry.rotateX(-Math.PI / 2);
   const featherGeometry = keep(new THREE.BoxGeometry(0.22, 0.04, 0.22));
-  const pickupGeometry = keep(heartGeometry(0.55, 0.16));
   const smallHeart = keep(heartGeometry(0.22, 0.06));
   const sparkGeometry = keep(new THREE.BoxGeometry(0.1, 0.1, 0.1));
   const eyeGeometry = keep(new THREE.BoxGeometry(0.13, 0.2, 0.05));
@@ -296,7 +295,11 @@ export function createCupidScene(canvas: HTMLCanvasElement, layers: HTMLImageEle
   const headMaterial = keep(lambert('#FF4F86', { emissive: '#6A0A2A' }));
   const fullHead = keep(lambert('#FF6FA0', { emissive: '#D0306A' }));
   const featherMaterial = keep(lambert('#FFFFFF'));
-  const pickupMaterial = keep(lambert('#FF6F9C', { emissive: '#8A1F48' }));
+  const teddies = keep(createTeddyKit());
+  // A soft gold glow on the floor under each plushie, so it stands out in a crowd.
+  const glowGeometry = keep(new THREE.RingGeometry(0.55, 0.85, 20));
+  glowGeometry.rotateX(-Math.PI / 2);
+  const glowMaterial = keep(new THREE.MeshBasicMaterial({ color: '#FFD45E', transparent: true, opacity: 0.55, depthWrite: false }));
   const dropMaterial = keep(lambert('#6FB7F2', { emissive: '#1F4F8A' }));
   const bitMaterials = {
     pink: keep(new THREE.MeshBasicMaterial({ color: '#FF7FA8' })),
@@ -367,7 +370,10 @@ export function createCupidScene(canvas: HTMLCanvasElement, layers: HTMLImageEle
 
   const clouds = new Map<number, Thing>();
   const arrows = new Map<number, THREE.Group>();
-  const pickups = new Map<number, THREE.Mesh>();
+  const plushies = new Map<number, { group: THREE.Group; teddy: THREE.Group; glow: THREE.Mesh; born: number }>();
+  let lastGrab = -10;
+  let hitAt: Flat | null = null;
+  let clock = 0;
   const drops = new Map<number, { mesh: THREE.Mesh; shadow: THREE.Mesh }>();
   const bits: Bit[] = [];
   let shake = 0;
@@ -398,8 +404,17 @@ export function createCupidScene(canvas: HTMLCanvasElement, layers: HTMLImageEle
         burst(event.at, 0.9, big ? 10 : 6, sparkGeometry, bitMaterials.grey, 3);
       } else if (event.type === 'hit') {
         burst(event.at, 0.9, 4, sparkGeometry, bitMaterials.white, 3);
-      } else if (event.type === 'pickup') {
-        burst(event.at, 0.6, 5, sparkGeometry, bitMaterials.pink, 1.6, -1);
+      } else if (event.type === 'grab') {
+        lastGrab = clock;
+        burst(event.at, 0.8, 12, smallHeart, bitMaterials.pink, 3.5, 4);
+        burst(event.at, 0.8, 8, sparkGeometry, bitMaterials.gold, 3, 2);
+      } else if (event.type === 'plushie') {
+        burst(event.at, 0.4, 8, sparkGeometry, bitMaterials.gold, 2, -2);
+      } else if (event.type === 'plushieGone') {
+        burst(event.at, 0.5, 8, sparkGeometry, bitMaterials.grey, 2, -1);
+      } else if (event.type === 'plushieHit') {
+        hitAt = event.at;
+        burst(event.at, 0.7, 10, sparkGeometry, bitMaterials.white, 3);
       } else if (event.type === 'hurt') {
         shake = 0.35;
         burst(event.at, 0.8, 8, sparkGeometry, bitMaterials.blue, 4);
@@ -440,6 +455,7 @@ export function createCupidScene(canvas: HTMLCanvasElement, layers: HTMLImageEle
 
   return {
     render(run, { time, delta, events }) {
+      clock = time;
       readEvents(run, events);
       const player = run.player;
       const facingRight = player.face.x > 0.05 || (Math.abs(player.face.x) <= 0.05 && hero.userData.right);
@@ -463,6 +479,7 @@ export function createCupidScene(canvas: HTMLCanvasElement, layers: HTMLImageEle
           drawing: player.drawing,
           heading: Math.atan2(-player.face.z, player.face.x),
           delta,
+          cheer: time - lastGrab,
         });
       }
       heroShadow.position.set(player.pos.x, 0.02, player.pos.z);
@@ -559,20 +576,37 @@ export function createCupidScene(canvas: HTMLCanvasElement, layers: HTMLImageEle
       );
 
       sync(
-        run.hearts,
-        pickups,
+        run.plushies,
+        plushies,
         () => {
-          const mesh = new THREE.Mesh(pickupGeometry, pickupMaterial);
-          scene.add(mesh);
-          return mesh;
+          const group = new THREE.Group();
+          const teddy = teddies.make();
+          const glow = new THREE.Mesh(glowGeometry, glowMaterial);
+          glow.position.y = 0.03;
+          group.add(glow, teddy);
+          scene.add(group);
+          return { group, teddy, glow, born: time };
         },
-        (mesh, heart) => {
-          mesh.position.set(heart.pos.x, 0.55 + Math.sin(time * 4 + heart.id) * 0.12, heart.pos.z);
-          mesh.rotation.y = time * 2.5 + heart.id;
-          // Hearts blink before they fade away.
-          mesh.visible = heart.life > 1.5 || Math.floor(time * 10) % 2 === 0;
+        (item, plushie) => {
+          item.group.position.set(plushie.pos.x, 0, plushie.pos.z);
+          // Pops in with a little bounce, then sways and blinks before it fades.
+          const age = time - item.born;
+          const pop = age < 0.35 ? Math.sin((age / 0.35) * Math.PI * 0.75) / Math.sin(Math.PI * 0.75) : 1;
+          item.teddy.scale.setScalar(1.25 * Math.min(1.15, pop));
+          const fallen = hitAt && Math.hypot(hitAt.x - plushie.pos.x, hitAt.z - plushie.pos.z) < 0.01;
+          if (fallen) {
+            item.teddy.rotation.x += (-1.35 - item.teddy.rotation.x) * Math.min(1, delta * 10);
+            item.teddy.rotation.z = 0;
+            item.teddy.position.y = 0;
+          } else {
+            item.teddy.rotation.z = Math.sin(time * 2.4 + plushie.id) * 0.1;
+            item.teddy.position.y = Math.abs(Math.sin(time * 3 + plushie.id)) * 0.08;
+          }
+          const ending = plushie.life < 3 && !fallen;
+          item.group.visible = !ending || Math.floor(time * (plushie.life < 1.2 ? 14 : 7)) % 2 === 0;
+          item.glow.scale.setScalar(0.85 + 0.15 * (plushie.life / PLUSHIE_LIFE) + Math.sin(time * 5) * 0.04);
         },
-        (mesh) => scene.remove(mesh),
+        (item) => scene.remove(item.group),
       );
 
       sync(

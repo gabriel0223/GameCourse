@@ -90,9 +90,18 @@ export function createCupidAudio(volume: number): CupidAudio {
             tone('triangle', note(combo + 2, 392), note(combo + 2, 392), now + 0.06, 0.14, 0.16);
             if (event.kind === 'storm') tone('sine', 140, 60, now, 0.4, 0.4);
             break;
-          case 'pickup':
-            tone('sine', note(combo + 5), note(combo + 5), now, 0.08, 0.1);
-            tone('sine', note(combo + 7), note(combo + 7), now + 0.045, 0.12, 0.08);
+          case 'grab':
+            // A happy run up the scale, longer for a bigger combo.
+            tune(Array.from({ length: 3 + Math.min(5, event.combo) }, (_, i) => 5 + i * 2), now, 0.055, 0.15);
+            break;
+          case 'plushie':
+            tone('sine', note(12), note(14), now, 0.18, 0.06);
+            break;
+          case 'plushieGone':
+            tone('sine', note(7), note(2), now, 0.25, 0.06);
+            break;
+          case 'plushieHit':
+            tone('triangle', 520, 180, now, 0.5, 0.25);
             break;
           case 'combo':
             tune([event.level + 3, event.level + 5, event.level + 7], now + 0.05, 0.05, 0.12);

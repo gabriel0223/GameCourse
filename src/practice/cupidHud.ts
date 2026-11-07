@@ -1,5 +1,5 @@
 import { strings } from '../strings';
-import { COMBO_STEP, DASH_RECHARGE, MAX_COMBO, MAX_HP, drawPower } from './cupidGame';
+import { COMBO_STEP, DASH_RECHARGE, MAX_COMBO, MAX_HP, PLUSHIE_LIFE, PLUSHIE_POINTS, drawPower } from './cupidGame';
 import type { CupidEvent, CupidRun, Flat } from './cupidGame';
 import type { Projected } from './cupidScene';
 
@@ -72,15 +72,14 @@ function heart(c: CanvasRenderingContext2D, x: number, y: number, size: number, 
 }
 
 // Turns the game's events into floating numbers, banners, and flashes.
-export function readHudEvents(hud: HudState, run: CupidRun, events: CupidEvent[], time: number) {
+export function readHudEvents(hud: HudState, events: CupidEvent[], time: number) {
   for (const event of events) {
-    if (event.type === 'pop') hud.texts.push({ text: `+${event.points}`, at: event.at, born: time, color: run.combo > 1 ? GOLD : WHITE });
-    else if (event.type === 'pickup') hud.texts.push({ text: `+${event.points}`, at: event.at, born: time, color: '#FFB3CC' });
+    if (event.type === 'grab') hud.texts.push({ text: `+${event.points}`, at: event.at, born: time, color: GOLD });
     else if (event.type === 'hurt') hud.hurt = time;
     else if (event.type === 'combo') hud.comboBump = time;
     else if (event.type === 'wave') hud.banner = { text: t.wave(event.wave), detail: event.wave === 1 ? t.firstWave : '', born: time, until: time + 1.8 };
     else if (event.type === 'cleared') {
-      hud.banner = { text: t.cleared, detail: `+${event.bonus}${event.healed ? `  ·  ${t.healed}` : ''}`, born: time, until: time + 2 };
+      hud.banner = { text: t.cleared, detail: event.healed ? t.healed : '', born: time, until: time + 2 };
     }
   }
   hud.texts = hud.texts.filter((item) => time - item.born < 0.9);
@@ -102,8 +101,9 @@ export function drawHud(c: CanvasRenderingContext2D, run: CupidRun, hud: HudStat
     c.fillRect(0, 0, HUD_W, HUD_H);
   }
 
-  // Health hearts, top left.
-  for (let i = 0; i < MAX_HP; i += 1) heart(c, 24 + i * 26, 24, 20, i < run.player.hp);
+  // Health hearts, top left, only when there's more than one to lose.
+  if (MAX_HP > 1) for (let i = 0; i < MAX_HP; i += 1) heart(c, 24 + i * 26, 24, 20, i < run.player.hp);
+  label(c, t.grabbed(run.grabbed), 16, MAX_HP > 1 ? 52 : 28, '#FFE3EE', 12);
 
   // Wave, top center.
   if (run.wave > 0) label(c, t.wave(run.wave), HUD_W / 2, 26, WHITE, 13, 'center');
@@ -122,6 +122,25 @@ export function drawHud(c: CanvasRenderingContext2D, run: CupidRun, hud: HudStat
     c.fillRect(x - 1, 79, 8, 6);
     c.fillStyle = filled ? comboColor : 'rgba(255, 255, 255, 0.25)';
     c.fillRect(x, 80, 6, 4);
+  }
+  label(c, t.worth(PLUSHIE_POINTS * run.combo), HUD_W - 16, 100, '#FFE3EE', 10, 'right');
+
+  // A shrinking ring over each plushie shows how long it will stay.
+  for (const plushie of run.plushies) {
+    if (run.status === 'over') break;
+    const at = toScreen(options.project(plushie.pos, 2));
+    const left = Math.max(0, plushie.life / PLUSHIE_LIFE);
+    c.lineCap = 'round';
+    c.lineWidth = 4;
+    c.strokeStyle = INK;
+    c.beginPath();
+    c.arc(at.x, at.y, 6, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * left);
+    c.stroke();
+    c.lineWidth = 2;
+    c.strokeStyle = left < 0.3 ? PINK : GOLD;
+    c.beginPath();
+    c.arc(at.x, at.y, 6, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * left);
+    c.stroke();
   }
 
   // The draw meter wraps around her while she holds the bow.

@@ -198,11 +198,11 @@ export const strings = {
       cupid: {
         title: 'Love Attack',
         skill: 'Moving and aiming at the same time',
-        summary: 'Turn grumpy clouds happy with a heart bow.',
+        summary: 'Rescue teddy plushies from grumpy clouds with a heart bow.',
         about: [
           'Most action games ask your thumbs to do two jobs at once: one stick moves you, and the other aims. Keeping them apart, so walking doesn’t pull your aim and aiming doesn’t stop your feet, is one of the hardest things for new players.',
-          'Grumpy clouds float into the arena and try to bump into you. Hold R2 to draw your heart bow and let go to shoot. A quick tap shoots fast but weak, and a full draw flies faster, hits harder, and goes right through a crowd. You walk slower while drawing, so pick your moment.',
-          'Popping clouds in a row raises your combo and multiplies your points, and a miss resets the progress toward the next step. Getting bumped costs a heart and the whole combo. Dash through danger with L1, since you can’t be hurt mid-dash.',
+          'Teddy plushies appear around the arena, and grabbing them is how you score. Grumpy clouds float in to get in your way. Hold R2 to draw your heart bow and let go to shoot. A quick tap shoots fast but weak, and a full draw flies faster, hits harder, and goes right through a crowd. You walk slower while drawing, so pick your moment.',
+          'Every three clouds you pop raises your multiplier, and the next plushie you grab cashes it in. A missed arrow clears your progress toward the next step. Plushies fade after a while, so grab now or pop a few more first? Be careful: if a cloud bumps you or an arrow hits a plushie, the run is over. Dash through danger with L1, since you can’t be hurt mid-dash.',
         ],
       },
       jet: {
@@ -227,6 +227,14 @@ export const strings = {
       go: 'Go!',
       getReady: 'Get ready',
       best: (score: number) => `Best ${score}`,
+      grabbed: (count: number) => `Plushies ${count}`,
+      worth: (points: number) => `Next plushie +${points}`,
+      plushiesGrabbed: 'Plushies',
+      endings: {
+        bumped: 'A grumpy cloud bumped into you.',
+        rain: 'A raindrop got you.',
+        plushie: 'Your arrow hit a plushie!',
+      },
       mouseNote: 'Your mouse aims. Hold the left button to draw the bow, and let go to shoot.',
       hintsOption: 'Show control reminders',
       prototype: 'Prototype',

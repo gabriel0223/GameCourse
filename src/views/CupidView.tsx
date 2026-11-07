@@ -10,7 +10,7 @@ import { bestScore } from '../domain/practice';
 import type { FinishedRun, RunReward } from '../domain/practice';
 import { createCupidAudio } from '../practice/cupidAudio';
 import { accuracy, newCupidRun, stepCupidRun, toggleCupidPause } from '../practice/cupidGame';
-import type { CupidRun } from '../practice/cupidGame';
+import type { CupidRun, Ending } from '../practice/cupidGame';
 import { HUD_H, HUD_W, drawHud, newHud, readHudEvents } from '../practice/cupidHud';
 import { MouseControls, PAD, readPadControls, rumble } from '../practice/cupidInput';
 import type { CupidScheme } from '../practice/cupidInput';
@@ -44,6 +44,8 @@ interface Setup {
 
 interface Finished {
   run: FinishedRun;
+  ending: Ending | null;
+  grabbed: number;
   wave: number;
   bestCombo: number;
   accuracy: number;
@@ -114,6 +116,8 @@ function ArenaStage({ setup, onFinish }: { setup: Setup; onFinish(result: Finish
       finished = true;
       finish.current({
         run: { game: GAME_ID, device: setup.scheme, score: run.score, bestStreak: 0, mistakes: run.shots - run.landed },
+        ending: run.ending,
+        grabbed: run.grabbed,
         wave: run.wave,
         bestCombo: run.bestCombo,
         accuracy: accuracy(run),
@@ -164,9 +168,11 @@ function ArenaStage({ setup, onFinish }: { setup: Setup; onFinish(result: Finish
           if (event.type === 'drawFull') rumble(0, 0.35, 40);
           if (event.type === 'hurt') rumble(0.9, 0.5, 260);
           if (event.type === 'pop' && event.kind === 'storm') rumble(0.6, 0.3, 160);
+          if (event.type === 'grab') rumble(0.2, 0.5, 120);
+          if (event.type === 'plushieHit') rumble(0.9, 0.2, 300);
         }
       }
-      readHudEvents(hudState, run, events, clock);
+      readHudEvents(hudState, events, clock);
       scene.render(run, { time: clock, delta: run.status === 'paused' ? 0 : delta, events });
       drawHud(context, run, hudState, {
         project: scene.project,
@@ -190,6 +196,7 @@ function ArenaStage({ setup, onFinish }: { setup: Setup; onFinish(result: Finish
         const nearest = landed.sort(
           (a, b) => Math.hypot(a.pos.x - run.player.pos.x, a.pos.z - run.player.pos.z) - Math.hypot(b.pos.x - run.player.pos.x, b.pos.z - run.player.pos.z),
         )[0];
+        status.current.dataset.plushies = run.plushies.map((item) => `${item.pos.x.toFixed(2)},${item.pos.z.toFixed(2)}`).join(' ');
         status.current.dataset.kinds = run.enemies.map((enemy) => enemy.kind).join(' ');
         status.current.dataset.nearest = nearest ? `${nearest.pos.x.toFixed(2)},${nearest.pos.z.toFixed(2)}` : '';
       }
@@ -424,7 +431,9 @@ export function CupidView() {
         <RunResults
           game={GAME_ID}
           score={phase.finished.run.score}
+          note={phase.finished.ending ? t.cupid.endings[phase.finished.ending] : undefined}
           stats={[
+            { label: t.cupid.plushiesGrabbed, value: phase.finished.grabbed },
             { label: t.cupid.wavesReached, value: phase.finished.wave },
             { label: t.cupid.bestCombo, value: phase.finished.bestCombo },
             { label: t.cupid.accuracy, value: phase.finished.accuracy },
