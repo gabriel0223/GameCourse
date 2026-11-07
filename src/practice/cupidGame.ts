@@ -188,7 +188,8 @@ export function newCupidRun(): CupidRun {
     pops: 0,
     player: {
       pos: { x: 0, z: 1 },
-      face: { x: 0, z: -1 },
+      // A three-quarter turn toward the camera, so the start shows her face.
+      face: { x: 0.8, z: 0.6 },
       moving: 0,
       hp: MAX_HP,
       draw: 0,

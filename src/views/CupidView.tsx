@@ -19,7 +19,6 @@ import { cupidControls } from '../practice/controls';
 import { PAD_PAUSE } from '../practice/devices';
 import { PadReader, usePadConfirm, usePadStatus } from '../practice/gamepad';
 import { loadVolume, saveVolume } from '../practice/jetAudio';
-import bearSprite from '../assets/practice/bear.png';
 import { useLibrary } from '../state/LibraryContext';
 import { strings } from '../strings';
 import { hrefs } from '../useHashRoute';
@@ -66,9 +65,10 @@ function ArenaStage({ setup, onFinish }: { setup: Setup; onFinish(result: Finish
   const bestAtStart = useRef(bestScore(profile.practice, GAME_ID));
 
   // Her outfit is read once, so a run keeps one look from start to finish.
+  // The bear is a 3D model, so it needs no sprite layers.
   const layerUrls = useRef(
     setup.hero === 'bear'
-      ? [bearSprite]
+      ? null
       : [
       `base-${profile.skin}`,
       gamer.equipped.bottom?.id,
@@ -89,12 +89,12 @@ function ArenaStage({ setup, onFinish }: { setup: Setup; onFinish(result: Finish
     overlay.height = HUD_H * 2;
     context.scale(2, 2);
 
-    const layers = layerUrls.current.map((url) => {
+    const layers = layerUrls.current?.map((url) => {
       const image = new Image();
       image.src = url;
       return image;
     });
-    const scene = createCupidScene(element, layers);
+    const scene = createCupidScene(element, layers ?? null);
     const audio = createCupidAudio(startVolume.current);
     applyVolume.current = audio.setVolume;
     const run: CupidRun = newCupidRun();

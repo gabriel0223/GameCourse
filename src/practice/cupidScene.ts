@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { createBear } from './cupidBear';
 import { ARENA_D, ARENA_W, KINDS, drawPower, isDashing } from './cupidGame';
 import type { CupidEvent, CupidRun, EnemyKind, Flat } from './cupidGame';
 
@@ -146,7 +147,8 @@ interface Bit {
   gravity: number;
 }
 
-export function createCupidScene(canvas: HTMLCanvasElement, layers: HTMLImageElement[]): CupidScene {
+// With sprite layers she plays as her own character. Without them, she plays as the 3D white bear.
+export function createCupidScene(canvas: HTMLCanvasElement, layers: HTMLImageElement[] | null): CupidScene {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, preserveDrawingBuffer: true });
   renderer.setPixelRatio(1);
   renderer.setSize(RENDER_W, RENDER_H, false);
@@ -222,16 +224,22 @@ export function createCupidScene(canvas: HTMLCanvasElement, layers: HTMLImageEle
   spriteTexture.repeat.set(1 / FRAMES, 1);
   const paintSprite = () => {
     spriteContext.clearRect(0, 0, spriteCanvas.width, spriteCanvas.height);
-    for (const layer of layers) if (layer.complete && layer.naturalWidth) spriteContext.drawImage(layer, 0, 0);
+    for (const layer of layers ?? []) if (layer.complete && layer.naturalWidth) spriteContext.drawImage(layer, 0, 0);
     spriteTexture.needsUpdate = true;
   };
   paintSprite();
-  for (const layer of layers) if (!layer.complete) layer.addEventListener('load', paintSprite);
+  for (const layer of layers ?? []) if (!layer.complete) layer.addEventListener('load', paintSprite);
   const heroMaterial = keep(new THREE.SpriteMaterial({ map: spriteTexture, transparent: true, alphaTest: 0.5 }));
   const hero = new THREE.Sprite(heroMaterial);
   hero.center.set(0.5, 0);
   hero.scale.set(SPRITE_W * PIXEL, SPRITE_H * PIXEL, 1);
-  scene.add(hero);
+  const bear = layers ? null : createBear();
+  if (bear) {
+    disposables.push(bear);
+    scene.add(bear.group);
+  } else {
+    scene.add(hero);
+  }
 
   const shadowGeometry = keep(new THREE.CircleGeometry(1, 16));
   shadowGeometry.rotateX(-Math.PI / 2);
@@ -445,6 +453,18 @@ export function createCupidScene(canvas: HTMLCanvasElement, layers: HTMLImageEle
       hero.position.set(player.pos.x, 0.02, player.pos.z);
       const hurt = time < player.hurtUntil && run.status === 'running';
       hero.visible = run.status === 'over' ? Math.floor(time * 6) % 2 === 0 : !hurt || Math.floor(time * 14) % 2 === 0;
+      if (bear) {
+        bear.group.position.set(player.pos.x, 0.02, player.pos.z);
+        bear.group.visible = hero.visible;
+        bear.pose({
+          time,
+          walk: run.status === 'running' ? Math.min(1, player.moving / 6) : 0,
+          dashing: isDashing(run),
+          drawing: player.drawing,
+          heading: Math.atan2(-player.face.z, player.face.x),
+          delta,
+        });
+      }
       heroShadow.position.set(player.pos.x, 0.02, player.pos.z);
 
       // The bow sits a step ahead of her, with the string pulled back as she draws.
