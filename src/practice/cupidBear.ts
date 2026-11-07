@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
 // Love Attack's white bear as a low-poly model: an original polar bear cub in a red scarf.
-// It faces +x, stands on y = 0, and is about 1.6 units tall.
+// It faces +x, stands on y = 0, and is about 2 units tall.
 
 export interface BearPose {
   // Seconds, for the walk cycle and the scarf.
@@ -23,9 +23,12 @@ export interface Bear {
   dispose(): void;
 }
 
-const flat = (hex: string) => new THREE.MeshLambertMaterial({ color: hex, flatShading: true });
+// Smooth shading for the full 3D look, or flat facets for the pixel look.
+const fill = (hex: string, smooth: boolean) => new THREE.MeshLambertMaterial({ color: hex, flatShading: !smooth });
 
-export function createBear(): Bear {
+export function createBear(smooth: boolean): Bear {
+  const flat = (hex: string) => fill(hex, smooth);
+  const detail = smooth ? 3 : 1;
   const fur = flat('#FBF8FF');
   // A little glow of its own keeps white fur white, even on the shaded side.
   fur.emissive.set('#4A4458');
@@ -36,13 +39,12 @@ export function createBear(): Bear {
   const shine = new THREE.MeshBasicMaterial({ color: '#FFFFFF' });
   const scarf = flat('#E8476F');
   const scarfShade = flat('#B32F55');
-  const ball = new THREE.IcosahedronGeometry(1, 1);
-  const smooth = new THREE.IcosahedronGeometry(1, 2);
+  const ball = new THREE.IcosahedronGeometry(1, detail);
+  const round = new THREE.IcosahedronGeometry(1, detail + 1);
   const box = new THREE.BoxGeometry(1, 1, 1);
-  const ring = new THREE.TorusGeometry(0.31, 0.085, 5, 12);
-  const outline = new THREE.MeshBasicMaterial({ color: '#2B1B38', side: THREE.BackSide });
-  const geometries = [ball, smooth, box, ring];
-  const materials = [fur, muzzle, pad, ink, shine, scarf, scarfShade, outline];
+  const ring = smooth ? new THREE.TorusGeometry(0.31, 0.085, 12, 32) : new THREE.TorusGeometry(0.31, 0.085, 5, 12);
+  const geometries = [ball, round, box, ring];
+  const materials = [fur, muzzle, pad, ink, shine, scarf, scarfShade];
 
   const part = (geometry: THREE.BufferGeometry, material: THREE.Material, x: number, y: number, z: number, sx: number, sy = sx, sz = sx) => {
     const mesh = new THREE.Mesh(geometry, material);
@@ -67,11 +69,11 @@ export function createBear(): Bear {
   const head = new THREE.Group();
   head.position.set(0.05, 1.2, 0);
   body.add(head);
-  head.add(part(smooth, fur, 0, 0, 0, 0.53, 0.48, 0.51));
+  head.add(part(round, fur, 0, 0, 0, 0.53, 0.48, 0.51));
   head.add(part(ball, muzzle, 0.45, -0.12, 0, 0.21, 0.16, 0.2));
-  head.add(part(smooth, ink, 0.64, -0.07, 0, 0.08, 0.065, 0.09));
+  head.add(part(round, ink, 0.64, -0.07, 0, 0.08, 0.065, 0.09));
   for (const side of [-1, 1]) {
-    head.add(part(smooth, ink, 0.38, 0.06, side * 0.27, 0.075, 0.1, 0.07));
+    head.add(part(round, ink, 0.38, 0.06, side * 0.27, 0.075, 0.1, 0.07));
     head.add(part(box, shine, 0.43, 0.11, side * 0.29, 0.03, 0.035, 0.02));
     const ear = new THREE.Group();
     ear.position.set(-0.1, 0.4, side * 0.33);
@@ -106,21 +108,6 @@ export function createBear(): Bear {
   turn.add(...legs);
   body.add(...arms);
 
-  // A dark shell behind each big shape gives the model the same outline as the pixel sprites.
-  const OUTLINE = 0.055;
-  const shelled = new Set<THREE.Material>([fur, scarf]);
-  const shells: THREE.Mesh[] = [];
-  group.traverse((child) => {
-    if (child instanceof THREE.Mesh && shelled.has(child.material as THREE.Material)) shells.push(child);
-  });
-  for (const mesh of shells) {
-    const shell = new THREE.Mesh(mesh.geometry, outline);
-    shell.position.copy(mesh.position);
-    shell.rotation.copy(mesh.rotation);
-    const grow = mesh.geometry === ring ? 1.25 : 1;
-    shell.scale.set(mesh.scale.x + OUTLINE * grow, mesh.scale.y + OUTLINE * grow, mesh.scale.z + OUTLINE * grow);
-    mesh.parent!.add(shell);
-  }
   group.scale.setScalar(1.3);
 
   let heading = 0;
@@ -175,7 +162,9 @@ export interface TeddyKit {
   dispose(): void;
 }
 
-export function createTeddyKit(): TeddyKit {
+export function createTeddyKit(smooth: boolean): TeddyKit {
+  const flat = (hex: string) => fill(hex, smooth);
+  const detail = smooth ? 3 : 1;
   const brown = flat('#A06B44');
   brown.emissive.set('#2A160C');
   const tan = flat('#E2BC8E');
@@ -183,22 +172,15 @@ export function createTeddyKit(): TeddyKit {
   const ink = new THREE.MeshBasicMaterial({ color: '#2B1B38' });
   const shine = new THREE.MeshBasicMaterial({ color: '#FFFFFF' });
   const bow = flat('#E8476F');
-  const outline = new THREE.MeshBasicMaterial({ color: '#2B1B38', side: THREE.BackSide });
-  const ball = new THREE.IcosahedronGeometry(1, 1);
-  const smooth = new THREE.IcosahedronGeometry(1, 2);
+  const ball = new THREE.IcosahedronGeometry(1, detail);
+  const round = new THREE.IcosahedronGeometry(1, detail + 1);
   const box = new THREE.BoxGeometry(1, 1, 1);
 
-  const part = (parent: THREE.Object3D, geometry: THREE.BufferGeometry, material: THREE.Material, x: number, y: number, z: number, sx: number, sy = sx, sz = sx, edge = false) => {
+  const part = (parent: THREE.Object3D, geometry: THREE.BufferGeometry, material: THREE.Material, x: number, y: number, z: number, sx: number, sy = sx, sz = sx) => {
     const mesh = new THREE.Mesh(geometry, material);
     mesh.position.set(x, y, z);
     mesh.scale.set(sx, sy, sz);
     parent.add(mesh);
-    if (edge) {
-      const shell = new THREE.Mesh(geometry, outline);
-      shell.position.copy(mesh.position);
-      shell.scale.set(sx + 0.05, sy + 0.05, sz + 0.05);
-      parent.add(shell);
-    }
     return mesh;
   };
 
@@ -209,30 +191,30 @@ export function createTeddyKit(): TeddyKit {
       // Leans back a little, so its face looks up at the camera.
       teddy.rotation.x = -0.35;
       group.add(teddy);
-      part(teddy, ball, brown, 0, 0.3, 0, 0.3, 0.29, 0.26, true);
+      part(teddy, ball, brown, 0, 0.3, 0, 0.3, 0.29, 0.26);
       part(teddy, ball, tan, 0, 0.27, 0.19, 0.17, 0.17, 0.08);
       for (const side of [-1, 1]) {
-        part(teddy, ball, brown, side * 0.16, 0.1, 0.17, 0.11, 0.09, 0.15, true);
+        part(teddy, ball, brown, side * 0.16, 0.1, 0.17, 0.11, 0.09, 0.15);
         part(teddy, ball, tan, side * 0.16, 0.1, 0.31, 0.07, 0.07, 0.03);
-        part(teddy, ball, brown, side * 0.3, 0.33, 0.06, 0.08, 0.14, 0.08, true);
-        part(teddy, ball, brown, side * 0.2, 0.98, 0, 0.1, 0.1, 0.06, true);
+        part(teddy, ball, brown, side * 0.3, 0.33, 0.06, 0.08, 0.14, 0.08);
+        part(teddy, ball, brown, side * 0.2, 0.98, 0, 0.1, 0.1, 0.06);
         part(teddy, ball, tan, side * 0.2, 0.98, 0.04, 0.055, 0.055, 0.03);
-        part(teddy, smooth, ink, side * 0.11, 0.78, 0.25, 0.045, 0.045, 0.03);
+        part(teddy, round, ink, side * 0.11, 0.78, 0.25, 0.045, 0.045, 0.03);
         part(teddy, box, shine, side * 0.11 + 0.015, 0.795, 0.275, 0.015, 0.015, 0.01);
         // The bow's two loops.
         const loop = part(teddy, box, bow, side * 0.1, 0.55, 0.24, 0.13, 0.08, 0.04);
         loop.rotation.z = side * 0.35;
       }
-      part(teddy, smooth, brown, 0, 0.75, 0, 0.3, 0.27, 0.27, true);
+      part(teddy, round, brown, 0, 0.75, 0, 0.3, 0.27, 0.27);
       part(teddy, ball, tan, 0, 0.68, 0.22, 0.12, 0.09, 0.08);
-      part(teddy, smooth, ink, 0, 0.71, 0.3, 0.045, 0.035, 0.03);
+      part(teddy, round, ink, 0, 0.71, 0.3, 0.045, 0.035, 0.03);
       part(teddy, ball, bow, 0, 0.55, 0.26, 0.05, 0.05, 0.04);
       group.scale.setScalar(1.25);
       return group;
     },
     dispose() {
-      for (const geometry of [ball, smooth, box]) geometry.dispose();
-      for (const material of [brown, tan, ink, shine, bow, outline]) material.dispose();
+      for (const geometry of [ball, round, box]) geometry.dispose();
+      for (const material of [brown, tan, ink, shine, bow]) material.dispose();
     },
   };
 }

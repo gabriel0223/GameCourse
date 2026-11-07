@@ -2791,6 +2791,10 @@ a.practice-card:focus-visible {
   cursor: none;
 }
 
+.jet-canvas.cupid-smooth {
+  image-rendering: auto;
+}
+
 .cupid-hero {
   display: flex;
   flex-wrap: wrap;

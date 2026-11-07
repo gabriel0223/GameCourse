@@ -14,7 +14,7 @@ import type { CupidRun, Ending } from '../practice/cupidGame';
 import { HUD_H, HUD_W, drawHud, newHud, readHudEvents } from '../practice/cupidHud';
 import { MouseControls, PAD, readPadControls, rumble } from '../practice/cupidInput';
 import type { CupidScheme } from '../practice/cupidInput';
-import { createCupidScene } from '../practice/cupidScene';
+import { SMOOTH, createCupidScene } from '../practice/cupidScene';
 import { cupidControls } from '../practice/controls';
 import { PAD_PAUSE } from '../practice/devices';
 import { PadReader, usePadConfirm, usePadStatus } from '../practice/gamepad';
@@ -187,6 +187,7 @@ function ArenaStage({ setup, onFinish }: { setup: Setup; onFinish(result: Finish
         status.current.dataset.state = run.status;
         status.current.dataset.score = String(run.score);
         status.current.dataset.time = run.time.toFixed(1);
+        status.current.dataset.quality = String(scene.quality());
         status.current.dataset.hp = String(run.player.hp);
         status.current.dataset.combo = String(run.combo);
         status.current.dataset.enemies = String(run.enemies.length);
@@ -268,7 +269,7 @@ function ArenaStage({ setup, onFinish }: { setup: Setup; onFinish(result: Finish
   return (
     <>
       <div className={`runner-frame jet-frame${setup.scheme === 'mouse' ? ' cupid-mouse' : ''}`}>
-        <canvas ref={canvas} className="jet-canvas" role="img" aria-label={t.cupid.canvasLabel} />
+        <canvas ref={canvas} className={`jet-canvas${SMOOTH ? ' cupid-smooth' : ''}`} role="img" aria-label={t.cupid.canvasLabel} />
         <canvas ref={hud} className="jet-hud" aria-hidden="true" />
         {paused && (
           <PauseMenu guide={cupidControls(setup.scheme)} onResume={() => pause.current()} onQuit={() => quit.current()}>
