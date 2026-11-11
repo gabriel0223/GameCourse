@@ -88,7 +88,7 @@ export function createCupidAudio(volume: number): CupidAudio {
             pops += 1;
             tone('sine', 300, note(combo + (pops % 2) * 2, 392), now, 0.09, 0.3);
             tone('triangle', note(combo + 2, 392), note(combo + 2, 392), now + 0.06, 0.14, 0.16);
-            if (event.kind === 'storm') tone('sine', 140, 60, now, 0.4, 0.4);
+            if (event.kind === 'brute') tone('sine', 140, 60, now, 0.4, 0.4);
             break;
           case 'grab':
             // A happy run up the scale, longer for a bigger combo.
@@ -116,8 +116,13 @@ export function createCupidAudio(volume: number): CupidAudio {
           case 'dash':
             hiss(now, 0.18, 600, 2800, 0.22);
             break;
-          case 'spit':
-            tone('sine', 180, 420, now, 0.5, 0.08, 0.2);
+          case 'windup':
+            // A grumble, lower for a big bear.
+            tone('sawtooth', event.kind === 'brute' ? 90 : 160, event.kind === 'brute' ? 130 : 260, now, event.kind === 'brute' ? 0.6 : 0.45, 0.07, 0.15);
+            break;
+          case 'charge':
+            hiss(now, 0.4, 300, 1800, 0.25);
+            tone('square', 110, 60, now, 0.35, 0.12);
             break;
           case 'over':
             tune([7, 4, 2, 0, -3], now + 0.1, 0.13, 0.16);

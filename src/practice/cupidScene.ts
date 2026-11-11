@@ -1,17 +1,14 @@
 import * as THREE from 'three';
-import { createBear, createTeddyKit } from './cupidBear';
+import { createBear, createPandaKit, createTeddyKit } from './cupidBear';
+import type { Panda } from './cupidBear';
 import { ARENA_D, ARENA_W, KINDS, PLUSHIE_LIFE, drawPower, isDashing } from './cupidGame';
-import type { CupidEvent, CupidRun, EnemyKind, Flat } from './cupidGame';
+import type { CupidEvent, CupidRun, Flat } from './cupidGame';
 
 // The full 3D look: full resolution, smooth shading, and real shadows.
 // Set it to false for the pixel look, drawn small and scaled up with hard pixels like Sunset Ace.
 export const SMOOTH = true;
 export const RENDER_W = 480;
 export const RENDER_H = 270;
-const SPRITE_W = 16;
-const SPRITE_H = 22;
-const FRAMES = 5;
-const PIXEL = 0.095;
 
 export interface Projected {
   x: number;
@@ -143,31 +140,11 @@ function floorTexture() {
   return texture;
 }
 
-interface CloudLook {
-  body: string;
-  shade: string;
-  scale: number;
-}
-
-const LOOKS: Record<EnemyKind, CloudLook> = {
-  puff: { body: '#A99CC8', shade: '#8A7DAD', scale: 0.7 },
-  spitter: { body: '#86AEDC', shade: '#6489B8', scale: 0.74 },
-  storm: { body: '#5F5680', shade: '#4A4268', scale: 1.3 },
-};
-
-const PUFF_SPOTS: Array<[number, number, number, number]> = [
-  [0, 0, 0, 0.62],
-  [-0.55, -0.12, 0.05, 0.42],
-  [0.55, -0.1, 0.02, 0.45],
-  [-0.25, 0.32, -0.1, 0.4],
-  [0.28, 0.3, -0.05, 0.38],
-];
-
-interface Thing {
-  group: THREE.Group;
-  materials: THREE.MeshLambertMaterial[];
-  shadow?: THREE.Mesh;
-  extra?: THREE.Object3D;
+interface Rival {
+  panda: Panda;
+  shadow: THREE.Mesh;
+  // Real shadows wait until the bear lands, or a falling bear casts one far off to the side.
+  casting: boolean;
 }
 
 interface Bit {
@@ -179,8 +156,7 @@ interface Bit {
   gravity: number;
 }
 
-// With sprite layers she plays as her own character. Without them, she plays as the 3D white bear.
-export function createCupidScene(canvas: HTMLCanvasElement, layers: HTMLImageElement[] | null): CupidScene {
+export function createCupidScene(canvas: HTMLCanvasElement): CupidScene {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: SMOOTH, preserveDrawingBuffer: true });
   renderer.setPixelRatio(1);
   renderer.setSize(RENDER_W, RENDER_H, false);
@@ -289,34 +265,10 @@ export function createCupidScene(canvas: HTMLCanvasElement, layers: HTMLImageEle
   rimMesh.receiveShadow = SMOOTH;
   scene.add(rimMesh);
 
-  // Her character, built from the same layered sprite strips as everywhere else in the app.
-  const spriteCanvas = document.createElement('canvas');
-  spriteCanvas.width = SPRITE_W * FRAMES;
-  spriteCanvas.height = SPRITE_H;
-  const spriteContext = spriteCanvas.getContext('2d')!;
-  const spriteTexture = keep(new THREE.CanvasTexture(spriteCanvas));
-  spriteTexture.magFilter = THREE.NearestFilter;
-  spriteTexture.minFilter = THREE.NearestFilter;
-  spriteTexture.colorSpace = THREE.SRGBColorSpace;
-  spriteTexture.repeat.set(1 / FRAMES, 1);
-  const paintSprite = () => {
-    spriteContext.clearRect(0, 0, spriteCanvas.width, spriteCanvas.height);
-    for (const layer of layers ?? []) if (layer.complete && layer.naturalWidth) spriteContext.drawImage(layer, 0, 0);
-    spriteTexture.needsUpdate = true;
-  };
-  paintSprite();
-  for (const layer of layers ?? []) if (!layer.complete) layer.addEventListener('load', paintSprite);
-  const heroMaterial = keep(new THREE.SpriteMaterial({ map: spriteTexture, transparent: true, alphaTest: 0.5 }));
-  const hero = new THREE.Sprite(heroMaterial);
-  hero.center.set(0.5, 0);
-  hero.scale.set(SPRITE_W * PIXEL, SPRITE_H * PIXEL, 1);
-  const bear = layers ? null : createBear(SMOOTH);
-  if (bear) {
-    disposables.push(bear);
-    scene.add(shade(bear.group));
-  } else {
-    scene.add(hero);
-  }
+  // She always plays as the white bear.
+  const bear = createBear(SMOOTH);
+  disposables.push(bear);
+  scene.add(shade(bear.group));
 
   const shadowGeometry = keep(new THREE.CircleGeometry(1, 16));
   shadowGeometry.rotateX(-Math.PI / 2);
@@ -328,8 +280,8 @@ export function createCupidScene(canvas: HTMLCanvasElement, layers: HTMLImageEle
     return mesh;
   };
   const heroShadow = makeShadow(0.5);
-  // A real shadow replaces the painted one, except under the flat sprite, which can't cast one.
-  heroShadow.visible = !(SMOOTH && bear);
+  // In the 3D look a real shadow replaces the painted one.
+  heroShadow.visible = !SMOOTH;
   scene.add(heroShadow);
 
   // The heart bow lies flat beside her and turns with her aim.
@@ -355,7 +307,7 @@ export function createCupidScene(canvas: HTMLCanvasElement, layers: HTMLImageEle
   const dots = new THREE.InstancedMesh(dotGeometry, dotMaterial, DOTS);
   scene.add(dots);
 
-  // Arrows, plushies, and clouds share geometry and get their own pieces as they appear.
+  // Arrows, plushies, and bears share geometry and get their own pieces as they appear.
   const shaftGeometry = keep(new THREE.BoxGeometry(1, 0.07, 0.07));
   shaftGeometry.translate(-0.25, 0, 0);
   const headGeometry = keep(heartGeometry(0.42, 0.08));
@@ -364,11 +316,17 @@ export function createCupidScene(canvas: HTMLCanvasElement, layers: HTMLImageEle
   const featherGeometry = keep(new THREE.BoxGeometry(0.22, 0.04, 0.22));
   const smallHeart = keep(heartGeometry(0.22, 0.06));
   const sparkGeometry = keep(new THREE.BoxGeometry(0.1, 0.1, 0.1));
-  const eyeGeometry = keep(new THREE.BoxGeometry(0.13, 0.2, 0.05));
-  const browGeometry = keep(new THREE.BoxGeometry(0.26, 0.07, 0.05));
-  const mouthGeometry = keep(new THREE.BoxGeometry(0.24, 0.06, 0.05));
-  const dropGeometry = keep(new THREE.IcosahedronGeometry(0.2, SMOOTH ? 2 : 0));
-  const ink = keep(new THREE.MeshBasicMaterial({ color: '#2B1B38' }));
+  // A thrown broken heart: the left half of a heart, ending in a jagged crack. The right half mirrors it.
+  const halfHeart = new THREE.Shape();
+  halfHeart.moveTo(0, -0.3);
+  halfHeart.bezierCurveTo(-0.07, -0.22, -0.37, -0.04, -0.34, 0.13);
+  halfHeart.bezierCurveTo(-0.3, 0.31, -0.07, 0.34, 0, 0.18);
+  halfHeart.lineTo(0.04, 0.09);
+  halfHeart.lineTo(-0.03, 0);
+  halfHeart.lineTo(0.04, -0.1);
+  halfHeart.lineTo(0, -0.3);
+  const brokenGeometry = keep(new THREE.ExtrudeGeometry(halfHeart, { depth: 0.12, bevelEnabled: false, curveSegments: SMOOTH ? 12 : 4 }));
+  brokenGeometry.translate(0, 0, -0.06);
   const shaftMaterial = keep(lambert('#F7E3C8'));
   const fullShaft = keep(lambert('#FFD45E', { emissive: '#B07A10' }));
   const headMaterial = keep(lambert('#FF4F86', { emissive: '#6A0A2A' }));
@@ -379,7 +337,8 @@ export function createCupidScene(canvas: HTMLCanvasElement, layers: HTMLImageEle
   const glowGeometry = keep(new THREE.RingGeometry(0.55, 0.85, 20));
   glowGeometry.rotateX(-Math.PI / 2);
   const glowMaterial = keep(new THREE.MeshBasicMaterial({ color: '#FFD45E', transparent: true, opacity: 0.55, depthWrite: false }));
-  const dropMaterial = keep(lambert('#6FB7F2', { emissive: '#1F4F8A' }));
+  const brokenMaterial = keep(lambert('#8E4BC4', { emissive: '#3A1060' }));
+  const pandas = keep(createPandaKit(SMOOTH));
   const bitMaterials = {
     pink: keep(new THREE.MeshBasicMaterial({ color: '#FF7FA8' })),
     white: keep(new THREE.MeshBasicMaterial({ color: '#FFFFFF' })),
@@ -403,57 +362,26 @@ export function createCupidScene(canvas: HTMLCanvasElement, layers: HTMLImageEle
     return group;
   }
 
-  // A grumpy cloud: a few puffs, angry brows, and a frown, all facing the camera.
-  function makeCloud(kind: EnemyKind): Thing {
-    const look = LOOKS[kind];
-    const group = new THREE.Group();
-    const body = lambert(look.body, { emissive: '#000000' });
-    const shadeMaterial = lambert(look.shade, { emissive: '#000000' });
-    const puffs = new THREE.Group();
-    PUFF_SPOTS.forEach(([x, y, z, size], index) => {
-      const puff = new THREE.Mesh(puffGeometry, index > 2 ? shadeMaterial : body);
-      puff.position.set(x, y, z);
-      puff.scale.setScalar(size);
-      puffs.add(puff);
-    });
-    const face = new THREE.Group();
-    face.position.set(0, 0.06, 0.6);
-    for (const side of [-1, 1]) {
-      const eye = new THREE.Mesh(eyeGeometry, ink);
-      eye.position.set(side * 0.17, 0.02, 0);
-      face.add(eye);
-      const brow = new THREE.Mesh(browGeometry, ink);
-      brow.position.set(side * 0.19, 0.17, 0.01);
-      brow.rotation.z = side * -0.45;
-      face.add(brow);
-    }
-    const mouth = new THREE.Mesh(mouthGeometry, ink);
-    mouth.position.set(0, -0.17, 0);
-    face.add(mouth);
-    // The face tilts up a little, toward the camera.
-    face.rotation.x = -0.5;
-    puffs.add(face);
-    group.add(puffs);
-    group.scale.setScalar(look.scale);
-    let extra: THREE.Object3D | undefined;
-    if (kind === 'spitter') {
-      extra = new THREE.Mesh(dropGeometry, dropMaterial);
-      extra.position.set(0, -0.6, 0.2);
-      extra.visible = false;
-      puffs.add(extra);
-    }
-    const shadow = makeShadow(KINDS[kind].radius);
-    scene.add(shadow);
-    return { group: shade(group), materials: [body, shadeMaterial], shadow, extra };
-  }
-
-  const clouds = new Map<number, Thing>();
+  const rivals = new Map<number, Rival>();
   const arrows = new Map<number, THREE.Group>();
   const plushies = new Map<number, { group: THREE.Group; teddy: THREE.Group; glow: THREE.Mesh; born: number }>();
   let lastGrab = -10;
+  let lastShot = -10;
   let hitAt: Flat | null = null;
   let clock = 0;
-  const drops = new Map<number, { mesh: THREE.Mesh; shadow: THREE.Mesh }>();
+  const thrown = new Map<number, { group: THREE.Group; shadow: THREE.Mesh }>();
+  // Each broken heart is two halves, clipped down the middle with a jagged gap.
+  function makeBroken() {
+    const group = new THREE.Group();
+    for (const side of [-1, 1]) {
+      const half = new THREE.Mesh(brokenGeometry, brokenMaterial);
+      half.scale.set(side * -1.6, 1.6, 1.6);
+      half.position.x = side * 0.07;
+      half.rotation.z = side * -0.18;
+      group.add(half);
+    }
+    return shade(group);
+  }
   const bits: Bit[] = [];
   let shake = 0;
 
@@ -478,9 +406,12 @@ export function createCupidScene(canvas: HTMLCanvasElement, layers: HTMLImageEle
   function readEvents(run: CupidRun, events: CupidEvent[]) {
     for (const event of events) {
       if (event.type === 'pop') {
-        const big = event.kind === 'storm';
-        burst(event.at, 0.9, big ? 16 : 9, smallHeart, bitMaterials.pink, big ? 6 : 4);
-        burst(event.at, 0.9, big ? 10 : 6, sparkGeometry, bitMaterials.grey, 3);
+        // A charmed bear bursts into hearts and sparkles.
+        const big = event.kind === 'brute';
+        burst(event.at, 1, big ? 18 : 10, smallHeart, bitMaterials.pink, big ? 6 : 4.5);
+        burst(event.at, 1, big ? 10 : 6, sparkGeometry, bitMaterials.white, 3.5);
+      } else if (event.type === 'charge') {
+        burst(event.at, 0.2, 10, sparkGeometry, bitMaterials.grey, 3, 3);
       } else if (event.type === 'hit') {
         burst(event.at, 0.9, 4, sparkGeometry, bitMaterials.white, 3);
       } else if (event.type === 'grab') {
@@ -497,7 +428,9 @@ export function createCupidScene(canvas: HTMLCanvasElement, layers: HTMLImageEle
       } else if (event.type === 'hurt') {
         shake = 0.35;
         burst(event.at, 0.8, 8, sparkGeometry, bitMaterials.blue, 4);
-      } else if (event.type === 'shot' && event.full) {
+      } else if (event.type === 'shot') {
+        lastShot = clock;
+        if (event.full) burst(run.player.pos, 0.8, 6, sparkGeometry, bitMaterials.gold, 2.5);
         burst(run.player.pos, 0.8, 6, sparkGeometry, bitMaterials.gold, 2.5);
       } else if (event.type === 'dash') {
         burst(run.player.pos, 0.2, 6, sparkGeometry, bitMaterials.white, 2, 2);
@@ -553,30 +486,21 @@ export function createCupidScene(canvas: HTMLCanvasElement, layers: HTMLImageEle
       }
       readEvents(run, events);
       const player = run.player;
-      const facingRight = player.face.x > 0.05 || (Math.abs(player.face.x) <= 0.05 && hero.userData.right);
-      hero.userData.right = facingRight;
-
-      // Walking frames while she moves, the standing frame when still.
-      const walking = player.moving > 0.5 && run.status === 'running';
-      const frame = walking ? Math.floor(time * (isDashing(run) ? 16 : 9)) % 4 : 4;
-      spriteTexture.repeat.x = (facingRight ? -1 : 1) / FRAMES;
-      spriteTexture.offset.x = (facingRight ? frame + 1 : frame) / FRAMES;
-      hero.position.set(player.pos.x, 0.02, player.pos.z);
       const hurt = time < player.hurtUntil && run.status === 'running';
-      hero.visible = run.status === 'over' ? Math.floor(time * 6) % 2 === 0 : !hurt || Math.floor(time * 14) % 2 === 0;
-      if (bear) {
-        bear.group.position.set(player.pos.x, 0.02, player.pos.z);
-        bear.group.visible = hero.visible;
-        bear.pose({
-          time,
-          walk: run.status === 'running' ? Math.min(1, player.moving / 6) : 0,
-          dashing: isDashing(run),
-          drawing: player.drawing,
-          heading: Math.atan2(-player.face.z, player.face.x),
-          delta,
-          cheer: time - lastGrab,
-        });
-      }
+      bear.group.position.set(player.pos.x, 0.02, player.pos.z);
+      bear.group.visible = run.status === 'over' ? Math.floor(time * 6) % 2 === 0 : !hurt || Math.floor(time * 14) % 2 === 0;
+      const footfall = bear.pose({
+        time,
+        speed: run.status === 'running' ? player.moving : 0,
+        dashing: isDashing(run),
+        drawing: player.drawing,
+        heading: Math.atan2(-player.face.z, player.face.x),
+        delta,
+        cheer: time - lastGrab,
+        recoil: time - lastShot,
+      });
+      // Little puffs of dust where her feet land.
+      if (footfall && bear.group.visible) burst(player.pos, 0.05, 3, sparkGeometry, bitMaterials.white, 1.2, 6);
       heroShadow.position.set(player.pos.x, 0.02, player.pos.z);
 
       // The bow sits a step ahead of her, with the string pulled back as she draws.
@@ -618,36 +542,44 @@ export function createCupidScene(canvas: HTMLCanvasElement, layers: HTMLImageEle
 
       sync(
         run.enemies,
-        clouds,
+        rivals,
         (enemy) => {
-          const thing = makeCloud(enemy.kind);
-          scene.add(thing.group);
-          return thing;
+          const panda = pandas.make(enemy.kind);
+          const shadow = makeShadow(KINDS[enemy.kind].radius);
+          scene.add(panda.group, shadow);
+          return { panda, shadow, casting: false };
         },
-        (thing, enemy) => {
+        (rival, enemy) => {
+          const { panda, shadow } = rival;
+          if (SMOOTH && !rival.casting && enemy.spawning <= 0) {
+            shade(panda.group);
+            rival.casting = true;
+          }
           const radius = KINDS[enemy.kind].radius;
           const landing = Math.max(0, enemy.spawning);
-          // The shadow grows first, then the cloud drops in.
-          const drop = Math.min(1, landing / 0.45);
-          const hover = 0.95 + Math.sin(time * 2.2 + enemy.seed) * 0.1 + drop * drop * 9;
-          thing.group.position.set(enemy.pos.x, hover, enemy.pos.z);
-          thing.group.visible = landing < 0.45;
-          const grow = 1 - Math.min(1, landing / 0.9);
-          thing.shadow!.scale.set(radius * (0.3 + 0.7 * grow), 1, radius * 0.75 * (0.3 + 0.7 * grow));
-          thing.shadow!.position.set(enemy.pos.x, 0.025, enemy.pos.z);
-          // In the 3D look, the painted shadow only marks where a cloud is about to land.
-          thing.shadow!.visible = !SMOOTH || landing > 0.05;
-          const look = LOOKS[enemy.kind];
-          const swell = enemy.windup > 0 ? 1 + (1 - enemy.windup / 0.8) * 0.3 + Math.sin(time * 40) * 0.03 : 1;
-          thing.group.scale.setScalar(look.scale * swell);
-          if (thing.extra) thing.extra.visible = enemy.windup > 0;
-          const flash = enemy.flash > 0 ? '#FFFFFF' : enemy.windup > 0 ? '#1F4F8A' : '#000000';
-          for (const material of thing.materials) material.emissive.set(flash);
+          // The shadow grows first, then the bear drops in and lands with a squash.
+          const fall = Math.min(1, landing / 0.4);
+          panda.group.position.set(enemy.pos.x, fall * fall * 9, enemy.pos.z);
+          panda.group.visible = landing < 0.4;
+          const grow = 1 - Math.min(1, landing / 0.75);
+          shadow.scale.set(radius * (0.3 + 0.7 * grow), 1, radius * 0.75 * (0.3 + 0.7 * grow));
+          shadow.position.set(enemy.pos.x, 0.025, enemy.pos.z);
+          // In the 3D look, the painted shadow only marks where a bear is about to land.
+          shadow.visible = !SMOOTH || landing > 0.05;
+          const windupLength = enemy.kind === 'brute' ? 0.7 : 0.55;
+          panda.pose({
+            time,
+            delta,
+            speed: run.status === 'running' ? enemy.speed : 0,
+            heading: Math.atan2(-enemy.face.z, enemy.face.x),
+            windup: enemy.windup > 0 ? 1 - enemy.windup / windupLength : 0,
+            charging: enemy.charging > 0,
+            flash: enemy.flash > 0,
+          });
         },
-        (thing) => {
-          scene.remove(thing.group);
-          if (thing.shadow) scene.remove(thing.shadow);
-          for (const material of thing.materials) material.dispose();
+        ({ panda, shadow }) => {
+          scene.remove(panda.group, shadow);
+          panda.dispose();
         },
       );
 
@@ -707,21 +639,21 @@ export function createCupidScene(canvas: HTMLCanvasElement, layers: HTMLImageEle
       );
 
       sync(
-        run.drops,
-        drops,
+        run.thrown,
+        thrown,
         () => {
-          const mesh = shade(new THREE.Mesh(dropGeometry, dropMaterial));
-          const shadow = makeShadow(0.22);
+          const group = makeBroken();
+          const shadow = makeShadow(0.25);
           shadow.visible = !SMOOTH;
-          scene.add(mesh, shadow);
-          return { mesh, shadow };
+          scene.add(group, shadow);
+          return { group, shadow };
         },
-        ({ mesh, shadow }, drop) => {
-          mesh.position.set(drop.pos.x, 0.55, drop.pos.z);
-          mesh.scale.set(1, 1.4, 1);
-          shadow.position.set(drop.pos.x, 0.025, drop.pos.z);
+        ({ group, shadow }, item) => {
+          group.position.set(item.pos.x, 0.8, item.pos.z);
+          group.rotation.y = time * 9 + item.id;
+          shadow.position.set(item.pos.x, 0.025, item.pos.z);
         },
-        ({ mesh, shadow }) => scene.remove(mesh, shadow),
+        ({ group, shadow }) => scene.remove(group, shadow),
       );
 
       for (let i = bits.length - 1; i >= 0; i -= 1) {
@@ -759,7 +691,7 @@ export function createCupidScene(canvas: HTMLCanvasElement, layers: HTMLImageEle
     },
     dispose() {
       resizer?.disconnect();
-      for (const thing of clouds.values()) for (const material of thing.materials) material.dispose();
+      for (const rival of rivals.values()) rival.panda.dispose();
       for (const item of disposables) item.dispose();
       renderer.dispose();
     },

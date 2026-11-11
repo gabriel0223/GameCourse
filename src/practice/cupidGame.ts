@@ -12,21 +12,21 @@ export const COUNTDOWN = 3;
 // One mistake ends the run. Raise this to give her more hearts, and the HUD shows them.
 export const MAX_HP = 1;
 
-// Movement
-const MOVE_SPEED = 6;
-const DRAW_SPEED = 3.2;
-const DASH_SPEED = 21;
+// Movement. Everything is fast on purpose: this is meant to feel intense.
+export const MOVE_SPEED = 8.5;
+const DRAW_SPEED = 4.6;
+const DASH_SPEED = 27;
 export const DASH_TIME = 0.16;
-const DASH_COOLDOWN = 0.55;
+const DASH_COOLDOWN = 0.45;
 // From the start of one dash to the next.
 export const DASH_RECHARGE = DASH_TIME + DASH_COOLDOWN;
 const HURT_GRACE = 1.3;
 const PLAYER_RADIUS = 0.45;
 
 // The bow. Holding longer makes a faster, stronger arrow, and a full draw also pierces.
-export const FULL_DRAW = 0.55;
-const RELEASE_GAP = 0.12;
-const ARROW_LIFE = 1.1;
+export const FULL_DRAW = 0.42;
+const RELEASE_GAP = 0.09;
+const ARROW_LIFE = 0.75;
 const ARROW_RADIUS = 0.3;
 // On a controller, an arrow bends toward an enemy this close to the aim line.
 const ASSIST_ANGLE = (8 * Math.PI) / 180;
@@ -37,14 +37,16 @@ export const MAX_COMBO = 8;
 
 // Teddy plushies are the score. Each one cashes in the combo, then the combo starts over.
 export const PLUSHIE_POINTS = 100;
-export const PLUSHIE_LIFE = 10;
+export const PLUSHIE_LIFE = 8;
 const PLUSHIE_RADIUS = 0.5;
 // Generous on purpose: brushing past a plushie is enough to grab it.
 const GRAB_RADIUS = 1.35;
 const PLUSHIE_GAP = 1.2;
-const SPAWN_TIME = 0.9;
+const SPAWN_TIME = 0.75;
 
-export type EnemyKind = 'puff' | 'spitter' | 'storm';
+// The enemies are jealous bears. Chasers run straight at her, throwers keep their distance and
+// throw broken hearts, and big bears wind up and charge in a straight line.
+export type EnemyKind = 'chaser' | 'thrower' | 'brute';
 
 interface KindRules {
   hp: number;
@@ -52,9 +54,9 @@ interface KindRules {
 }
 
 export const KINDS: Record<EnemyKind, KindRules> = {
-  puff: { hp: 1, radius: 0.65 },
-  spitter: { hp: 2, radius: 0.7 },
-  storm: { hp: 6, radius: 1.25 },
+  chaser: { hp: 1, radius: 0.6 },
+  thrower: { hp: 2, radius: 0.6 },
+  brute: { hp: 5, radius: 1 },
 };
 
 export interface Player {
@@ -90,14 +92,21 @@ export interface Enemy {
   hp: number;
   // Counts down while the shadow grows. An enemy can't hurt or be hit until it lands.
   spawning: number;
-  // Spitters wind up before they spit, so there's always time to react.
+  // Throwers and big bears wind up first, so there's always time to react.
   windup: number;
   cooldown: number;
+  // A big bear's charge: the direction it locked in, and how long it has left.
+  charge: Flat;
+  charging: number;
+  // Where it's facing and how fast it moved last step, for the model.
+  face: Flat;
+  speed: number;
   flash: number;
   seed: number;
 }
 
-export interface Drop {
+// A broken heart thrown by a jealous bear.
+export interface Thrown {
   id: number;
   pos: Flat;
   vel: Flat;
@@ -110,7 +119,7 @@ export interface Plushie {
   life: number;
 }
 
-export type Ending = 'bumped' | 'rain' | 'plushie';
+export type Ending = 'bumped' | 'heartbreak' | 'plushie';
 
 export type CupidEvent =
   | { type: 'shot'; power: number; full: boolean }
@@ -124,7 +133,8 @@ export type CupidEvent =
   | { type: 'plushieGone'; at: Flat }
   | { type: 'grab'; at: Flat; points: number; combo: number }
   | { type: 'dash' }
-  | { type: 'spit'; at: Flat }
+  | { type: 'windup'; at: Flat; kind: EnemyKind }
+  | { type: 'charge'; at: Flat }
   | { type: 'combo'; level: number }
   | { type: 'comboLost' }
   | { type: 'over' };
@@ -145,9 +155,9 @@ export interface CupidRun {
   time: number;
   countdown: number;
   score: number;
-  // Counts down to the next cloud, and to the next big storm.
+  // Counts down to the next bear, and to the next big bear.
   spawnTimer: number;
-  stormTimer: number;
+  bruteTimer: number;
   combo: number;
   comboProgress: number;
   bestCombo: number;
@@ -157,7 +167,7 @@ export interface CupidRun {
   player: Player;
   arrows: Arrow[];
   enemies: Enemy[];
-  drops: Drop[];
+  thrown: Thrown[];
   plushies: Plushie[];
   // Counts down to the next plushie.
   plushieTimer: number;
@@ -184,7 +194,7 @@ export function newCupidRun(): CupidRun {
     countdown: COUNTDOWN,
     score: 0,
     spawnTimer: 1,
-    stormTimer: STORM_FIRST,
+    bruteTimer: BRUTE_FIRST,
     combo: 1,
     comboProgress: 0,
     bestCombo: 1,
@@ -207,7 +217,7 @@ export function newCupidRun(): CupidRun {
     },
     arrows: [],
     enemies: [],
-    drops: [],
+    thrown: [],
     plushies: [],
     plushieTimer: 0.8,
     grabbed: 0,
@@ -218,15 +228,18 @@ export function newCupidRun(): CupidRun {
 }
 
 // There are no waves. Everything ramps up smoothly with the time she has survived.
-const STORM_FIRST = 45;
-const STORM_GAP = 50;
-// Seconds between clouds: 2.2 at the start, down to 0.6 after about a minute and a half.
-export const spawnGap = (time: number) => Math.max(0.6, 2.2 * 0.985 ** time);
-// How many clouds can be in the arena at once.
-export const cloudLimit = (time: number) => Math.min(16, 3 + Math.floor(time / 12));
-// Spitters start showing up after 30 seconds and become more common, up to one in four.
-export const spitterChance = (time: number) => Math.max(0, Math.min(0.25, (time - 30) / 200));
-const speedUp = (time: number) => Math.min(1.4, time * 0.011);
+const BRUTE_FIRST = 25;
+const BRUTE_GAP = 35;
+// Seconds between bears: 1.4 at the start, down to 0.4 after about a minute.
+export const spawnGap = (time: number) => Math.max(0.4, 1.4 * 0.982 ** time);
+// How many bears can be in the arena at once.
+export const enemyLimit = (time: number) => Math.min(20, 4 + Math.floor(time / 8));
+// Throwers start showing up after 15 seconds and become more common, up to three in ten.
+export const throwerChance = (time: number) => Math.max(0, Math.min(0.3, (time - 15) / 150));
+const speedUp = (time: number) => Math.min(2.6, time * 0.02);
+const THROW_SPEED = 9;
+const CHARGE_SPEED = 12.5;
+const CHARGE_TIME = 0.8;
 
 export const isDashing = (run: CupidRun) => run.time < run.player.dashUntil;
 export const isGuarded = (run: CupidRun) => isDashing(run) || run.time < run.player.hurtUntil;
@@ -260,7 +273,11 @@ function spawnEnemy(run: CupidRun, kind: EnemyKind, at: Flat, random: () => numb
     hp: KINDS[kind].hp,
     spawning,
     windup: 0,
-    cooldown: 1.5 + random() * 1.5,
+    cooldown: 1 + random() * 1.2,
+    charge: { x: 0, z: 0 },
+    charging: 0,
+    face: { x: 0, z: 1 },
+    speed: 0,
     flash: 0,
     seed: random() * 100,
   });
@@ -321,15 +338,9 @@ function fire(run: CupidRun, assist: boolean) {
   run.events.push({ type: 'shot', power, full });
 }
 
-function popEnemy(run: CupidRun, enemy: Enemy, random: () => number) {
+function popEnemy(run: CupidRun, enemy: Enemy) {
   run.pops += 1;
   run.events.push({ type: 'pop', at: { ...enemy.pos }, kind: enemy.kind });
-  // A big storm breaks into two small clouds.
-  if (enemy.kind === 'storm') {
-    for (const side of [-1, 1]) {
-      spawnEnemy(run, 'puff', { x: clamp(enemy.pos.x + side * 1.2, -ARENA_W, ARENA_W), z: enemy.pos.z }, random, 0.25);
-    }
-  }
   // Pops build the combo, and the next plushie cashes it in.
   run.comboProgress += 1;
   if (run.comboProgress >= COMBO_STEP && run.combo < MAX_COMBO) {
@@ -391,39 +402,68 @@ function stepEnemies(run: CupidRun, delta: number, random: () => number) {
     }
     const toward = minus(player.pos, enemy.pos);
     const dir = unit(toward);
-    const wobble = Math.sin(run.time * 2.3 + enemy.seed) * 0.35;
+    const wobble = Math.sin(run.time * 2.3 + enemy.seed) * 0.3;
     const side = { x: -dir.z, z: dir.x };
-    if (enemy.kind === 'spitter') {
-      // Keeps its distance and circles, then winds up and spits a slow raindrop.
+    const before = { ...enemy.pos };
+    if (enemy.kind === 'thrower') {
+      // Keeps its distance and circles, then winds up and throws a broken heart.
       const gap = lengthOf(toward);
       const push = gap < 4.5 ? -1 : gap > 6.5 ? 1 : 0;
-      const speed = 2 + faster * 0.5;
+      const speed = enemy.windup > 0 ? 0 : 3 + faster * 0.5;
       enemy.pos.x += (dir.x * push * 0.8 + side.x * 0.6) * speed * delta;
       enemy.pos.z += (dir.z * push * 0.8 + side.z * 0.6) * speed * delta;
       if (enemy.windup > 0) {
         enemy.windup -= delta;
         if (enemy.windup <= 0) {
-          run.drops.push({ id: run.nextId, pos: { ...enemy.pos }, vel: { x: dir.x * 5, z: dir.z * 5 }, life: 4 });
+          run.thrown.push({ id: run.nextId, pos: { ...enemy.pos }, vel: { x: dir.x * THROW_SPEED, z: dir.z * THROW_SPEED }, life: 3 });
           run.nextId += 1;
-          enemy.cooldown = 2.6 + random() * 1.4;
+          enemy.cooldown = 1.8 + random() * 1;
         }
       } else {
         enemy.cooldown -= delta;
         if (enemy.cooldown <= 0) {
-          enemy.windup = 0.8;
-          run.events.push({ type: 'spit', at: { ...enemy.pos } });
+          enemy.windup = 0.55;
+          run.events.push({ type: 'windup', at: { ...enemy.pos }, kind: enemy.kind });
+        }
+      }
+    } else if (enemy.kind === 'brute') {
+      // Walks closer, stamps in place, then charges in a straight line.
+      if (enemy.charging > 0) {
+        enemy.charging -= delta;
+        enemy.pos.x += enemy.charge.x * CHARGE_SPEED * delta;
+        enemy.pos.z += enemy.charge.z * CHARGE_SPEED * delta;
+        if (enemy.charging <= 0) enemy.cooldown = 1.6 + random() * 1.2;
+      } else if (enemy.windup > 0) {
+        enemy.windup -= delta;
+        if (enemy.windup <= 0) {
+          enemy.charge = dir;
+          enemy.charging = CHARGE_TIME;
+          run.events.push({ type: 'charge', at: { ...enemy.pos } });
+        }
+      } else {
+        const speed = 2 + faster * 0.3;
+        enemy.pos.x += dir.x * speed * delta;
+        enemy.pos.z += dir.z * speed * delta;
+        enemy.cooldown -= delta;
+        if (enemy.cooldown <= 0 && lengthOf(toward) < 8) {
+          enemy.windup = 0.7;
+          run.events.push({ type: 'windup', at: { ...enemy.pos }, kind: enemy.kind });
         }
       }
     } else {
-      const speed = enemy.kind === 'storm' ? 1.4 + faster * 0.4 : 2.2 + faster;
+      const speed = 3.3 + faster;
       enemy.pos.x += (dir.x + side.x * wobble) * speed * delta;
       enemy.pos.z += (dir.z + side.z * wobble) * speed * delta;
     }
+    const moved = minus(enemy.pos, before);
+    enemy.speed = delta > 0 ? lengthOf(moved) / delta : 0;
+    // Faces where it's going, or at her while standing still.
+    enemy.face = enemy.charging > 0 ? enemy.charge : enemy.speed > 0.3 && enemy.kind !== 'thrower' ? unit(moved) : dir;
     enemy.pos.x = clamp(enemy.pos.x, -ARENA_W - 0.5, ARENA_W + 0.5);
     enemy.pos.z = clamp(enemy.pos.z, -ARENA_D - 0.5, ARENA_D + 0.5);
   }
 
-  // Clouds nudge each other apart, so a crowd stays readable.
+  // Bears nudge each other apart, so a crowd stays readable.
   const live = run.enemies.filter((enemy) => enemy.spawning <= 0);
   for (let i = 0; i < live.length; i += 1) {
     for (let j = i + 1; j < live.length; j += 1) {
@@ -447,7 +487,7 @@ function stepEnemies(run: CupidRun, delta: number, random: () => number) {
   }
 }
 
-function stepArrows(run: CupidRun, delta: number, random: () => number) {
+function stepArrows(run: CupidRun, delta: number) {
   const kept: Arrow[] = [];
   for (const arrow of run.arrows) {
     arrow.pos.x += arrow.dir.x * arrow.speed * delta;
@@ -470,7 +510,7 @@ function stepArrows(run: CupidRun, delta: number, random: () => number) {
       enemy.hp -= arrow.damage;
       enemy.flash = 0.12;
       if (arrow.hits.length === 1) run.landed += 1;
-      if (enemy.hp <= 0) popEnemy(run, enemy, random);
+      if (enemy.hp <= 0) popEnemy(run, enemy);
       else run.events.push({ type: 'hit', at: { ...enemy.pos }, kind: enemy.kind });
       if (!arrow.pierce) {
         spent = true;
@@ -492,23 +532,23 @@ function stepArrows(run: CupidRun, delta: number, random: () => number) {
   run.enemies = run.enemies.filter((enemy) => enemy.hp > 0);
 }
 
-function stepDrops(run: CupidRun, delta: number) {
-  const kept: Drop[] = [];
-  for (const drop of run.drops) {
+function stepThrown(run: CupidRun, delta: number) {
+  const kept: Thrown[] = [];
+  for (const drop of run.thrown) {
     drop.pos.x += drop.vel.x * delta;
     drop.pos.z += drop.vel.z * delta;
     drop.life -= delta;
     if (distance(drop.pos, run.player.pos) < 0.3 + PLAYER_RADIUS && !isGuarded(run)) {
-      hurtPlayer(run, drop.pos, 'rain');
+      hurtPlayer(run, drop.pos, 'heartbreak');
       continue;
     }
     if (drop.life > 0 && Math.abs(drop.pos.x) < ARENA_W + 2 && Math.abs(drop.pos.z) < ARENA_D + 2) kept.push(drop);
   }
-  run.drops = kept;
+  run.thrown = kept;
 }
 
 function plushieSpot(run: CupidRun, random: () => number): Flat {
-  // Somewhere open, not right next to her or inside a cloud.
+  // Somewhere open, not right next to her or a bear.
   let best: Flat = { x: 0, z: 0 };
   let bestRoom = -1;
   for (let tries = 0; tries < 16; tries += 1) {
@@ -564,19 +604,19 @@ function stepPlushies(run: CupidRun, delta: number, random: () => number) {
 }
 
 function stepSpawns(run: CupidRun, delta: number, random: () => number) {
-  run.stormTimer -= delta;
-  if (run.stormTimer <= 0) {
-    spawnEnemy(run, 'storm', spawnPoint(run, random), random);
-    run.stormTimer = STORM_GAP;
+  run.bruteTimer -= delta;
+  if (run.bruteTimer <= 0) {
+    spawnEnemy(run, 'brute', spawnPoint(run, random), random);
+    run.bruteTimer = BRUTE_GAP;
   }
   run.spawnTimer -= delta;
   if (run.spawnTimer > 0) return;
-  // When the arena is full, the next cloud waits for room.
-  if (run.enemies.length >= cloudLimit(run.time)) {
+  // When the arena is full, the next bear waits for room.
+  if (run.enemies.length >= enemyLimit(run.time)) {
     run.spawnTimer = 0.25;
     return;
   }
-  const kind: EnemyKind = random() < spitterChance(run.time) ? 'spitter' : 'puff';
+  const kind: EnemyKind = random() < throwerChance(run.time) ? 'thrower' : 'chaser';
   spawnEnemy(run, kind, spawnPoint(run, random), random);
   run.spawnTimer = spawnGap(run.time);
 }
@@ -595,9 +635,9 @@ export function stepCupidRun(run: CupidRun, input: CupidInput, delta: number, ra
   stepSpawns(run, delta, random);
   stepEnemies(run, delta, random);
   if (run.status !== 'running') return;
-  stepArrows(run, delta, random);
+  stepArrows(run, delta);
   if (run.status !== 'running') return;
-  stepDrops(run, delta);
+  stepThrown(run, delta);
   if (run.status !== 'running') return;
   stepPlushies(run, delta, random);
 }

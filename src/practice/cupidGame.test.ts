@@ -10,9 +10,9 @@ import {
   accuracy,
   newCupidRun,
   stepCupidRun,
-  cloudLimit,
+  enemyLimit,
   spawnGap,
-  spitterChance,
+  throwerChance,
 } from './cupidGame';
 import type { CupidInput, CupidRun, Enemy, EnemyKind } from './cupidGame';
 
@@ -22,15 +22,29 @@ const fixed = () => 0.5;
 function running(): CupidRun {
   const run = newCupidRun();
   run.status = 'running';
-  // Keeps new clouds and plushies out of the way unless a test wants them.
+  // Keeps new bears and plushies out of the way unless a test wants them.
   run.spawnTimer = 999;
-  run.stormTimer = 999;
+  run.bruteTimer = 999;
   run.plushieTimer = 999;
   return run;
 }
 
 function place(run: CupidRun, kind: EnemyKind, x: number, z: number): Enemy {
-  const enemy: Enemy = { id: run.nextId++, kind, pos: { x, z }, hp: KINDS[kind].hp, spawning: 0, windup: 0, cooldown: 99, flash: 0, seed: 0 };
+  const enemy: Enemy = {
+    id: run.nextId++,
+    kind,
+    pos: { x, z },
+    hp: KINDS[kind].hp,
+    spawning: 0,
+    windup: 0,
+    cooldown: 99,
+    charge: { x: 0, z: 0 },
+    charging: 0,
+    face: { x: 0, z: 1 },
+    speed: 0,
+    flash: 0,
+    seed: 0,
+  };
   run.enemies.push(enemy);
   return enemy;
 }
@@ -82,9 +96,9 @@ describe('Love Attack', () => {
     expect(full.events.some((event) => event.type === 'drawFull')).toBe(true);
   });
 
-  it('pops a cloud with an arrow', () => {
+  it('charms a jealous bear with an arrow', () => {
     const run = running();
-    place(run, 'puff', 4, run.player.pos.z);
+    place(run, 'chaser', 4, run.player.pos.z);
     shoot(run, { x: 1, z: 0 }, 0.1);
     step(run, {}, 0.6);
     expect(run.enemies).toHaveLength(0);
@@ -96,7 +110,7 @@ describe('Love Attack', () => {
     const run = running();
     run.plushieTimer = 99;
     for (let i = 0; i < COMBO_STEP * 2; i += 1) {
-      place(run, 'puff', 4, run.player.pos.z);
+      place(run, 'chaser', 4, run.player.pos.z);
       shoot(run, { x: 1, z: 0 }, 0.1);
       step(run, {}, 0.5);
     }
@@ -120,9 +134,9 @@ describe('Love Attack', () => {
     expect(accuracy(run)).toBe(0);
   });
 
-  it('ends the run when a cloud bumps her', () => {
+  it('ends the run when a jealous bear bumps her', () => {
     const run = running();
-    place(run, 'puff', run.player.pos.x + 0.5, run.player.pos.z);
+    place(run, 'chaser', run.player.pos.x + 0.5, run.player.pos.z);
     step(run, {}, 1 / 60);
     expect(run.status).toBe('over');
     expect(run.ending).toBe('bumped');
@@ -131,8 +145,8 @@ describe('Love Attack', () => {
   it('ends the run when an arrow hits a plushie', () => {
     const run = running();
     run.plushies.push({ id: 900, pos: { x: run.player.pos.x + 4, z: run.player.pos.z }, life: 5 });
-    // A cloud behind the plushie doesn't help: the plushie is in the way.
-    place(run, 'puff', run.player.pos.x + 7, run.player.pos.z);
+    // A bear behind the plushie doesn't help: the plushie is in the way.
+    place(run, 'chaser', run.player.pos.x + 7, run.player.pos.z);
     shoot(run, { x: 1, z: 0 }, FULL_DRAW + 0.05);
     step(run, {}, 0.5);
     expect(run.status).toBe('over');
@@ -161,18 +175,18 @@ describe('Love Attack', () => {
     expect(gap).toBeGreaterThan(3);
   });
 
-  it('lets a dash pass through a cloud unharmed', () => {
+  it('lets a dash pass through a bear unharmed', () => {
     const run = running();
-    place(run, 'storm', run.player.pos.x + 2.2, run.player.pos.z);
+    place(run, 'brute', run.player.pos.x + 2.2, run.player.pos.z);
     step(run, { move: { x: 1, z: 0 }, dash: true }, 1 / 60);
     step(run, { move: { x: 1, z: 0 } }, DASH_TIME - 1 / 60);
     expect(run.status).toBe('running');
     expect(run.player.pos.x).toBeGreaterThan(2.5);
   });
 
-  it('bends a controller arrow toward a cloud just off the aim line', () => {
+  it('bends a controller arrow toward a bear just off the aim line', () => {
     const run = running();
-    const enemy = place(run, 'puff', 6, run.player.pos.z + 0.6);
+    const enemy = place(run, 'chaser', 6, run.player.pos.z + 0.6);
     shoot(run, { x: 1, z: 0 }, 0.1, true);
     const dir = run.arrows[0].dir;
     expect(dir.z).toBeGreaterThan(0.05);
@@ -180,25 +194,42 @@ describe('Love Attack', () => {
     expect(run.enemies.includes(enemy)).toBe(false);
   });
 
-  it('splits a storm into two small clouds', () => {
+  it('makes a big bear wind up, then charge in a straight line', () => {
     const run = running();
-    const storm = place(run, 'storm', 5, run.player.pos.z);
-    storm.hp = 1;
-    shoot(run, { x: 1, z: 0 }, 0.1);
-    step(run, {}, 0.4);
-    expect(run.enemies.filter((enemy) => enemy.kind === 'puff')).toHaveLength(2);
+    const brute = place(run, 'brute', run.player.pos.x + 6, run.player.pos.z);
+    brute.cooldown = 0;
+    step(run, {}, 0.2);
+    expect(brute.windup).toBeGreaterThan(0);
+    expect(run.events.some((event) => event.type === 'windup' && event.kind === 'brute')).toBe(true);
+    // The charge locks onto where she stands when the wind-up ends.
+    step(run, {}, 0.55);
+    expect(brute.charging).toBeGreaterThan(0);
+    expect(Math.abs(brute.charge.z)).toBeLessThan(0.1);
+    // Stepping aside then dodges it, because the charge keeps its line.
+    step(run, { move: { x: 0, z: -1 } }, 0.8);
+    expect(run.status).toBe('running');
+    expect(Math.abs(brute.pos.z - 1)).toBeLessThan(0.1);
+  });
+
+  it('lets a thrower throw a broken heart that ends the run', () => {
+    const run = running();
+    const thrower = place(run, 'thrower', run.player.pos.x + 5, run.player.pos.z);
+    thrower.cooldown = 0;
+    step(run, {}, 1.5);
+    expect(run.status).toBe('over');
+    expect(run.ending).toBe('heartbreak');
   });
 
   it('ramps up smoothly with time instead of waves', () => {
-    expect(spawnGap(0)).toBeGreaterThan(2);
+    expect(spawnGap(0)).toBeGreaterThan(1.3);
     expect(spawnGap(90)).toBeLessThan(0.7);
-    expect(cloudLimit(0)).toBe(3);
-    expect(cloudLimit(120)).toBeGreaterThan(10);
-    expect(spitterChance(20)).toBe(0);
-    expect(spitterChance(80)).toBeGreaterThan(0.2);
+    expect(enemyLimit(0)).toBe(4);
+    expect(enemyLimit(120)).toBeGreaterThan(10);
+    expect(throwerChance(10)).toBe(0);
+    expect(throwerChance(80)).toBeGreaterThan(0.2);
   });
 
-  it('keeps sending clouds, up to the limit for the time survived', () => {
+  it('keeps sending bears, up to the limit for the time survived', () => {
     const run = newCupidRun();
     run.status = 'running';
     run.plushieTimer = 999;
@@ -207,7 +238,7 @@ describe('Love Attack', () => {
       stepCupidRun(run, { ...idle, dash: true, move: { x: Math.cos(i / 20), z: Math.sin(i / 20) } }, 1 / 60, fixed);
     }
     expect(run.enemies.length).toBeGreaterThanOrEqual(3);
-    expect(run.enemies.length).toBeLessThanOrEqual(cloudLimit(run.time));
+    expect(run.enemies.length).toBeLessThanOrEqual(enemyLimit(run.time));
   });
 
   it('grabs a plushie from a step away', () => {

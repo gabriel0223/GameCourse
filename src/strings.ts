@@ -198,11 +198,11 @@ export const strings = {
       cupid: {
         title: 'Love Attack',
         skill: 'Moving and aiming at the same time',
-        summary: 'Rescue teddy plushies from grumpy clouds with a heart bow.',
+        summary: 'Rescue teddy plushies from jealous bears with a heart bow.',
         about: [
           'Most action games ask your thumbs to do two jobs at once: one stick moves you, and the other aims. Keeping them apart, so walking doesn’t pull your aim and aiming doesn’t stop your feet, is one of the hardest things for new players.',
-          'Teddy plushies appear around the arena, and grabbing them is how you score. Grumpy clouds float in to get in your way, and more of them come, faster, the longer you last. Hold R2 to draw your heart bow and let go to shoot. A quick tap shoots fast but weak, and a full draw flies faster, hits harder, and goes right through a crowd. You walk slower while drawing, so pick your moment.',
-          'Every three clouds you pop raises your multiplier, and the next plushie you grab cashes it in. A missed arrow clears your progress toward the next step. Plushies fade after a while, so grab now or pop a few more first? Be careful: if a cloud bumps you or an arrow hits a plushie, the run is over. Dash through danger with L1, since you can’t be hurt mid-dash.',
+          'Teddy plushies appear around the arena, and grabbing them is how you score. Jealous bears come running to stop you, and more of them come, faster, the longer you last. Some keep their distance and throw broken hearts, and big ones stamp their feet before they charge in a straight line. Hold R2 to draw your heart bow and let go to shoot. A quick tap shoots fast but weak, and a full draw flies faster, hits harder, and goes right through a crowd. You walk slower while drawing, so pick your moment.',
+          'A heart arrow cures a bear’s jealousy. Every three bears you charm raises your multiplier, and the next plushie you grab cashes it in. A missed arrow clears your progress toward the next step. Plushies fade after a while, so grab now or charm a few more first? Be careful: if a bear or a broken heart touches you, or an arrow hits a plushie, the run is over. Dash through danger with L1, since you can’t be hurt mid-dash.',
         ],
       },
       jet: {
@@ -229,15 +229,13 @@ export const strings = {
       worth: (points: number) => `Next plushie +${points}`,
       plushiesGrabbed: 'Plushies',
       endings: {
-        bumped: 'A grumpy cloud bumped into you.',
-        rain: 'A raindrop got you.',
+        bumped: 'A jealous bear caught you.',
+        heartbreak: 'A broken heart hit you.',
         plushie: 'Your arrow hit a plushie!',
       },
       mouseNote: 'Your mouse aims. Hold the left button to draw the bow, and let go to shoot.',
       hintsOption: 'Show control reminders',
       prototype: 'Prototype',
-      playAs: 'Play as',
-      heroes: { bear: 'White bear', self: 'Your character' },
       schemes: {
         playstation: { name: 'PlayStation', summary: 'Left stick moves, right stick aims, and R2 draws the bow.' },
         xbox: { name: 'Xbox', summary: 'The same layout with RT. Works on a DualSense too.' },
@@ -297,7 +295,7 @@ export const strings = {
         draw: 'Draw the bow, then let go to shoot',
         dash: 'Dash (you can’t be hurt mid-dash)',
         padTip: 'Keep your right thumb on the stick and your aim follows it. Let go of the stick and your aim stays where it was.',
-        mouseTip: 'Point the mouse where you want to shoot. You don’t need to click on the clouds, just aim and let go.',
+        mouseTip: 'Point the mouse where you want to shoot. You don’t need to click on the bears, just aim and let go.',
       },
       jet: {
         pitch: 'Nose up and down',
