@@ -233,10 +233,9 @@ describe('Love Attack', () => {
     const run = newCupidRun();
     run.status = 'running';
     run.plushieTimer = 999;
-    // She dashes around in circles, so nothing reaches her during the test.
-    for (let i = 0; i < 60 * 8; i += 1) {
-      stepCupidRun(run, { ...idle, dash: true, move: { x: Math.cos(i / 20), z: Math.sin(i / 20) } }, 1 / 60, fixed);
-    }
+    // She can't be hurt during this test, since it's only about who arrives.
+    run.player.hurtUntil = 999;
+    for (let i = 0; i < 60 * 8; i += 1) stepCupidRun(run, idle, 1 / 60, fixed);
     expect(run.enemies.length).toBeGreaterThanOrEqual(3);
     expect(run.enemies.length).toBeLessThanOrEqual(enemyLimit(run.time));
   });

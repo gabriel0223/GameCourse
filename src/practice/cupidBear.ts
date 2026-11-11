@@ -26,8 +26,9 @@ export interface Bear {
   dispose(): void;
 }
 
-// A running gait shared by every bear: the stride advances with distance covered, the body
-// bounces twice per stride, squashes as each foot lands, and leans forward with speed.
+// A running gait shared by every bear: the stride advances with distance covered, so feet
+// don't slide, at a natural pace of about two strides a second. The body bounces a little
+// with each step, settles as each foot lands, and twists gently against the legs.
 interface Gait {
   stride: number;
   walk: number;
@@ -35,9 +36,10 @@ interface Gait {
   lift: number;
   bounce: number;
   squash: number;
+  twist: number;
 }
 
-const newGait = (): Gait => ({ stride: 0, walk: 0, swing: 0, lift: 0, bounce: 0, squash: 0 });
+const newGait = (): Gait => ({ stride: 0, walk: 0, swing: 0, lift: 0, bounce: 0, squash: 0, twist: 0 });
 
 function stepGait(gait: Gait, speed: number, delta: number, runSpeed: number, strideLength: number): boolean {
   const before = Math.sin(gait.stride);
@@ -46,10 +48,11 @@ function stepGait(gait: Gait, speed: number, delta: number, runSpeed: number, st
   gait.walk += (target - gait.walk) * Math.min(1, delta * 14);
   gait.stride += (speed * delta * Math.PI) / strideLength;
   const phase = Math.sin(gait.stride);
-  gait.swing = phase * 0.95 * gait.walk;
-  gait.lift = Math.cos(gait.stride) * 0.12 * gait.walk;
-  gait.bounce = Math.abs(phase) * 0.17 * gait.walk;
-  gait.squash = (1 - Math.abs(phase)) ** 4 * gait.walk;
+  gait.swing = phase * 0.6 * gait.walk;
+  gait.lift = Math.cos(gait.stride) * 0.08 * gait.walk;
+  gait.bounce = Math.abs(phase) * 0.08 * gait.walk;
+  gait.squash = (1 - Math.abs(phase)) ** 3 * gait.walk;
+  gait.twist = phase * 0.14 * gait.walk;
   return gait.walk > 0.2 && Math.sign(phase) !== Math.sign(before);
 }
 
@@ -151,9 +154,9 @@ export function createBear(smooth: boolean): Bear {
       gap = Math.atan2(Math.sin(gap), Math.cos(gap));
       heading += gap * Math.min(1, delta * 26);
       turn.rotation.y = heading;
-      const footfall = stepGait(gait, dashing ? Math.min(speed, 14) : speed, delta, 8.5, 0.62);
-      const { walk, swing, lift, bounce, squash } = gait;
-      bank += (Math.max(-0.4, Math.min(0.4, -gap * 0.9)) * walk - bank) * Math.min(1, delta * 10);
+      const footfall = stepGait(gait, dashing ? Math.min(speed, 12) : speed, delta, 8.5, 1.75);
+      const { walk, swing, lift, bounce, squash, twist } = gait;
+      bank += (Math.max(-0.22, Math.min(0.22, -gap * 0.6)) * walk - bank) * Math.min(1, delta * 8);
       turn.rotation.x = bank;
 
       legs[0].rotation.z = swing;
@@ -161,8 +164,8 @@ export function createBear(smooth: boolean): Bear {
       legs[0].position.y = 0.3 + Math.max(0, lift);
       legs[1].position.y = 0.3 + Math.max(0, -lift);
       // Arms pump against the legs, or hold the bow out in front while drawing.
-      arms[0].rotation.z = drawing ? 1.3 : -swing * 1.15;
-      arms[1].rotation.z = drawing ? 1.1 : swing * 1.15;
+      arms[0].rotation.z = drawing ? 1.3 : -swing * 1.05;
+      arms[1].rotation.z = drawing ? 1.1 : swing * 1.05;
       arms[0].rotation.x = drawing ? -0.35 : -0.15 * walk;
       arms[1].rotation.x = drawing ? 0.35 : 0.15 * walk;
 
@@ -170,8 +173,10 @@ export function createBear(smooth: boolean): Bear {
       body.position.y = bounce + breathe;
       // Squashes as each foot lands, and stretches long during a dash.
       const stretch = dashing ? 0.16 : 0;
-      body.scale.set(1 + squash * 0.07 + stretch, 1 - squash * 0.1 - stretch * 0.6, 1 + squash * 0.07);
-      body.rotation.z = dashing ? -0.6 : -0.3 * walk;
+      body.scale.set(1 + squash * 0.035 + stretch, 1 - squash * 0.05 - stretch * 0.6, 1 + squash * 0.035);
+      body.rotation.z = dashing ? -0.5 : -0.15 * walk;
+      // Shoulders turn a little against the legs, the way people run.
+      body.rotation.y = drawing ? 0 : -twist;
       // A quick shove back when an arrow flies.
       const kick = recoil < 0.16 ? 1 - recoil / 0.16 : 0;
       body.position.x = -kick * 0.14;
@@ -188,7 +193,8 @@ export function createBear(smooth: boolean): Bear {
         arms[1].rotation.z = 2.7 * hop;
       }
       // Tipped up so the camera above can see her face, nodding with each step.
-      head.rotation.z = 0.28 - bounce * 0.6 + Math.sin(time * 1.7) * 0.04 * (1 - walk);
+      head.rotation.z = 0.28 - bounce * 0.8 + Math.sin(time * 1.7) * 0.04 * (1 - walk);
+      head.rotation.y = twist * 0.6;
 
       tail.rotation.y = 0.35 + Math.sin(time * (7 + walk * 10)) * (0.15 + walk * 0.3);
       tail.rotation.z = -0.25 + walk * 0.5 + Math.sin(time * 11) * 0.08;
@@ -300,14 +306,43 @@ export function createPandaKit(smooth: boolean): PandaKit {
   const detail = smooth ? 3 : 1;
   const black = flat('#2A2530');
   const lips = flat('#F07FA2');
-  const anger = new THREE.MeshBasicMaterial({ color: '#FF3B4E' });
   const shine = new THREE.MeshBasicMaterial({ color: '#FFFFFF' });
   const heartMaterial = flat('#8E4BC4');
   const bows = Object.fromEntries(Object.entries(BOWS).map(([kind, hex]) => [kind, flat(hex)])) as Record<PandaKind, THREE.MeshLambertMaterial>;
   const ball = new THREE.IcosahedronGeometry(1, detail);
   const round = new THREE.IcosahedronGeometry(1, detail + 1);
   const box = new THREE.BoxGeometry(1, 1, 1);
-  const vein = new THREE.TorusGeometry(0.11, 0.032, 6, 12, Math.PI / 2);
+  // The anger mark, drawn once: four thick curved strokes bulging toward the middle,
+  // red with a white edge so it stands out on any background.
+  const markCanvas = document.createElement('canvas');
+  markCanvas.width = 128;
+  markCanvas.height = 128;
+  const draw = markCanvas.getContext('2d')!;
+  draw.lineCap = 'round';
+  for (const [width, color] of [
+    [22, '#FFFFFF'],
+    [12, '#F02C44'],
+  ] as const) {
+    draw.lineWidth = width;
+    draw.strokeStyle = color;
+    for (const [sx, sy] of [
+      [1, 1],
+      [-1, 1],
+      [-1, -1],
+      [1, -1],
+    ]) {
+      // Each stroke curves around a corner beyond its quadrant, so its bulge faces the middle.
+      const cx = 64 + sx * 46;
+      const cy = 64 + sy * 46;
+      const start = Math.atan2(-sy, -sx) - Math.PI / 4;
+      draw.beginPath();
+      draw.arc(cx, cy, 34, start, start + Math.PI / 2);
+      draw.stroke();
+    }
+  }
+  const markTexture = new THREE.CanvasTexture(markCanvas);
+  markTexture.colorSpace = THREE.SRGBColorSpace;
+  const markMaterial = new THREE.SpriteMaterial({ map: markTexture, depthTest: false, transparent: true });
   const heartShape = new THREE.Shape();
   heartShape.moveTo(0, -0.5);
   heartShape.bezierCurveTo(-0.12, -0.36, -0.62, -0.06, -0.56, 0.22);
@@ -350,13 +385,13 @@ export function createPandaKit(smooth: boolean): PandaKit {
       part(head, ball, lips, 0.56, -0.2, 0, 0.04, 0.03, 0.065);
       for (const side of [-1, 1]) {
         part(head, ball, black, -0.08, 0.37, side * 0.31, 0.15, 0.14, 0.09);
-        // Droopy eye patches with a bright eye inside.
-        const patch = part(head, round, black, 0.36, 0.02, side * 0.21, 0.12, 0.16, 0.09);
-        patch.rotation.x = side * 0.5;
-        part(head, round, shine, 0.45, 0.05, side * 0.23, 0.045, 0.05, 0.04);
-        // Angry brows that tilt down toward the middle.
-        const brow = part(head, box, black, 0.42, 0.22, side * 0.2, 0.05, 0.05, 0.2);
-        brow.rotation.x = side * 0.55;
+        // Eye patches slanted in toward the nose, with a narrowed, glaring eye inside.
+        const patch = part(head, round, black, 0.36, 0.03, side * 0.21, 0.12, 0.16, 0.09);
+        patch.rotation.x = -side * 0.4;
+        part(head, round, shine, 0.455, 0.02, side * 0.22, 0.04, 0.03, 0.05);
+        // Thick brows that dive down toward the middle and cut into the top of each eye.
+        const brow = part(head, box, black, 0.45, 0.12, side * 0.2, 0.06, 0.065, 0.24);
+        brow.rotation.x = -side * 0.62;
         // Lashes flick out from the outer corner of each eye.
         for (const [dy, tilt] of [
           [0.1, 0.5],
@@ -377,20 +412,10 @@ export function createPandaKit(smooth: boolean): PandaKit {
       part(bow, ball, bows[kind], 0, 0, 0, 0.045);
       head.add(bow);
 
-      // The anger mark: four curved strokes bulging toward the middle, like a popping vein.
-      const mark = new THREE.Group();
-      for (const [sx, sy, spin] of [
-        [1, 1, Math.PI],
-        [-1, 1, Math.PI * 1.5],
-        [-1, -1, 0],
-        [1, -1, Math.PI / 2],
-      ]) {
-        const stroke = new THREE.Mesh(vein, anger);
-        stroke.position.set(sx * 0.15, sy * 0.15, 0);
-        stroke.rotation.z = spin;
-        mark.add(stroke);
-      }
-      mark.position.set(0.15, 2.3, 0.25);
+      // The anger mark always faces the camera and draws over everything, so it's easy to read.
+      const mark = new THREE.Sprite(markMaterial);
+      mark.position.set(0.25, 2.35, 0.3);
+      mark.renderOrder = 10;
       group.add(mark);
 
       const limb = (parent: THREE.Object3D, x: number, y: number, z: number, sx: number, sy: number, sz: number) => {
@@ -417,19 +442,20 @@ export function createPandaKit(smooth: boolean): PandaKit {
           gap = Math.atan2(Math.sin(gap), Math.cos(gap));
           heading += gap * Math.min(1, delta * 14);
           turn.rotation.y = heading;
-          stepGait(gait, speed, delta, kind === 'brute' ? 6 : 5.5, kind === 'brute' ? 0.7 : 0.5);
-          const { walk, swing, lift, bounce, squash } = gait;
+          stepGait(gait, speed, delta, kind === 'brute' ? 6 : 6.5, kind === 'brute' ? 1.9 : 1.5);
+          const { walk, swing, lift, bounce, squash, twist } = gait;
           legs[0].rotation.z = swing;
           legs[1].rotation.z = -swing;
           legs[0].position.y = 0.3 + Math.max(0, lift);
           legs[1].position.y = 0.3 + Math.max(0, -lift);
-          // Stomping mad: arms swing hard, fists up.
-          arms[0].rotation.z = -swing * 1.2;
-          arms[1].rotation.z = swing * 1.2;
+          // Stomping mad: arms pump, shoulders forward.
+          arms[0].rotation.z = -swing * 1.1;
+          arms[1].rotation.z = swing * 1.1;
           body.position.y = bounce + Math.sin(time * 3 + group.id) * 0.012 * (1 - walk);
-          body.scale.set(1 + squash * 0.08, 1 - squash * 0.11, 1 + squash * 0.08);
-          body.rotation.z = -0.32 * walk;
-          head.rotation.z = 0.28 - bounce * 0.6;
+          body.scale.set(1 + squash * 0.04, 1 - squash * 0.06, 1 + squash * 0.04);
+          body.rotation.z = -0.2 * walk;
+          body.rotation.y = -twist;
+          head.rotation.z = 0.28 - bounce * 0.8;
           held.visible = false;
           body.position.x = 0;
           arms[0].rotation.x = 0;
@@ -452,11 +478,10 @@ export function createPandaKit(smooth: boolean): PandaKit {
             arms[1].rotation.z = -1.5;
           }
           white.emissive.set(flash ? '#FFFFFF' : windup > 0 && kind === 'brute' ? '#5A1020' : '#1E1C22');
-          // The mark faces the camera and throbs, faster when she's about to attack.
-          mark.rotation.y = 0;
-          const throb = 1 + Math.max(0, Math.sin(time * (windup > 0 ? 24 : 9) + group.id)) * 0.35;
-          mark.scale.setScalar(throb);
-          mark.position.y = 2.3 + bounce;
+          // Throbs, faster when she's about to attack.
+          const throb = 1 + Math.max(0, Math.sin(time * (windup > 0 ? 24 : 8) + group.id)) * 0.3;
+          mark.scale.setScalar(1.1 * throb);
+          mark.position.y = 2.35 + bounce;
         },
         dispose() {
           white.dispose();
@@ -464,8 +489,10 @@ export function createPandaKit(smooth: boolean): PandaKit {
       };
     },
     dispose() {
-      for (const geometry of [ball, round, box, heart, vein]) geometry.dispose();
-      for (const material of [black, lips, anger, shine, heartMaterial, ...Object.values(bows)]) material.dispose();
+      for (const geometry of [ball, round, box, heart]) geometry.dispose();
+      markTexture.dispose();
+      markMaterial.dispose();
+      for (const material of [black, lips, shine, heartMaterial, ...Object.values(bows)]) material.dispose();
     },
   };
 }

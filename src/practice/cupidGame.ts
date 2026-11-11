@@ -236,9 +236,9 @@ export const spawnGap = (time: number) => Math.max(0.4, 1.4 * 0.982 ** time);
 export const enemyLimit = (time: number) => Math.min(20, 4 + Math.floor(time / 8));
 // Throwers start showing up after 15 seconds and become more common, up to three in ten.
 export const throwerChance = (time: number) => Math.max(0, Math.min(0.3, (time - 15) / 150));
-const speedUp = (time: number) => Math.min(2.6, time * 0.02);
+const speedUp = (time: number) => Math.min(2.4, time * 0.02);
 const THROW_SPEED = 9;
-const CHARGE_SPEED = 12.5;
+const CHARGE_SPEED = 15;
 const CHARGE_TIME = 0.8;
 
 export const isDashing = (run: CupidRun) => run.time < run.player.dashUntil;
@@ -409,7 +409,7 @@ function stepEnemies(run: CupidRun, delta: number, random: () => number) {
       // Keeps its distance and circles, then winds up and throws a broken heart.
       const gap = lengthOf(toward);
       const push = gap < 4.5 ? -1 : gap > 6.5 ? 1 : 0;
-      const speed = enemy.windup > 0 ? 0 : 3 + faster * 0.5;
+      const speed = enemy.windup > 0 ? 0 : 4.2 + faster * 0.5;
       enemy.pos.x += (dir.x * push * 0.8 + side.x * 0.6) * speed * delta;
       enemy.pos.z += (dir.z * push * 0.8 + side.z * 0.6) * speed * delta;
       if (enemy.windup > 0) {
@@ -441,7 +441,7 @@ function stepEnemies(run: CupidRun, delta: number, random: () => number) {
           run.events.push({ type: 'charge', at: { ...enemy.pos } });
         }
       } else {
-        const speed = 2 + faster * 0.3;
+        const speed = 2.8 + faster * 0.3;
         enemy.pos.x += dir.x * speed * delta;
         enemy.pos.z += dir.z * speed * delta;
         enemy.cooldown -= delta;
@@ -451,7 +451,7 @@ function stepEnemies(run: CupidRun, delta: number, random: () => number) {
         }
       }
     } else {
-      const speed = 3.3 + faster;
+      const speed = 4.6 + faster;
       enemy.pos.x += (dir.x + side.x * wobble) * speed * delta;
       enemy.pos.z += (dir.z + side.z * wobble) * speed * delta;
     }
