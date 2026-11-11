@@ -72,12 +72,23 @@ export function createBear(smooth: boolean): Bear {
   const shine = new THREE.MeshBasicMaterial({ color: '#FFFFFF' });
   const scarf = flat('#E8476F');
   const scarfShade = flat('#B32F55');
+  // A soft, see-through blush, so it tints the fur instead of sitting on top of it.
+  const blush = new THREE.MeshBasicMaterial({ color: '#F59AB6', transparent: true, opacity: 0.45, depthWrite: false });
   const ball = new THREE.IcosahedronGeometry(1, detail);
   const round = new THREE.IcosahedronGeometry(1, detail + 1);
   const box = new THREE.BoxGeometry(1, 1, 1);
   const ring = smooth ? new THREE.TorusGeometry(0.31, 0.085, 12, 32) : new THREE.TorusGeometry(0.31, 0.085, 5, 12);
-  const geometries = [ball, round, box, ring];
-  const materials = [fur, muzzle, pad, ink, shine, scarf, scarfShade];
+  // A little heart clip for one ear, matching the scarf.
+  const clipShape = new THREE.Shape();
+  clipShape.moveTo(0, -0.5);
+  clipShape.bezierCurveTo(-0.12, -0.36, -0.62, -0.06, -0.56, 0.22);
+  clipShape.bezierCurveTo(-0.5, 0.52, -0.12, 0.56, 0, 0.3);
+  clipShape.bezierCurveTo(0.12, 0.56, 0.5, 0.52, 0.56, 0.22);
+  clipShape.bezierCurveTo(0.62, -0.06, 0.12, -0.36, 0, -0.5);
+  const clip = new THREE.ExtrudeGeometry(clipShape, { depth: 0.25, bevelEnabled: false, curveSegments: smooth ? 12 : 4 });
+  clip.translate(0, 0, -0.125);
+  const geometries = [ball, round, box, ring, clip];
+  const materials = [fur, muzzle, pad, ink, shine, scarf, scarfShade, blush];
 
   const part = (geometry: THREE.BufferGeometry, material: THREE.Material, x: number, y: number, z: number, sx: number, sy = sx, sz = sx) => {
     const mesh = new THREE.Mesh(geometry, material);
@@ -108,11 +119,30 @@ export function createBear(smooth: boolean): Bear {
   for (const side of [-1, 1]) {
     head.add(part(round, ink, 0.38, 0.06, side * 0.27, 0.075, 0.1, 0.07));
     head.add(part(box, shine, 0.43, 0.11, side * 0.29, 0.03, 0.035, 0.02));
+    // Two small lashes flick out from the outer corner of each eye.
+    for (const [dy, tilt] of [
+      [0.08, 0.55],
+      [0.03, 0.95],
+    ] as const) {
+      const lash = part(box, ink, 0.35, 0.08 + dy, side * 0.335, 0.018, 0.075, 0.022);
+      lash.rotation.x = side * tilt;
+      head.add(lash);
+    }
+    // A subtle blush on each cheek, lying flat against the face.
+    const cheek = part(round, blush, 0.405, -0.085, side * 0.335, 0.02, 0.06, 0.1);
+    cheek.rotation.y = -side * 0.69;
+    head.add(cheek);
     const ear = new THREE.Group();
     ear.position.set(-0.1, 0.4, side * 0.33);
     ear.add(part(ball, fur, 0, 0, 0, 0.16, 0.15, 0.1));
     ear.add(part(ball, pad, 0.05, -0.01, side * 0.025, 0.09, 0.085, 0.05));
     head.add(ear);
+    if (side === 1) {
+      // Faces forward and a little outward, tilted like a hair clip.
+      const heartClip = part(clip, scarf, 0.08, -0.02, 0.07, 0.16);
+      heartClip.rotation.set(0, 1.15, 0.35);
+      ear.add(heartClip);
+    }
   }
 
   // The scarf wraps the neck, and its tail streams out behind.
@@ -480,7 +510,7 @@ export function createPandaKit(smooth: boolean): PandaKit {
           white.emissive.set(flash ? '#FFFFFF' : windup > 0 && kind === 'brute' ? '#5A1020' : '#1E1C22');
           // Throbs, faster when she's about to attack.
           const throb = 1 + Math.max(0, Math.sin(time * (windup > 0 ? 24 : 8) + group.id)) * 0.3;
-          mark.scale.setScalar(1.1 * throb);
+          mark.scale.setScalar(0.9 * throb);
           mark.position.y = 2.35 + bounce;
         },
         dispose() {
