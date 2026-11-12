@@ -47,18 +47,18 @@ describe('Codex drafts', () => {
     draft.blocks = [{ ...emptyBlock('image'), image: { ...image, caption: 'Round 2' } }];
     expect(fromDraft(draft).sections[0].image?.caption).toBe('Round 2');
   });
-  it('requires a title, a chosen image, and image descriptions', () => {
+  it('requires a title and a chosen image, but no image description', () => {
     const draft = newDraft('custom-1');
     expect(findProblem(draft)).toBe('title');
     draft.title = 'Test';
     expect(findProblem(draft)).toBeNull();
     draft.blocks = [emptyBlock('image')];
     expect(findProblem(draft)).toBe('image');
-    draft.blocks = [{ ...emptyBlock('image'), image: { ...image, alt: ' ' } }];
-    expect(findProblem(draft)).toBe('description');
+    draft.blocks = [{ ...emptyBlock('image'), image: { ...image, alt: '' } }];
+    expect(findProblem(draft)).toBeNull();
     draft.blocks = [];
     draft.heroImage = { ...image, alt: '' };
-    expect(findProblem(draft)).toBe('description');
+    expect(findProblem(draft)).toBeNull();
   });
 });
 

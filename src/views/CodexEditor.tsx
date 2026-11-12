@@ -33,14 +33,6 @@ async function storeImage(file: File) {
   return codexStore.saveImage(await prepareImage(file), file.name || 'pasted-image.png');
 }
 
-function focusDescription(container: Element | null | undefined) {
-  requestAnimationFrame(() => {
-    const input = container?.querySelector<HTMLInputElement>('.field input');
-    input?.scrollIntoView({ block: 'center' });
-    input?.focus();
-  });
-}
-
 // The box under the pointer wins. Typing in a box's text fields doesn't select it.
 function pasteTarget(): Element | null {
   const active = document.activeElement;
@@ -88,7 +80,7 @@ function ImageField({ id, image, fallback, withCaption, onChange }: ImageFieldPr
       const file = pastedImage(event.clipboardData);
       if (file) {
         event.preventDefault();
-        if (await addFile(file)) focusDescription(box.current);
+        await addFile(file);
       } else if (copiedPageImage(event.clipboardData)) {
         setError(t.pasteWebError);
       }
@@ -120,13 +112,6 @@ function ImageField({ id, image, fallback, withCaption, onChange }: ImageFieldPr
         <p className="field-error" role="alert">
           {error}
         </p>
-      )}
-      {image && (
-        <label className="field">
-          {t.imageDescription}
-          <small>{t.imageDescriptionHint}</small>
-          <input value={image.alt} onChange={(event) => onChange({ ...image, alt: event.target.value })} />
-        </label>
       )}
       {image && withCaption && (
         <label className="field">
@@ -362,7 +347,9 @@ export function CodexEditor({ id }: { id: string }) {
         setDirty(true);
         setSaveFailed(false);
         setSelected(block.key);
-        requestAnimationFrame(() => focusDescription(document.querySelector(`[data-block-key="${block.key}"]`)));
+        requestAnimationFrame(() =>
+          document.querySelector(`[data-block-key="${block.key}"]`)?.scrollIntoView({ block: 'center' }),
+        );
       } catch {
         notify(t.imageError, 'plain');
       }
@@ -386,7 +373,6 @@ export function CodexEditor({ id }: { id: string }) {
     title: t.titleRequired,
     year: t.yearError,
     image: t.missingImage,
-    description: t.missingDescription,
   };
   const backHref =
     id === 'new'

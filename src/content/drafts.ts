@@ -146,7 +146,7 @@ export function fromDraft(draft: Draft): CodexEntry {
   return entry;
 }
 
-export type DraftProblem = 'title' | 'year' | 'image' | 'description' | null;
+export type DraftProblem = 'title' | 'year' | 'image' | null;
 
 export function findProblem(draft: Draft): DraftProblem {
   if (!draft.title.trim()) return 'title';
@@ -154,7 +154,6 @@ export function findProblem(draft: Draft): DraftProblem {
   if (year !== undefined && (!Number.isInteger(year) || year < 1900 || year > 2100)) return 'year';
   const images = draft.blocks.filter((block) => block.kind === 'image');
   if (images.some((block) => !block.image)) return 'image';
-  const all = [...images.flatMap((block) => block.image ?? []), ...(draft.heroImage ? [draft.heroImage] : [])];
-  if (all.some((image) => !image.alt.trim())) return 'description';
+  // Images don't need a description. Only the two of them use the app, and they don't need one.
   return null;
 }
