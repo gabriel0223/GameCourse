@@ -1,5 +1,6 @@
 import type { CodexEntry, CodexImage } from '../content/codex';
 import type { Friend } from '../domain/friends';
+import type { Quest } from '../domain/quests';
 import type { Game, GameDetails, GameLookup, LibraryEntry } from '../domain/types';
 import type { CharacterProfile } from '../domain/wardrobe';
 
@@ -30,4 +31,11 @@ export interface CodexStore {
 
 export interface FriendStore {
   list(): Promise<Friend[]>;
+}
+
+// Quests made or changed in the app. Built-in quests live in src/content/quests.ts.
+export interface QuestStore {
+  list(): Promise<Quest[]>;
+  save(quest: Quest): Promise<void>;
+  remove(id: string): Promise<void>;
 }

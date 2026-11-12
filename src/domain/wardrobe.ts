@@ -1,3 +1,4 @@
+import type { QuestRecord, QuestReview } from './quests';
 import type { WardrobeGenre } from './genres';
 import { NEW_PRACTICE, loadPractice } from './practice';
 import type { PracticeRecord } from './practice';
@@ -168,6 +169,10 @@ export interface CharacterProfile {
   readEntries: string[];
   quizzes: QuizRecords;
   practice: PracticeRecord;
+  // Quests she turned in, by quest id.
+  quests: Record<string, QuestRecord>;
+  // Replies this account wrote to other players' quests, by reviewKey().
+  questReviews: Record<string, QuestReview>;
 }
 
 export const NAME_LIMIT = 24;
@@ -186,6 +191,8 @@ export const DEFAULT_PROFILE: CharacterProfile = {
   readEntries: [],
   quizzes: {},
   practice: NEW_PRACTICE,
+  quests: {},
+  questReviews: {},
 };
 
 // Saves from older versions miss newer fields, so they are filled in with defaults.

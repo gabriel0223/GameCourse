@@ -4,8 +4,9 @@ import type { WardrobeGenre } from '../domain/genres';
 import type { Game, GameDetails, GameLookup, GameStatus, LibraryEntry, PlaySession } from '../domain/types';
 import type { CharacterProfile } from '../domain/wardrobe';
 import type { Friend } from '../domain/friends';
+import type { Quest } from '../domain/quests';
 import { restoreProfile } from '../domain/wardrobe';
-import type { CodexStore, FriendStore, GameCatalog, LibraryStore } from './ports';
+import type { CodexStore, FriendStore, GameCatalog, LibraryStore, QuestStore } from './ports';
 
 const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
@@ -103,6 +104,30 @@ export const supabaseFriends: FriendStore = {
     return [...friends.values()];
   },
 };
+
+// Everyone signed in reads quests. Only Codex editors can write them, which the database enforces.
+export const supabaseQuestStore: QuestStore = {
+  async list() {
+    const { data, error } = await required().from('quests').select('quest');
+    if (error) throw error;
+    return (data as Array<{ quest: Quest }>).map((row) => row.quest);
+  },
+  async save(quest) {
+    const { error } = await required()
+      .from('quests')
+      .upsert({ id: quest.id, quest, updated_at: new Date().toISOString() });
+    if (error) throw error;
+  },
+  async remove(id) {
+    const { error } = await required().from('quests').delete().eq('id', id);
+    if (error) throw error;
+  },
+};
+
+export async function signedInUserId(): Promise<string | null> {
+  const { data } = await required().auth.getUser();
+  return data.user?.id ?? null;
+}
 
 const CODEX_BUCKET = 'codex-images';
 

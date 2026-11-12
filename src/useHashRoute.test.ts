@@ -34,3 +34,10 @@ describe('friend links', () => {
     expect(hrefs.friend('x')).toBe('#/friends/x');
   });
 });
+
+describe('quest links', () => {
+  it('opens the Quests tab and one quest', () => {
+    expect(parseRoute('#/quests')).toEqual({ view: 'quests', id: null });
+    expect(parseRoute(hrefs.quest('quest-sonic speed'))).toEqual({ view: 'quests', id: 'quest-sonic speed' });
+  });
+});

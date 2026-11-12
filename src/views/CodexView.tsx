@@ -14,6 +14,7 @@ import { useCodex } from '../state/CodexContext';
 import { useLibrary } from '../state/LibraryContext';
 import { strings } from '../strings';
 import { hrefs } from '../useHashRoute';
+import { EntryQuests } from './QuestsView';
 
 const t = strings.codex;
 
@@ -453,6 +454,7 @@ export function Article({
             <Section key={index} section={section} />
           ))}
           {entry.timeline?.kind === 'generation' && !preview && <GenerationEvents generation={entry.timeline.generation} />}
+          {!preview && <EntryQuests entry={entry} />}
           {!preview &&
             (path ? (
               <PathControls entry={entry} path={path} stops={stops} current={current} />

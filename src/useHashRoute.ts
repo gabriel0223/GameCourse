@@ -11,6 +11,7 @@ export type Route =
   | { view: 'shop' }
   | { view: 'friends'; id: string | null; tab: FriendTab; list: GameStatus }
   | { view: 'practice'; game: string | null }
+  | { view: 'quests'; id: string | null }
   | { view: 'codex'; id: string | null; editing: boolean; at: string | null; path: string | null; quiz: boolean };
 
 export const CHARACTER_TABS = ['overview', 'wardrobe', 'achievements'] as const;
@@ -49,6 +50,7 @@ export function parseRoute(hash: string): Route {
     };
   }
   if (parts[0] === 'practice') return { view: 'practice', game: parts[1] ?? null };
+  if (parts[0] === 'quests') return { view: 'quests', id: parts[1] ? decodeURIComponent(parts[1]) : null };
   if (parts[0] === 'codex') {
     const query = new URLSearchParams(params);
     return {
@@ -81,6 +83,8 @@ export const hrefs = {
   runner: '#/practice/runner',
   jet: '#/practice/jet',
   cupid: '#/practice/cupid',
+  quests: '#/quests',
+  quest: (id: string) => `#/quests/${encodeURIComponent(id)}`,
   codex: '#/codex',
   codexEntry: (id: string) => `#/codex/${encodeURIComponent(id)}`,
   codexEdit: (id: string) => `#/codex/${encodeURIComponent(id)}/edit`,

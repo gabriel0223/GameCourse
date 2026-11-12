@@ -7,6 +7,8 @@ import { changeStatus, logSession, newEntry, rateGame, removeSession } from '../
 import type { Game, GameStatus, LibraryEntry } from '../domain/types';
 import { applyRun } from '../domain/practice';
 import { applyQuiz } from '../domain/quiz';
+import { reviewKey, turnIn } from '../domain/quests';
+import type { Quest } from '../domain/quests';
 import type { FinishedRun, RunReward } from '../domain/practice';
 import { DEFAULT_PROFILE, PIECES, cleanName, restoreProfile } from '../domain/wardrobe';
 import type { CharacterProfile, Piece, Slot } from '../domain/wardrobe';
@@ -39,6 +41,9 @@ interface LibraryValue {
   setCharacterName(name: string): void;
   recordQuiz(pathId: string, score: number, total: number): void;
   recordRun(run: FinishedRun): RunReward;
+  turnInQuest(quest: Quest, answer: string, category: string): void;
+  markReplySeen(questId: string): void;
+  replyToQuest(playerId: string, questId: string, note: string): void;
   notify(text: string, tone: Toast['tone']): void;
 }
 
@@ -201,6 +206,24 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
         if (characterName === current.characterName) return;
         putProfile({ ...current, characterName });
         notify(strings.character.nameSaved, 'plain');
+      },
+      turnInQuest: (quest, answer, category) => {
+        const current = latestProfile.current;
+        const first = !current.quests[quest.id];
+        const next = { ...current, quests: turnIn(current.quests, quest, answer, nowIso(), category) };
+        commit(latestEntries.current, next, () => store.saveProfile(next), first ? strings.quests.turnedIn : strings.quests.updated);
+      },
+      markReplySeen: (questId) => {
+        const current = latestProfile.current;
+        const record = current.quests[questId];
+        if (!record || record.replySeenAt) return;
+        putProfile({ ...current, quests: { ...current.quests, [questId]: { ...record, replySeenAt: nowIso() } } });
+      },
+      replyToQuest: (playerId, questId, note) => {
+        const current = latestProfile.current;
+        const review = { note: note.trim(), reviewedAt: nowIso() };
+        const next = { ...current, questReviews: { ...current.questReviews, [reviewKey(playerId, questId)]: review } };
+        commit(latestEntries.current, next, () => store.saveProfile(next), strings.quests.replySent);
       },
       recordQuiz: (pathId, score, total) => {
         const current = latestProfile.current;

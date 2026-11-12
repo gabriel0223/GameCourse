@@ -27,6 +27,8 @@ import { TimelineView } from './views/TimelineView';
 import { LibraryView } from './views/LibraryView';
 import { FriendProfileView, FriendsView } from './views/FriendsView';
 import { PracticeView } from './views/PracticeView';
+import { QuestView, QuestsView } from './views/QuestsView';
+import { QuestsProvider, useQuests } from './state/QuestsContext';
 import { RunnerView } from './views/RunnerView';
 import { ShopView } from './views/ShopView';
 import { SearchView } from './views/SearchView';
@@ -61,7 +63,24 @@ function PlayerCard() {
   );
 }
 
+function QuestsLink({ active }: { active: boolean }) {
+  const { queue, newReplies } = useQuests();
+  const count = queue.length + newReplies;
+  return (
+    <a href={hrefs.quests} aria-current={active ? 'page' : undefined}>
+      <Icon name="quest" />
+      {strings.nav.quests}
+      {count > 0 && (
+        <small className="nav-badge" aria-label={strings.quests.badge(count)}>
+          {count}
+        </small>
+      )}
+    </a>
+  );
+}
+
 function Sidebar({ route }: { route: Route }) {
+  const onQuests = route.view === 'quests';
   const onCharacter = route.view === 'character';
   const onShop = route.view === 'shop';
   const onPractice = route.view === 'practice';
@@ -73,7 +92,7 @@ function Sidebar({ route }: { route: Route }) {
         {strings.appName}
       </a>
       <nav className="main-nav" aria-label="Main">
-        <a href="#/" aria-current={onCharacter || onShop || onCodex || onPractice || onFriends ? undefined : 'page'}>
+        <a href="#/" aria-current={onCharacter || onShop || onCodex || onPractice || onFriends || onQuests ? undefined : 'page'}>
           <Icon name="library" />
           {strings.nav.library}
         </a>
@@ -89,6 +108,7 @@ function Sidebar({ route }: { route: Route }) {
           <Icon name="codex" />
           {strings.nav.codex}
         </a>
+        <QuestsLink active={onQuests} />
         <a href={hrefs.practice} aria-current={onPractice ? 'page' : undefined}>
           <Icon name="practice" />
           {strings.nav.practice}
@@ -119,6 +139,7 @@ function Toasts() {
 function Screens({ route }: { route: Route }) {
   if (route.view === 'character') return <CharacterView tab={route.tab} slot={route.slot} />;
   if (route.view === 'shop') return <ShopView />;
+  if (route.view === 'quests') return route.id ? <QuestView key={route.id} id={route.id} /> : <QuestsView />;
   if (route.view === 'friends') {
     return route.id ? <FriendProfileView id={route.id} tab={route.tab} list={route.list} /> : <FriendsView />;
   }
@@ -204,6 +225,7 @@ function AppShell() {
     <LibraryProvider>
       <FriendsProvider>
         <CodexProvider>
+          <QuestsProvider>
           <div className="shell">
             <Sidebar route={route} />
             <div className="content">
@@ -220,6 +242,7 @@ function AppShell() {
               )}
             </div>
           </div>
+          </QuestsProvider>
         </CodexProvider>
       </FriendsProvider>
       <Toasts />

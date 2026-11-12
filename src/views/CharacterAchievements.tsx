@@ -15,6 +15,7 @@ const GROUPS: Array<[AchievementGroup, IconName]> = [
   ['Exploring', 'compass'],
   ['Character', 'character'],
   ['Codex', 'codex'],
+  ['Quests', 'quest'],
   ['Practice', 'practice'],
 ];
 type Filter = 'all' | 'earned' | 'locked';
@@ -26,6 +27,7 @@ const GOAL_LINKS: Record<AchievementGroup, string> = {
   Exploring: '#/',
   Character: hrefs.characterTab('wardrobe'),
   Codex: hrefs.paths,
+  Quests: hrefs.quests,
   Practice: hrefs.practice,
 };
 

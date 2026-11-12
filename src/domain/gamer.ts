@@ -3,6 +3,7 @@ import type { Path } from '../content/paths';
 import { WARDROBE_GENRES, genreEntryId, pickGenres } from './genres';
 import { bestScore } from './practice';
 import { hasPerfectQuiz, passedCount } from './quiz';
+import { questGold } from './quests';
 import type { WardrobeGenre } from './genres';
 import type { LibraryEntry } from './types';
 import { PIECES } from './wardrobe';
@@ -41,7 +42,7 @@ interface Facts {
   ownedCount: number;
 }
 
-export type AchievementGroup = 'Library' | 'Finishing' | 'Exploring' | 'Character' | 'Codex' | 'Practice';
+export type AchievementGroup = 'Library' | 'Finishing' | 'Exploring' | 'Character' | 'Codex' | 'Quests' | 'Practice';
 
 interface AchievementRule {
   id: string;
@@ -59,6 +60,11 @@ const playedGenre = (genre: WardrobeGenre) => (facts: Facts) =>
 
 const pathIds = PATHS.map((path) => path.id);
 const eraIds = ERAS.map((era) => era.id);
+
+const questCount = (profile: CharacterProfile) => Object.keys(profile.quests).length;
+
+const questCategories = (profile: CharacterProfile) =>
+  new Set(Object.values(profile.quests).map((record) => record.category)).size;
 
 const ACHIEVEMENTS: AchievementRule[] = [
   {
@@ -257,6 +263,49 @@ const ACHIEVEMENTS: AchievementRule[] = [
     counter: ({ profile }) => [passedCount(profile.quizzes, eraIds), eraIds.length],
   },
   {
+    id: 'first-quest',
+    difficulty: 'easy',
+    group: 'Quests',
+    title: 'Turned in your first quest',
+    description: 'Finish any quest and write your answer.',
+    earned: ({ profile }) => questCount(profile) >= 1,
+  },
+  {
+    id: 'read-reply',
+    difficulty: 'easy',
+    group: 'Quests',
+    title: 'Got a reply',
+    description: 'Open a reply to one of your quests.',
+    earned: ({ profile }) => Object.values(profile.quests).some((record) => record.replySeenAt),
+  },
+  {
+    id: 'five-quests',
+    difficulty: 'medium',
+    group: 'Quests',
+    title: 'Turned in 5 quests',
+    description: 'Finish 5 quests.',
+    earned: ({ profile }) => questCount(profile) >= 5,
+    counter: ({ profile }) => [questCount(profile), 5],
+  },
+  {
+    id: 'quest-explorer',
+    difficulty: 'medium',
+    group: 'Quests',
+    title: 'Quests all over the Codex',
+    description: 'Finish quests from 4 different Codex categories.',
+    earned: ({ profile }) => questCategories(profile) >= 4,
+    counter: ({ profile }) => [questCategories(profile), 4],
+  },
+  {
+    id: 'fifteen-quests',
+    difficulty: 'hard',
+    group: 'Quests',
+    title: 'Turned in 15 quests',
+    description: 'Finish 15 quests.',
+    earned: ({ profile }) => questCount(profile) >= 15,
+    counter: ({ profile }) => [questCount(profile), 15],
+  },
+  {
     id: 'first-run',
     difficulty: 'easy',
     group: 'Practice',
@@ -386,6 +435,7 @@ export function deriveGamer(entries: LibraryEntry[], profile: CharacterProfile):
   const earnedGold =
     achievements.reduce((sum, item) => sum + (item.unlocked ? item.gold : 0), 0) +
     paths.reduce((sum, item) => sum + (item.done ? item.gold : 0), 0) +
+    questGold(profile.quests) +
     (progress.level - 1) * LEVEL_GOLD;
   const spent = Object.values(profile.owned).reduce((sum, price) => sum + price, 0);
   return {

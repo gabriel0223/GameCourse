@@ -3,8 +3,17 @@ import { demoFriends } from './demoFriends';
 import { localCodexStore } from './localCodexStore';
 import { localStore } from './localStore';
 import type { Game } from '../domain/types';
-import type { CodexStore, FriendStore, GameCatalog, LibraryStore } from './ports';
-import { igdbCatalog, supabase, supabaseCodexStore, supabaseFriends, supabaseStore } from './supabase';
+import type { CodexStore, FriendStore, GameCatalog, LibraryStore, QuestStore } from './ports';
+import { localQuestStore } from './localQuestStore';
+import {
+  igdbCatalog,
+  signedInUserId,
+  supabase,
+  supabaseCodexStore,
+  supabaseFriends,
+  supabaseQuestStore,
+  supabaseStore,
+} from './supabase';
 
 export const isDemo = !supabase;
 
@@ -40,3 +49,8 @@ export const catalog: GameCatalog = {
 export const store: LibraryStore = supabase ? supabaseStore : localStore;
 export const codexStore: CodexStore = supabase ? supabaseCodexStore : localCodexStore;
 export const friendStore: FriendStore = supabase ? supabaseFriends : demoFriends;
+export const questStore: QuestStore = supabase ? supabaseQuestStore : localQuestStore;
+
+// Preview mode has one player, whose own replies are stored under this id.
+export const PREVIEW_PLAYER_ID = 'me';
+export const myPlayerId = (): Promise<string | null> => (supabase ? signedInUserId() : Promise.resolve(PREVIEW_PLAYER_ID));
