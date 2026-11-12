@@ -6036,18 +6036,34 @@ a.button {
   color: var(--text);
 }
 
-.time-range {
+.time-limit {
   flex: none;
   width: 250px;
-  padding: 4px 8px 0;
 }
 
-.time-range-track {
+.time-limit-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.time-limit-label svg {
+  width: 16px;
+  height: 16px;
+  color: var(--muted);
+}
+
+.time-limit-track {
   position: relative;
   height: 20px;
+  margin: 0 8px;
 }
 
-.time-range-track::before {
+.time-limit-track::before {
   content: '';
   position: absolute;
   top: 9px;
@@ -6058,14 +6074,15 @@ a.button {
   background: var(--line);
 }
 
-.time-range-fill {
+.time-limit-fill {
   position: absolute;
   top: 9px;
+  left: 0;
   height: 2px;
   background: var(--text);
 }
 
-.time-range-tick {
+.time-limit-tick {
   position: absolute;
   top: 6px;
   width: 2px;
@@ -6075,68 +6092,79 @@ a.button {
   background: var(--line);
 }
 
-.time-range-tick[data-on] {
+.time-limit-tick[data-on] {
   background: var(--text);
 }
 
-.time-range input[type='range'] {
+.time-limit input[type='range'] {
   position: absolute;
-  inset: 0;
-  width: 100%;
+  top: 0;
+  right: -8px;
+  left: -8px;
+  width: calc(100% + 16px);
   min-height: 0;
   height: 20px;
   margin: 0;
   padding: 0;
   border: none;
   background: none;
-  pointer-events: none;
+  cursor: pointer;
   appearance: none;
 }
 
-.time-range input[type='range']::-webkit-slider-runnable-track {
+.time-limit input[type='range']:focus,
+.time-limit input[type='range']:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.time-limit input[type='range']::-webkit-slider-runnable-track {
   height: 20px;
   background: none;
 }
 
-.time-range input[type='range']::-moz-range-track {
+.time-limit input[type='range']::-moz-range-track {
   height: 20px;
   background: none;
 }
 
-.time-range input[type='range']::-webkit-slider-thumb {
+.time-limit input[type='range']::-webkit-slider-thumb {
   width: 16px;
   height: 16px;
   margin-top: 2px;
   border: 2px solid var(--ground);
   border-radius: 50%;
   background: var(--text);
-  pointer-events: auto;
   cursor: grab;
   appearance: none;
 }
 
-.time-range input[type='range']::-moz-range-thumb {
+.time-limit input[type='range']::-moz-range-thumb {
   width: 12px;
   height: 12px;
   border: 2px solid var(--ground);
   border-radius: 50%;
   background: var(--text);
-  pointer-events: auto;
   cursor: grab;
 }
 
-.time-range input[type='range']:focus-visible::-webkit-slider-thumb {
+.time-limit input[type='range']:focus-visible::-webkit-slider-thumb {
   outline: 2px solid var(--gold);
   outline-offset: 2px;
 }
 
-.time-range-labels {
-  position: relative;
-  height: 20px;
-  margin-top: 4px;
+.time-limit input[type='range']:focus-visible::-moz-range-thumb {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
 }
 
-.time-range-labels span {
+.time-limit-stops {
+  position: relative;
+  height: 20px;
+  margin: 4px 8px 0;
+}
+
+.time-limit-stops span {
   position: absolute;
   color: var(--muted);
   font-size: 13px;
@@ -6144,23 +6172,17 @@ a.button {
   transform: translateX(-50%);
 }
 
-.time-range-labels span[data-on] {
-  color: var(--text);
+.time-limit-stops span[data-on] {
+  color: var(--soft);
 }
 
 /* The end labels line up with the ends of the track, so they don't spill past it. */
-.time-range-labels span:first-child {
-  transform: translateX(-6px);
+.time-limit-stops span:first-child {
+  transform: translateX(-8px);
 }
 
-.time-range-labels span:last-child {
-  transform: translateX(calc(-100% + 6px));
-}
-
-.time-range input[type='range']:focus,
-.time-range input[type='range']:focus-visible {
-  outline: none;
-  box-shadow: none;
+.time-limit-stops span:last-child {
+  transform: translateX(calc(-100% + 8px));
 }
 
 .quest-results-bar {
@@ -6532,7 +6554,7 @@ button.quest-form-remove {
   .quest-row-side {
     margin-left: 48px;
   }
-  .time-range {
+  .time-limit {
     width: 100%;
   }
   .quest-form-row {

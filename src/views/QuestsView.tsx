@@ -16,7 +16,7 @@ import {
   questIsValid,
   questsForYou,
 } from '../domain/quests';
-import type { Quest, QuestRecord, QuestStatus, ReviewItem } from '../domain/quests';
+import type { Quest, QuestRecord, ReviewItem } from '../domain/quests';
 import { todayLocal } from '../format';
 import { useCodex } from '../state/CodexContext';
 import { useLibrary } from '../state/LibraryContext';
@@ -361,7 +361,6 @@ const CATEGORY_ORDER: CodexCategory[] = ['playing', 'genres', 'history', 'consol
 
 type Sort = 'suggested' | 'shortest' | 'longest' | 'gold';
 const SORTS: Sort[] = ['suggested', 'shortest', 'longest', 'gold'];
-const STATUSES: QuestStatus[] = ['open', 'waiting', 'replied'];
 const LAST_STOP = QUEST_TIMES.length - 1;
 
 // A filter button that opens a small menu, like the ones on shopping sites.
@@ -434,41 +433,35 @@ function CheckList<T extends string>({
   );
 }
 
-// A slider with two handles that snap to the time tags, so she can say "between 30 min and 1 hour".
-function TimeRange({ range, onChange }: { range: [number, number]; onChange(next: [number, number]): void }) {
-  const [low, high] = range;
+// One handle, dragged left to right: the longest quest she's up for. The last stop means any length.
+function TimeLimit({ stop, onChange }: { stop: number; onChange(next: number): void }) {
   const percent = (index: number) => (index / LAST_STOP) * 100;
+  const any = stop === LAST_STOP;
   return (
-    <div className="time-range" role="group" aria-label={t.howLong}>
-      <div className="time-range-track">
-        <span className="time-range-fill" style={{ left: `${percent(low)}%`, right: `${100 - percent(high)}%` }} />
+    <div className="time-limit">
+      <label className="time-limit-label" htmlFor="quest-time-limit">
+        <Icon name="clock" />
+        {any ? t.anyLength : t.upTo(t.stop(QUEST_TIMES[stop]))}
+      </label>
+      <div className="time-limit-track">
+        <span className="time-limit-fill" style={{ width: `${percent(stop)}%` }} />
         {QUEST_TIMES.map((minutes, index) => (
-          <span key={minutes} className="time-range-tick" style={{ left: `${percent(index)}%` }} data-on={(index >= low && index <= high) || undefined} />
+          <span key={minutes} className="time-limit-tick" style={{ left: `${percent(index)}%` }} data-on={index <= stop || undefined} />
         ))}
         <input
+          id="quest-time-limit"
           type="range"
           min={0}
           max={LAST_STOP}
           step={1}
-          value={low}
-          aria-label={t.shortest}
-          aria-valuetext={t.stop(QUEST_TIMES[low])}
-          onChange={(event) => onChange([Math.min(Number(event.target.value), high), high])}
-        />
-        <input
-          type="range"
-          min={0}
-          max={LAST_STOP}
-          step={1}
-          value={high}
-          aria-label={t.longest}
-          aria-valuetext={t.stop(QUEST_TIMES[high])}
-          onChange={(event) => onChange([low, Math.max(Number(event.target.value), low)])}
+          value={stop}
+          aria-valuetext={any ? t.anyLength : t.upTo(t.stop(QUEST_TIMES[stop]))}
+          onChange={(event) => onChange(Number(event.target.value))}
         />
       </div>
-      <div className="time-range-labels" aria-hidden="true">
+      <div className="time-limit-stops" aria-hidden="true">
         {QUEST_TIMES.map((minutes, index) => (
-          <span key={minutes} style={{ left: `${percent(index)}%` }} data-on={(index >= low && index <= high) || undefined}>
+          <span key={minutes} style={{ left: `${percent(index)}%` }} data-on={index <= stop || undefined}>
             {t.stop(minutes)}
           </span>
         ))}
@@ -477,32 +470,52 @@ function TimeRange({ range, onChange }: { range: [number, number]; onChange(next
   );
 }
 
-// Shop-style browsing: filter buttons and a time slider on top, then a count and a sort.
+// Her filters are kept on this device, so they're still set when she comes back.
+interface SavedFilters {
+  // Null until she flips For you, so it can follow whether there's anything for her yet.
+  forYou: boolean | null;
+  categories: CodexCategory[];
+  stop: number;
+  sort: Sort;
+}
+
+const FILTERS_KEY = 'games-course-quest-filters';
+
+function loadFilters(): SavedFilters {
+  const saved = readLocal<Partial<SavedFilters>>(FILTERS_KEY, {});
+  return {
+    forYou: typeof saved.forYou === 'boolean' ? saved.forYou : null,
+    categories: Array.isArray(saved.categories) ? saved.categories.filter((item) => CATEGORY_ORDER.includes(item)) : [],
+    stop: Number.isInteger(saved.stop) && saved.stop! >= 0 && saved.stop! <= LAST_STOP ? saved.stop! : LAST_STOP,
+    sort: SORTS.includes(saved.sort as Sort) ? (saved.sort as Sort) : 'suggested',
+  };
+}
+
+// Shop-style browsing: filter buttons and a time limit on top, then a count and a sort.
 // For you only offers quests she hasn't done yet, since it answers "what could I do next?".
 function QuestBrowser({ quests }: { quests: Quest[] }) {
   const { find } = useCodex();
   const { profile } = useLibrary();
-  const { status } = useQuests();
   const started = ALL_PATHS.filter(
     (path) => pathRead(path, profile.readEntries) > 0 && !profile.quizzes[path.id]?.passed,
   ).flatMap((path) => path.entryIds);
   const forYouIds = new Set(questsForYou(quests, profile.quests, profile.readEntries, started).map((quest) => quest.id));
-  // Until she flips it, For you follows whether there's anything for her yet, so it still
-  // lands right if her profile finishes loading after this screen opens.
-  const [forYouPicked, setForYou] = useState<boolean | null>(null);
-  const forYou = forYouPicked ?? forYouIds.size > 0;
-  const [categories, setCategories] = useState<CodexCategory[]>([]);
-  const [statuses, setStatuses] = useState<QuestStatus[]>([]);
-  const [range, setRange] = useState<[number, number]>([0, LAST_STOP]);
-  const [sort, setSort] = useState<Sort>('suggested');
+  const [filters, setFilters] = useState<SavedFilters>(loadFilters);
+  const update = (change: Partial<SavedFilters>) =>
+    setFilters((current) => {
+      const next = { ...current, ...change };
+      writeLocal(FILTERS_KEY, next);
+      return next;
+    });
+  const { categories, stop, sort } = filters;
+  const forYou = filters.forYou ?? forYouIds.size > 0;
 
   const categoryOf = (quest: Quest) => find(quest.entryId)?.category;
   const present = CATEGORY_ORDER.filter((category) => quests.some((quest) => categoryOf(quest) === category));
   const shown = quests
     .filter((quest) => !forYou || forYouIds.has(quest.id))
     .filter((quest) => categories.length === 0 || categories.includes(categoryOf(quest)!))
-    .filter((quest) => statuses.length === 0 || statuses.includes(status(quest.id)))
-    .filter((quest) => fitsTime(quest, QUEST_TIMES[range[0]], QUEST_TIMES[range[1]]));
+    .filter((quest) => fitsTime(quest, 0, QUEST_TIMES[stop]));
 
   const minutes = (quest: Quest) => quest.minutes ?? Number.POSITIVE_INFINITY;
   const open = (quest: Quest) => Number(!profile.quests[quest.id]);
@@ -514,43 +527,40 @@ function QuestBrowser({ quests }: { quests: Quest[] }) {
     return open(b) - open(a) || order(a) - order(b);
   });
 
-  const filtered = !forYou && categories.length + statuses.length === 0 && range[0] === 0 && range[1] === LAST_STOP;
-  const reset = () => {
-    setForYou(false);
-    setCategories([]);
-    setStatuses([]);
-    setRange([0, LAST_STOP]);
-  };
+  // For you is a view of its own, so Clear only appears for filters she picked.
+  const narrowed = categories.length > 0 || stop !== LAST_STOP;
 
   return (
     <>
       <div className="quest-filter-bar">
         <div className="quest-filter-buttons">
-          <button type="button" className="filter-pill" aria-pressed={forYou} onClick={() => setForYou(!forYou)}>
+          <button type="button" className="filter-pill" aria-pressed={forYou} onClick={() => update({ forYou: !forYou })}>
             {forYou && <Icon name="check" />}
             {t.filters.forYou}
           </button>
           <FilterMenu label={t.filters.category} count={categories.length}>
-            <CheckList options={present} picked={categories} label={(value) => strings.codex.categories[value]} onChange={setCategories} />
-          </FilterMenu>
-          <FilterMenu label={t.filters.status} count={statuses.length}>
-            <CheckList options={STATUSES} picked={statuses} label={(value) => t.status[value]} onChange={setStatuses} />
+            <CheckList
+              options={present}
+              picked={categories}
+              label={(value) => strings.codex.categories[value]}
+              onChange={(next) => update({ categories: next })}
+            />
           </FilterMenu>
         </div>
-        <TimeRange range={range} onChange={setRange} />
+        <TimeLimit stop={stop} onChange={(next) => update({ stop: next })} />
       </div>
       <div className="quest-results-bar">
         <p className="count">
           {t.count(sorted.length)}
-          {!filtered && (
-            <button className="filter-clear" type="button" onClick={reset}>
+          {narrowed && (
+            <button className="filter-clear" type="button" onClick={() => update({ categories: [], stop: LAST_STOP })}>
               {t.clearAll}
             </button>
           )}
         </p>
         <label className="quest-sort">
           {t.sortBy}
-          <select value={sort} onChange={(event) => setSort(event.target.value as Sort)}>
+          <select value={sort} onChange={(event) => update({ sort: event.target.value as Sort })}>
             {SORTS.map((value) => (
               <option key={value} value={value}>
                 {t.sorts[value]}
@@ -561,7 +571,7 @@ function QuestBrowser({ quests }: { quests: Quest[] }) {
       </div>
       {sorted.length === 0 ? (
         <p className="empty-small quest-filter-empty">
-          {forYou && forYouIds.size === 0 ? t.emptyFilter['for-you'] : t.emptyFilter.other}
+          {forYou && forYouIds.size === 0 && !narrowed ? t.emptyFilter['for-you'] : t.emptyFilter.other}
         </p>
       ) : (
         <div className="quest-list">
