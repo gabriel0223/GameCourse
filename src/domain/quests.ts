@@ -12,6 +12,8 @@ export interface Quest {
   // One question to answer afterwards. Blank means a free answer.
   question: string;
   gold: number;
+  // Roughly how long it takes, from QUEST_TIMES. Quests saved before this existed have none.
+  minutes?: number;
   // Built-in quests can't be deleted, so removing one saves a hidden copy.
   hidden?: boolean;
   // True for quests made in the app rather than shipped with it.
@@ -40,6 +42,11 @@ export interface QuestReview {
 }
 
 export const DEFAULT_QUEST_GOLD = 40;
+
+// The time tags an editor picks from. The last one means two hours or more.
+export const QUEST_TIMES = [15, 30, 60, 120] as const;
+export const DEFAULT_QUEST_MINUTES = 30;
+export const QUICK_MINUTES = 30;
 export const MAX_QUEST_GOLD = 500;
 export const ANSWER_LIMIT = 6000;
 
@@ -53,6 +60,7 @@ export function cleanQuest(quest: Quest): Quest {
     task: quest.task.trim(),
     question: quest.question.trim(),
     gold: Math.min(MAX_QUEST_GOLD, Math.max(0, gold)),
+    minutes: QUEST_TIMES.find((option) => option === quest.minutes),
   };
 }
 
@@ -176,4 +184,18 @@ export function dailyQuest(
     (a, b) => Number(read.has(b.entryId)) - Number(read.has(a.entryId)) || order(a) - order(b) || a.id.localeCompare(b.id),
   );
   return sorted[((reroll % sorted.length) + sorted.length) % sorted.length];
+}
+
+export const isQuick = (quest: Quest) => quest.minutes !== undefined && quest.minutes <= QUICK_MINUTES;
+
+// Open quests that follow on from her studies: entries she has read, and stops on
+// paths she has started but not finished yet.
+export function questsForYou(
+  quests: Quest[],
+  records: Record<string, QuestRecord>,
+  readEntries: string[],
+  startedPathStops: string[],
+): Quest[] {
+  const near = new Set([...readEntries, ...startedPathStops]);
+  return quests.filter((quest) => !records[quest.id] && near.has(quest.entryId));
 }

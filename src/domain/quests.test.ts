@@ -6,7 +6,9 @@ import {
   cleanQuest,
   dailyQuest,
   findReply,
+  isQuick,
   mergeQuests,
+  questsForYou,
   newQuestId,
   questGold,
   questStatus,
@@ -35,6 +37,10 @@ describe('built-in quests', () => {
     const ids = new Set(CODEX_ENTRIES.map((entry) => entry.id));
     for (const item of BUILT_IN_QUESTS) expect(ids.has(item.entryId), item.id).toBe(true);
     expect(new Set(BUILT_IN_QUESTS.map((item) => item.id)).size).toBe(BUILT_IN_QUESTS.length);
+  });
+
+  it('each have a time tag', () => {
+    for (const item of BUILT_IN_QUESTS) expect(cleanQuest(item).minutes, item.id).toBe(item.minutes);
   });
 
   it('each ask one question', () => {
@@ -169,5 +175,26 @@ describe('daily quest', () => {
     let records: Record<string, QuestRecord> = {};
     for (const item of quests) records = turnIn(records, item, 'x', T1, 'genres');
     expect(dailyQuest(quests, records, [], '2026-11-12', 0)).toBeNull();
+  });
+});
+
+describe('finding a quest', () => {
+  it('keeps only the time tags editors can pick', () => {
+    expect(cleanQuest({ ...quest('a'), minutes: 60 }).minutes).toBe(60);
+    expect(cleanQuest({ ...quest('a'), minutes: 45 }).minutes).toBeUndefined();
+  });
+
+  it('counts 30 minutes or less as quick, and untagged quests as not quick', () => {
+    expect(isQuick({ ...quest('a'), minutes: 15 })).toBe(true);
+    expect(isQuick({ ...quest('a'), minutes: 30 })).toBe(true);
+    expect(isQuick({ ...quest('a'), minutes: 60 })).toBe(false);
+    expect(isQuick(quest('a'))).toBe(false);
+  });
+
+  it('suggests open quests from read entries and started paths', () => {
+    const quests = [quest('read', 'genre-rpg'), quest('path', 'genre-cozy'), quest('far', 'genre-horror'), quest('done', 'genre-rpg')];
+    const records = turnIn({}, quest('done', 'genre-rpg'), 'x', T1, 'genres');
+    const ids = questsForYou(quests, records, ['genre-rpg'], ['genre-cozy']).map((item) => item.id);
+    expect(ids).toEqual(['read', 'path']);
   });
 });

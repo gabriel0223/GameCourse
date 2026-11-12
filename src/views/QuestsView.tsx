@@ -3,12 +3,24 @@ import type { FormEvent } from 'react';
 import { GoldAmount } from '../components/GoldAmount';
 import { Icon } from '../components/Icon';
 import type { CodexCategory, CodexEntry } from '../content/codex';
-import { DEFAULT_QUEST_GOLD, MAX_QUEST_GOLD, ANSWER_LIMIT, dailyQuest, newQuestId, questIsValid } from '../domain/quests';
+import {
+  ANSWER_LIMIT,
+  DEFAULT_QUEST_GOLD,
+  DEFAULT_QUEST_MINUTES,
+  MAX_QUEST_GOLD,
+  QUEST_TIMES,
+  dailyQuest,
+  isQuick,
+  newQuestId,
+  questIsValid,
+  questsForYou,
+} from '../domain/quests';
 import type { Quest, QuestRecord, ReviewItem } from '../domain/quests';
 import { todayLocal } from '../format';
 import { useCodex } from '../state/CodexContext';
 import { useLibrary } from '../state/LibraryContext';
 import { useQuests } from '../state/QuestsContext';
+import { ALL_PATHS, pathRead } from '../content/paths';
 import { strings } from '../strings';
 import { hrefs } from '../useHashRoute';
 import { EntryArt } from './CodexView';
@@ -64,6 +76,7 @@ export function QuestForm({
         task: '',
         question: '',
         gold: DEFAULT_QUEST_GOLD,
+        minutes: DEFAULT_QUEST_MINUTES,
         custom: true,
       },
   );
@@ -136,6 +149,20 @@ export function QuestForm({
           {f.name}
           <input required value={draft.title} placeholder={f.namePlaceholder} onChange={(event) => set({ title: event.target.value })} />
         </label>
+        <label className="field quest-form-time">
+          {f.time}
+          <select
+            value={draft.minutes ?? ''}
+            onChange={(event) => set({ minutes: event.target.value ? Number(event.target.value) : undefined })}
+          >
+            {draft.minutes === undefined && <option value="">{f.noTime}</option>}
+            {QUEST_TIMES.map((minutes) => (
+              <option key={minutes} value={minutes}>
+                {t.time(minutes)}
+              </option>
+            ))}
+          </select>
+        </label>
         <label className="field quest-form-gold">
           {f.gold}
           <input
@@ -189,6 +216,16 @@ export function QuestForm({
 
 /* Small pieces shared by the screens. */
 
+function TimeTag({ minutes }: { minutes?: number }) {
+  if (minutes === undefined) return null;
+  return (
+    <span className="quest-time" title={t.timeTitle}>
+      <Icon name="clock" />
+      {t.time(minutes)}
+    </span>
+  );
+}
+
 function StatusTag({ questId, always = false }: { questId: string; always?: boolean }) {
   const { status, hasNewReply } = useQuests();
   const current = status(questId);
@@ -215,7 +252,8 @@ function QuestRow({
   const { find: findQuest } = useQuests();
   const entry = showEntry ? find(entryId) : undefined;
   // A deleted quest has no task left to show, only what she turned in.
-  const task = findQuest(id)?.task;
+  const quest = findQuest(id);
+  const task = quest?.task;
   return (
     <a className="quest-row" href={hrefs.quest(id)}>
       <span className="quest-row-icon" aria-hidden="true">
@@ -228,6 +266,7 @@ function QuestRow({
       </span>
       <span className="quest-row-side">
         <StatusTag questId={id} />
+        <TimeTag minutes={quest?.minutes} />
         <GoldAmount amount={gold} />
       </span>
     </a>
@@ -292,6 +331,7 @@ function TodaysQuest() {
           <div className="quest-today-text">
             <div className="quest-today-title">
               <h2>{quest.title}</h2>
+              <TimeTag minutes={quest.minutes} />
               <GoldAmount amount={quest.gold} />
             </div>
             {entry && <small>{t.from(entry.title)}</small>}
@@ -318,52 +358,58 @@ function TodaysQuest() {
 // The same order the Codex uses for its paths.
 const CATEGORY_ORDER: CodexCategory[] = ['playing', 'genres', 'history', 'consoles', 'people', 'roles', 'industry'];
 
-// Every quest, grouped by its entry's Codex category and folded away until opened,
-// so the full list never has to be scrolled through at once.
-function QuestGroups({ quests }: { quests: Quest[] }) {
+type Filter = 'for-you' | 'quick' | 'all' | CodexCategory;
+
+// One row of chips over a flat list. For you and Quick only offer quests she hasn't
+// done, since they answer "what could I do next?". All and the categories list everything.
+function QuestBrowser({ quests }: { quests: Quest[] }) {
   const { find } = useCodex();
   const { profile } = useLibrary();
-  const groups = CATEGORY_ORDER.map((category) => ({
-    category,
-    items: quests.filter((quest) => find(quest.entryId)?.category === category),
-  })).filter((group) => group.items.length > 0);
-  // A quest whose entry was deleted still shows, at the end.
-  const loose = quests.filter((quest) => !find(quest.entryId));
+  const started = ALL_PATHS.filter(
+    (path) => pathRead(path, profile.readEntries) > 0 && !profile.quizzes[path.id]?.passed,
+  ).flatMap((path) => path.entryIds);
+  const forYou = questsForYou(quests, profile.quests, profile.readEntries, started);
+  // Until she picks one, the filter follows whether there's anything for her yet, so it
+  // still lands right if her profile finishes loading after this screen opens.
+  const [picked, setFilter] = useState<Filter | null>(null);
+  const filter: Filter = picked ?? (forYou.length ? 'for-you' : 'all');
+  const categories = CATEGORY_ORDER.filter((category) => quests.some((quest) => find(quest.entryId)?.category === category));
+  const open = (quest: Quest) => !profile.quests[quest.id];
+
+  const shown = (() => {
+    if (filter === 'for-you') return forYou;
+    if (filter === 'quick') return quests.filter((quest) => open(quest) && isQuick(quest));
+    const listed = filter === 'all' ? quests : quests.filter((quest) => find(quest.entryId)?.category === filter);
+    // Quests she can still do come first.
+    return [...listed].sort((a, b) => Number(open(b)) - Number(open(a)));
+  })();
+
+  const chip = (value: Filter, label: string) => (
+    <button key={value} type="button" aria-pressed={filter === value} onClick={() => setFilter(value)}>
+      {label}
+    </button>
+  );
+
   return (
-    <div className="quest-groups">
-      {groups.map(({ category, items }) => {
-        const done = items.filter((quest) => profile.quests[quest.id]).length;
-        return (
-          <details className="quest-group" key={category}>
-            <summary>
-              <span className="quest-group-name">{strings.codex.categories[category]}</span>
-              <span className="quest-group-count">{t.groupCount(done, items.length)}</span>
-              <span className="quest-group-bar" aria-hidden="true">
-                <span style={{ width: `${(done / items.length) * 100}%` }} />
-              </span>
-            </summary>
-            <div className="quest-list">
-              {items.map((quest) => (
-                <QuestRow key={quest.id} id={quest.id} title={quest.title} gold={quest.gold} entryId={quest.entryId} />
-              ))}
-            </div>
-          </details>
-        );
-      })}
-      {loose.length > 0 && (
-        <details className="quest-group">
-          <summary>
-            <span className="quest-group-name">{t.otherGroup}</span>
-            <span className="quest-group-count">{loose.length}</span>
-          </summary>
-          <div className="quest-list">
-            {loose.map((quest) => (
-              <QuestRow key={quest.id} id={quest.id} title={quest.title} gold={quest.gold} entryId={quest.entryId} />
-            ))}
-          </div>
-        </details>
+    <>
+      <div className="chips quest-filters" role="group" aria-label={t.filterLabel}>
+        {chip('for-you', t.filters.forYou)}
+        {chip('quick', t.filters.quick)}
+        {chip('all', t.filters.all)}
+        <span className="quest-filters-gap" aria-hidden="true" />
+        {categories.map((category) => chip(category, strings.codex.categories[category]))}
+      </div>
+      {filter === 'quick' && shown.length > 0 && <p className="empty-small quest-filter-note">{t.quickNote}</p>}
+      {shown.length === 0 ? (
+        <p className="empty-small quest-filter-empty">{t.emptyFilter[filter === 'for-you' || filter === 'quick' ? filter : 'other']}</p>
+      ) : (
+        <div className="quest-list">
+          {shown.map((quest) => (
+            <QuestRow key={quest.id} id={quest.id} title={quest.title} gold={quest.gold} entryId={quest.entryId} />
+          ))}
+        </div>
       )}
-    </div>
+    </>
   );
 }
 
@@ -430,8 +476,8 @@ export function QuestsView() {
       )}
 
       <section className="quest-block">
-        <h2>{t.all}</h2>
-        {quests.length === 0 ? <p className="empty-small">{t.none}</p> : <QuestGroups quests={quests} />}
+        <h2>{t.browse}</h2>
+        {quests.length === 0 ? <p className="empty-small">{t.none}</p> : <QuestBrowser quests={quests} />}
       </section>
     </main>
   );
@@ -524,6 +570,7 @@ export function QuestView({ id }: { id: string }) {
           <h1>{quest?.title ?? record!.title}</h1>
           <div className="quest-head-tags">
             <StatusTag questId={id} always />
+            <TimeTag minutes={quest?.minutes} />
             <GoldAmount amount={gold} />
           </div>
         </div>
