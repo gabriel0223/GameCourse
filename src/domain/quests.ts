@@ -46,7 +46,8 @@ export const DEFAULT_QUEST_GOLD = 40;
 // The time tags an editor picks from. The last one means two hours or more.
 export const QUEST_TIMES = [15, 30, 60, 120] as const;
 export const DEFAULT_QUEST_MINUTES = 30;
-export const QUICK_MINUTES = 30;
+// The "up to" choices in the How long filter. 2+ hours is the same as Any, so it isn't one.
+export const TIME_LIMITS = [15, 30, 60] as const;
 export const MAX_QUEST_GOLD = 500;
 export const ANSWER_LIMIT = 6000;
 
@@ -186,7 +187,9 @@ export function dailyQuest(
   return sorted[((reroll % sorted.length) + sorted.length) % sorted.length];
 }
 
-export const isQuick = (quest: Quest) => quest.minutes !== undefined && quest.minutes <= QUICK_MINUTES;
+// Null means any length. A quest with no time tag only shows when any length is fine.
+export const fitsTime = (quest: Quest, limit: number | null) =>
+  limit === null || (quest.minutes !== undefined && quest.minutes <= limit);
 
 // Open quests that follow on from her studies: entries she has read, and stops on
 // paths she has started but not finished yet.

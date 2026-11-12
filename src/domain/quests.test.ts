@@ -6,7 +6,7 @@ import {
   cleanQuest,
   dailyQuest,
   findReply,
-  isQuick,
+  fitsTime,
   mergeQuests,
   questsForYou,
   newQuestId,
@@ -184,11 +184,13 @@ describe('finding a quest', () => {
     expect(cleanQuest({ ...quest('a'), minutes: 45 }).minutes).toBeUndefined();
   });
 
-  it('counts 30 minutes or less as quick, and untagged quests as not quick', () => {
-    expect(isQuick({ ...quest('a'), minutes: 15 })).toBe(true);
-    expect(isQuick({ ...quest('a'), minutes: 30 })).toBe(true);
-    expect(isQuick({ ...quest('a'), minutes: 60 })).toBe(false);
-    expect(isQuick(quest('a'))).toBe(false);
+  it('fits a time limit, counting untagged quests only when any length is fine', () => {
+    expect(fitsTime({ ...quest('a'), minutes: 15 }, 30)).toBe(true);
+    expect(fitsTime({ ...quest('a'), minutes: 30 }, 30)).toBe(true);
+    expect(fitsTime({ ...quest('a'), minutes: 60 }, 30)).toBe(false);
+    expect(fitsTime({ ...quest('a'), minutes: 120 }, null)).toBe(true);
+    expect(fitsTime(quest('a'), 60)).toBe(false);
+    expect(fitsTime(quest('a'), null)).toBe(true);
   });
 
   it('suggests open quests from read entries and started paths', () => {

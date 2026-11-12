@@ -9,8 +9,9 @@ import {
   DEFAULT_QUEST_MINUTES,
   MAX_QUEST_GOLD,
   QUEST_TIMES,
+  TIME_LIMITS,
   dailyQuest,
-  isQuick,
+  fitsTime,
   newQuestId,
   questIsValid,
   questsForYou,
@@ -358,10 +359,11 @@ function TodaysQuest() {
 // The same order the Codex uses for its paths.
 const CATEGORY_ORDER: CodexCategory[] = ['playing', 'genres', 'history', 'consoles', 'people', 'roles', 'industry'];
 
-type Filter = 'for-you' | 'quick' | 'all' | CodexCategory;
+type Filter = 'for-you' | 'all' | CodexCategory;
 
-// One row of chips over a flat list. For you and Quick only offer quests she hasn't
-// done, since they answer "what could I do next?". All and the categories list everything.
+// Two filters that combine: what to explore (chips) and how much time she has (up to).
+// For you only offers quests she hasn't done, since it answers "what could I do next?".
+// All and the categories list everything, with the ones she can still do first.
 function QuestBrowser({ quests }: { quests: Quest[] }) {
   const { find } = useCodex();
   const { profile } = useLibrary();
@@ -372,36 +374,52 @@ function QuestBrowser({ quests }: { quests: Quest[] }) {
   // Until she picks one, the filter follows whether there's anything for her yet, so it
   // still lands right if her profile finishes loading after this screen opens.
   const [picked, setFilter] = useState<Filter | null>(null);
+  const [limit, setLimit] = useState<number | null>(null);
   const filter: Filter = picked ?? (forYou.length ? 'for-you' : 'all');
   const categories = CATEGORY_ORDER.filter((category) => quests.some((quest) => find(quest.entryId)?.category === category));
   const open = (quest: Quest) => !profile.quests[quest.id];
 
-  const shown = (() => {
+  const inFilter = (() => {
     if (filter === 'for-you') return forYou;
-    if (filter === 'quick') return quests.filter((quest) => open(quest) && isQuick(quest));
     const listed = filter === 'all' ? quests : quests.filter((quest) => find(quest.entryId)?.category === filter);
-    // Quests she can still do come first.
     return [...listed].sort((a, b) => Number(open(b)) - Number(open(a)));
   })();
+  const shown = inFilter.filter((quest) => fitsTime(quest, limit));
 
   const chip = (value: Filter, label: string) => (
     <button key={value} type="button" aria-pressed={filter === value} onClick={() => setFilter(value)}>
       {label}
     </button>
   );
+  const limitOption = (value: number | null) => (
+    <button key={value ?? 'any'} type="button" aria-pressed={limit === value} onClick={() => setLimit(value)}>
+      {value === null ? t.anyTime : t.time(value)}
+    </button>
+  );
+
+  let empty: string = t.emptyFilter.other;
+  if (inFilter.length > 0) empty = t.emptyFilter.tooShort;
+  else if (filter === 'for-you') empty = t.emptyFilter['for-you'];
 
   return (
     <>
-      <div className="chips quest-filters" role="group" aria-label={t.filterLabel}>
-        {chip('for-you', t.filters.forYou)}
-        {chip('quick', t.filters.quick)}
-        {chip('all', t.filters.all)}
-        <span className="quest-filters-gap" aria-hidden="true" />
-        {categories.map((category) => chip(category, strings.codex.categories[category]))}
+      <div className="quest-filter-bar">
+        <div className="chips quest-filters" role="group" aria-label={t.filterLabel}>
+          {chip('for-you', t.filters.forYou)}
+          {chip('all', t.filters.all)}
+          <span className="quest-filters-gap" aria-hidden="true" />
+          {categories.map((category) => chip(category, strings.codex.categories[category]))}
+        </div>
+        <div className="quest-time-filter" role="group" aria-label={t.howLong}>
+          <span className="quest-time-filter-label">
+            <Icon name="clock" />
+            {t.upTo}
+          </span>
+          <div className="segmented">{[null, ...TIME_LIMITS].map(limitOption)}</div>
+        </div>
       </div>
-      {filter === 'quick' && shown.length > 0 && <p className="empty-small quest-filter-note">{t.quickNote}</p>}
       {shown.length === 0 ? (
-        <p className="empty-small quest-filter-empty">{t.emptyFilter[filter === 'for-you' || filter === 'quick' ? filter : 'other']}</p>
+        <p className="empty-small quest-filter-empty">{empty}</p>
       ) : (
         <div className="quest-list">
           {shown.map((quest) => (
