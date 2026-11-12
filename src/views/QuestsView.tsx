@@ -480,13 +480,15 @@ interface SavedFilters {
 }
 
 const FILTERS_KEY = 'games-course-quest-filters';
+// The slider starts in the middle, at 1h, so it's clear it can move either way.
+const DEFAULT_STOP = QUEST_TIMES.indexOf(60);
 
 function loadFilters(): SavedFilters {
   const saved = readLocal<Partial<SavedFilters>>(FILTERS_KEY, {});
   return {
     forYou: typeof saved.forYou === 'boolean' ? saved.forYou : null,
     categories: Array.isArray(saved.categories) ? saved.categories.filter((item) => CATEGORY_ORDER.includes(item)) : [],
-    stop: Number.isInteger(saved.stop) && saved.stop! >= 0 && saved.stop! <= LAST_STOP ? saved.stop! : LAST_STOP,
+    stop: Number.isInteger(saved.stop) && saved.stop! >= 0 && saved.stop! <= LAST_STOP ? saved.stop! : DEFAULT_STOP,
     sort: SORTS.includes(saved.sort as Sort) ? (saved.sort as Sort) : 'suggested',
   };
 }
@@ -528,7 +530,7 @@ function QuestBrowser({ quests }: { quests: Quest[] }) {
   });
 
   // For you is a view of its own, so Clear only appears for filters she picked.
-  const narrowed = categories.length > 0 || stop !== LAST_STOP;
+  const narrowed = categories.length > 0 || stop !== DEFAULT_STOP;
 
   return (
     <>
@@ -553,7 +555,7 @@ function QuestBrowser({ quests }: { quests: Quest[] }) {
         <p className="count">
           {t.count(sorted.length)}
           {narrowed && (
-            <button className="filter-clear" type="button" onClick={() => update({ categories: [], stop: LAST_STOP })}>
+            <button className="filter-clear" type="button" onClick={() => update({ categories: [], stop: DEFAULT_STOP })}>
               {t.clearAll}
             </button>
           )}
