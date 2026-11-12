@@ -379,7 +379,7 @@ export const strings = {
     all: 'All quests',
     browse: 'Find a quest',
     filterLabel: 'Show quests',
-    filters: { forYou: 'For you', category: 'Codex section' },
+    filters: { forYou: 'For you', category: 'Category' },
     upTo: (time: string) => `Up to ${time}`,
     anyLength: 'Any length',
     stop: (minutes: number) => (minutes >= 240 ? '4h+' : minutes >= 60 ? `${minutes / 60}h` : `${minutes}m`),
