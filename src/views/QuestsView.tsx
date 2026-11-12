@@ -620,9 +620,9 @@ export function QuestView({ id }: { id: string }) {
           )}
           {reply ? (
             <div className="quest-reply">
-              <p className="quest-kicker">{t.replyFrom(reply.from)}</p>
+              <p className="quest-kicker">{t.notesTitle}</p>
               <p>{reply.note || t.noNote}</p>
-              <small>{shortDate(reply.reviewedAt)}</small>
+              <small>{t.notesSignature(reply.from, shortDate(reply.reviewedAt))}</small>
             </div>
           ) : (
             <p className="quest-waiting">{t.waitingNote}</p>
