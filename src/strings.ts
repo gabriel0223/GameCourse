@@ -466,7 +466,7 @@ export const strings = {
     tabs: { home: 'Home', paths: 'Paths', history: 'Timeline', glossary: 'Glossary' },
     categories: {
       genres: 'Genres',
-      history: 'History',
+      history: 'Timeline',
       consoles: 'Consoles',
       industry: 'Game industry',
       playing: 'How to play',
@@ -542,7 +542,7 @@ export const strings = {
       prompt: 'Type above to search every guide, event, console, and term.',
       results: (count: number) => `${count} ${count === 1 ? 'result' : 'results'}`,
       guides: 'Guides',
-      history: 'History',
+      history: 'Timeline',
       consoles: 'Consoles',
       glossary: 'Glossary',
     },
