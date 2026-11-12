@@ -242,12 +242,15 @@ function QuestRow({
   gold,
   entryId,
   showEntry = true,
+  forYou = false,
 }: {
   id: string;
   title: string;
   gold: number;
   entryId: string;
   showEntry?: boolean;
+  // Follows on from her reading or a path she's on, shown with a small tag.
+  forYou?: boolean;
 }) {
   const { find } = useCodex();
   const { find: findQuest } = useQuests();
@@ -261,7 +264,12 @@ function QuestRow({
         <Icon name="quest" />
       </span>
       <span className="quest-row-text">
-        {entry && <small>{entry.title}</small>}
+        {(entry || forYou) && (
+          <span className="quest-row-meta">
+            {forYou && <span className="quest-for-you">{t.forYouTag}</span>}
+            {entry && <small>{entry.title}</small>}
+          </span>
+        )}
         <strong>{title}</strong>
         {task && <span className="quest-row-task">{task}</span>}
       </span>
@@ -359,8 +367,8 @@ function TodaysQuest() {
 // The same order the Codex uses for its paths.
 const CATEGORY_ORDER: CodexCategory[] = ['playing', 'genres', 'history', 'consoles', 'people', 'roles', 'industry'];
 
-type Sort = 'suggested' | 'shortest' | 'longest' | 'gold';
-const SORTS: Sort[] = ['suggested', 'shortest', 'longest', 'gold'];
+type Sort = 'for-you' | 'shortest' | 'longest' | 'gold';
+const SORTS: Sort[] = ['for-you', 'shortest', 'longest', 'gold'];
 const LAST_STOP = QUEST_TIMES.length - 1;
 
 // A filter button that opens a small menu, like the ones on shopping sites.
@@ -472,8 +480,6 @@ function TimeLimit({ stop, onChange }: { stop: number; onChange(next: number): v
 
 // Her filters are kept on this device, so they're still set when she comes back.
 interface SavedFilters {
-  // Null until she flips For you, so it can follow whether there's anything for her yet.
-  forYou: boolean | null;
   categories: CodexCategory[];
   stop: number;
   sort: Sort;
@@ -486,15 +492,16 @@ const DEFAULT_STOP = QUEST_TIMES.indexOf(60);
 function loadFilters(): SavedFilters {
   const saved = readLocal<Partial<SavedFilters>>(FILTERS_KEY, {});
   return {
-    forYou: typeof saved.forYou === 'boolean' ? saved.forYou : null,
     categories: Array.isArray(saved.categories) ? saved.categories.filter((item) => CATEGORY_ORDER.includes(item)) : [],
     stop: Number.isInteger(saved.stop) && saved.stop! >= 0 && saved.stop! <= LAST_STOP ? saved.stop! : DEFAULT_STOP,
-    sort: SORTS.includes(saved.sort as Sort) ? (saved.sort as Sort) : 'suggested',
+    // Older saves may say 'suggested', which For you replaced.
+    sort: SORTS.includes(saved.sort as Sort) ? (saved.sort as Sort) : 'for-you',
   };
 }
 
-// Shop-style browsing: filter buttons and a time limit on top, then a count and a sort.
-// For you only offers quests she hasn't done yet, since it answers "what could I do next?".
+// Shop-style browsing: a Category menu and a time limit on top, then a count and a sort.
+// For you is the default sort, not a filter, so picking a category never empties the list:
+// quests from her reading and current paths come first, tagged, then everything else.
 function QuestBrowser({ quests }: { quests: Quest[] }) {
   const { find } = useCodex();
   const { profile } = useLibrary();
@@ -510,12 +517,10 @@ function QuestBrowser({ quests }: { quests: Quest[] }) {
       return next;
     });
   const { categories, stop, sort } = filters;
-  const forYou = filters.forYou ?? forYouIds.size > 0;
 
   const categoryOf = (quest: Quest) => find(quest.entryId)?.category;
   const present = CATEGORY_ORDER.filter((category) => quests.some((quest) => categoryOf(quest) === category));
   const shown = quests
-    .filter((quest) => !forYou || forYouIds.has(quest.id))
     .filter((quest) => categories.length === 0 || categories.includes(categoryOf(quest)!))
     .filter((quest) => fitsTime(quest, 0, QUEST_TIMES[stop]));
 
@@ -526,20 +531,16 @@ function QuestBrowser({ quests }: { quests: Quest[] }) {
     if (sort === 'shortest') return minutes(a) - minutes(b);
     if (sort === 'longest') return minutes(b) - minutes(a);
     if (sort === 'gold') return b.gold - a.gold;
-    return open(b) - open(a) || order(a) - order(b);
+    const near = (quest: Quest) => Number(forYouIds.has(quest.id));
+    return near(b) - near(a) || open(b) - open(a) || order(a) - order(b);
   });
 
-  // For you is a view of its own, so Clear only appears for filters she picked.
   const narrowed = categories.length > 0 || stop !== DEFAULT_STOP;
 
   return (
     <>
       <div className="quest-filter-bar">
         <div className="quest-filter-buttons">
-          <button type="button" className="filter-pill" aria-pressed={forYou} onClick={() => update({ forYou: !forYou })}>
-            {forYou && <Icon name="check" />}
-            {t.filters.forYou}
-          </button>
           <FilterMenu label={t.filters.category} count={categories.length}>
             <CheckList
               options={present}
@@ -573,12 +574,19 @@ function QuestBrowser({ quests }: { quests: Quest[] }) {
       </div>
       {sorted.length === 0 ? (
         <p className="empty-small quest-filter-empty">
-          {forYou && forYouIds.size === 0 && !narrowed ? t.emptyFilter['for-you'] : t.emptyFilter.other}
+          {t.emptyFilter.other}
         </p>
       ) : (
         <div className="quest-list">
           {sorted.map((quest) => (
-            <QuestRow key={quest.id} id={quest.id} title={quest.title} gold={quest.gold} entryId={quest.entryId} />
+            <QuestRow
+              key={quest.id}
+              id={quest.id}
+              title={quest.title}
+              gold={quest.gold}
+              entryId={quest.entryId}
+              forYou={forYouIds.has(quest.id)}
+            />
           ))}
         </div>
       )}

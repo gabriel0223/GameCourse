@@ -5890,6 +5890,22 @@ a.button {
   font-size: 13px;
 }
 
+.quest-row-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 8px;
+}
+
+.quest-for-you {
+  padding: 1px 8px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--gold) 16%, transparent);
+  color: var(--gold);
+  font-size: 12px;
+  font-weight: 600;
+}
+
 .quest-row-task {
   display: -webkit-box;
   overflow: hidden;

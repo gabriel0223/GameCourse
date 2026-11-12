@@ -379,7 +379,8 @@ export const strings = {
     all: 'All quests',
     browse: 'Find a quest',
     filterLabel: 'Show quests',
-    filters: { forYou: 'For you', category: 'Category' },
+    filters: { category: 'Category' },
+    forYouTag: 'From your reading',
     upTo: (time: string) => `Up to ${time}`,
     anyLength: 'Any length',
     stop: (minutes: number) => (minutes >= 240 ? '4h+' : minutes >= 60 ? `${minutes / 60}h` : `${minutes}m`),
@@ -387,9 +388,8 @@ export const strings = {
     clear: 'Clear',
     clearAll: 'Clear filters',
     sortBy: 'Sort by',
-    sorts: { suggested: 'Suggested', shortest: 'Shortest first', longest: 'Longest first', gold: 'Most gold' },
+    sorts: { 'for-you': 'For you', shortest: 'Shortest first', longest: 'Longest first', gold: 'Most gold' },
     emptyFilter: {
-      'for-you': 'Quests from entries you read and paths you start will show up here.',
       other: 'No quests match these filters.',
     },
     time: (minutes: number) =>
