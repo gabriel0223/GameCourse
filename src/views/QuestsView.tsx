@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import { GoldAmount } from '../components/GoldAmount';
 import { Icon } from '../components/Icon';
-import type { CodexEntry } from '../content/codex';
+import type { CodexCategory, CodexEntry } from '../content/codex';
 import { DEFAULT_QUEST_GOLD, MAX_QUEST_GOLD, ANSWER_LIMIT, dailyQuest, newQuestId, questIsValid } from '../domain/quests';
 import type { Quest, QuestRecord, ReviewItem } from '../domain/quests';
 import { todayLocal } from '../format';
@@ -189,10 +189,12 @@ export function QuestForm({
 
 /* Small pieces shared by the screens. */
 
-function StatusTag({ questId }: { questId: string }) {
+function StatusTag({ questId, always = false }: { questId: string; always?: boolean }) {
   const { status, hasNewReply } = useQuests();
   const current = status(questId);
   if (hasNewReply(questId)) return <span className="quest-tag quest-tag-new">{t.newReply}</span>;
+  // Most quests are untouched, so they only get a tag once something has happened.
+  if (current === 'open' && !always) return null;
   return <span className={`quest-tag quest-tag-${current}`}>{t.status[current]}</span>;
 }
 
@@ -210,18 +212,24 @@ function QuestRow({
   showEntry?: boolean;
 }) {
   const { find } = useCodex();
+  const { find: findQuest } = useQuests();
   const entry = showEntry ? find(entryId) : undefined;
+  // A deleted quest has no task left to show, only what she turned in.
+  const task = findQuest(id)?.task;
   return (
     <a className="quest-row" href={hrefs.quest(id)}>
       <span className="quest-row-icon" aria-hidden="true">
         <Icon name="quest" />
       </span>
       <span className="quest-row-text">
-        <strong>{title}</strong>
         {entry && <small>{entry.title}</small>}
+        <strong>{title}</strong>
+        {task && <span className="quest-row-task">{task}</span>}
       </span>
-      <StatusTag questId={id} />
-      <GoldAmount amount={gold} />
+      <span className="quest-row-side">
+        <StatusTag questId={id} />
+        <GoldAmount amount={gold} />
+      </span>
     </a>
   );
 }
@@ -282,7 +290,10 @@ function TodaysQuest() {
         <div className="quest-today-card">
           {entry && <EntryArt entry={entry} />}
           <div className="quest-today-text">
-            <h2>{quest.title}</h2>
+            <div className="quest-today-title">
+              <h2>{quest.title}</h2>
+              <GoldAmount amount={quest.gold} />
+            </div>
             {entry && <small>{t.from(entry.title)}</small>}
             <p>{quest.task}</p>
             <div className="quest-today-actions">
@@ -294,9 +305,7 @@ function TodaysQuest() {
                   {t.another}
                 </button>
               )}
-              <GoldAmount amount={quest.gold} />
             </div>
-            <p className="quest-today-hint">{t.todayHint}</p>
           </div>
         </div>
       ) : (
@@ -306,12 +315,61 @@ function TodaysQuest() {
   );
 }
 
-type Filter = 'open' | 'all';
+// The same order the Codex uses for its paths.
+const CATEGORY_ORDER: CodexCategory[] = ['playing', 'genres', 'history', 'consoles', 'people', 'roles', 'industry'];
+
+// Every quest, grouped by its entry's Codex category and folded away until opened,
+// so the full list never has to be scrolled through at once.
+function QuestGroups({ quests }: { quests: Quest[] }) {
+  const { find } = useCodex();
+  const { profile } = useLibrary();
+  const groups = CATEGORY_ORDER.map((category) => ({
+    category,
+    items: quests.filter((quest) => find(quest.entryId)?.category === category),
+  })).filter((group) => group.items.length > 0);
+  // A quest whose entry was deleted still shows, at the end.
+  const loose = quests.filter((quest) => !find(quest.entryId));
+  return (
+    <div className="quest-groups">
+      {groups.map(({ category, items }) => {
+        const done = items.filter((quest) => profile.quests[quest.id]).length;
+        return (
+          <details className="quest-group" key={category}>
+            <summary>
+              <span className="quest-group-name">{strings.codex.categories[category]}</span>
+              <span className="quest-group-count">{t.groupCount(done, items.length)}</span>
+              <span className="quest-group-bar" aria-hidden="true">
+                <span style={{ width: `${(done / items.length) * 100}%` }} />
+              </span>
+            </summary>
+            <div className="quest-list">
+              {items.map((quest) => (
+                <QuestRow key={quest.id} id={quest.id} title={quest.title} gold={quest.gold} entryId={quest.entryId} />
+              ))}
+            </div>
+          </details>
+        );
+      })}
+      {loose.length > 0 && (
+        <details className="quest-group">
+          <summary>
+            <span className="quest-group-name">{t.otherGroup}</span>
+            <span className="quest-group-count">{loose.length}</span>
+          </summary>
+          <div className="quest-list">
+            {loose.map((quest) => (
+              <QuestRow key={quest.id} id={quest.id} title={quest.title} gold={quest.gold} entryId={quest.entryId} />
+            ))}
+          </div>
+        </details>
+      )}
+    </div>
+  );
+}
 
 export function QuestsView() {
   const { quests, ready, canEdit, queue, reply, hasNewReply } = useQuests();
   const { profile } = useLibrary();
-  const [filter, setFilter] = useState<Filter>('open');
   const [adding, setAdding] = useState(false);
 
   if (!ready) return <main className="page" aria-busy="true" />;
@@ -322,7 +380,6 @@ export function QuestsView() {
   );
   const waiting = records.filter(([id]) => !reply(id));
   const finished = records.filter(([id]) => reply(id));
-  const listed = filter === 'open' ? quests.filter((quest) => !profile.quests[quest.id]) : quests;
 
   const row = ([id, record]: [string, QuestRecord]) => (
     <QuestRow key={id} id={id} title={record.title} gold={record.gold} entryId={record.entryId} />
@@ -373,25 +430,8 @@ export function QuestsView() {
       )}
 
       <section className="quest-block">
-        <div className="quest-block-head">
-          <h2>{t.all}</h2>
-          <div className="chips" role="group" aria-label={t.all}>
-            {(['open', 'all'] as Filter[]).map((item) => (
-              <button key={item} type="button" aria-pressed={filter === item} onClick={() => setFilter(item)}>
-                {t.filters[item]}
-              </button>
-            ))}
-          </div>
-        </div>
-        {listed.length === 0 ? (
-          <p className="empty-small">{quests.length ? t.noOpen : t.none}</p>
-        ) : (
-          <div className="quest-list">
-            {listed.map((quest) => (
-              <QuestRow key={quest.id} id={quest.id} title={quest.title} gold={quest.gold} entryId={quest.entryId} />
-            ))}
-          </div>
-        )}
+        <h2>{t.all}</h2>
+        {quests.length === 0 ? <p className="empty-small">{t.none}</p> : <QuestGroups quests={quests} />}
       </section>
     </main>
   );
@@ -483,7 +523,7 @@ export function QuestView({ id }: { id: string }) {
           )}
           <h1>{quest?.title ?? record!.title}</h1>
           <div className="quest-head-tags">
-            <StatusTag questId={id} />
+            <StatusTag questId={id} always />
             <GoldAmount amount={gold} />
           </div>
         </div>
