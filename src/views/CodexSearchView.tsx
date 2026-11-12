@@ -7,6 +7,7 @@ import { useLibrary } from '../state/LibraryContext';
 import { strings } from '../strings';
 import { hrefs, useCodexQuery } from '../useHashRoute';
 import { EntryArt, ReadMark } from './CodexView';
+import { QuestMark } from '../components/QuestMark';
 
 const t = strings.codex;
 
@@ -36,6 +37,7 @@ function ResultGroup({ title, hits, needle }: { title: string; hits: EntryHit[];
               <span>
                 <strong>
                   <Marked text={entry.title} needle={needle} />
+                  <QuestMark entryId={entry.id} inline />
                 </strong>
                 <span>
                   <Marked text={snippet ?? entry.summary} needle={needle} />

@@ -15,6 +15,7 @@ import { useLibrary } from '../state/LibraryContext';
 import { strings } from '../strings';
 import { hrefs } from '../useHashRoute';
 import { EntryQuests } from './QuestsView';
+import { QuestMark } from '../components/QuestMark';
 
 const t = strings.codex;
 
@@ -52,6 +53,7 @@ export function EntryCards({ entries, read, wide = false }: { entries: CodexEntr
         >
           <EntryArt entry={entry} />
           {read.includes(entry.id) && <ReadMark />}
+          <QuestMark entryId={entry.id} />
           <span className="genre-card-body">
             <strong>{entry.title}</strong>
             <span>{entry.summary}</span>
@@ -70,6 +72,7 @@ export function ConsoleCards({ entries }: { entries: CodexEntry[] }) {
         <a className="genre-card console-card" key={entry.id} href={hrefs.codexEntry(entry.id)}>
           <EntryArt entry={entry} />
           {profile.readEntries.includes(entry.id) && <ReadMark />}
+          <QuestMark entryId={entry.id} />
           <span className="genre-card-body">
             <strong>{entry.title}</strong>
             <span>
@@ -222,7 +225,10 @@ function GenerationEvents({ generation }: { generation: number }) {
           <li key={entry.id}>
             <a href={hrefs.codexEntry(entry.id)}>
               <span className="timeline-year">{entry.timeline?.label}</span>
-              <strong>{entry.title}</strong>
+              <strong>
+                {entry.title}
+                <QuestMark entryId={entry.id} inline />
+              </strong>
               {profile.readEntries.includes(entry.id) && <ReadMark />}
             </a>
           </li>
@@ -331,6 +337,7 @@ function NextChoices({ entry }: { entry: CodexEntry }) {
           <a className="next-card" href={hrefs.codexEntry(choice.entry.id)} key={choice.entry.id}>
             <EntryArt entry={choice.entry} />
             {profile.readEntries.includes(choice.entry.id) && <ReadMark />}
+            <QuestMark entryId={choice.entry.id} />
             <span>
               <em>{t.next[choice.reason]}</em>
               <strong>{choice.entry.title}</strong>

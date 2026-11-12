@@ -4,6 +4,7 @@ import { CODEX_ENTRIES } from '../content/codex';
 import { deriveGamer } from './gamer';
 import {
   cleanQuest,
+  entryQuestState,
   dailyQuest,
   findReply,
   fitsTime,
@@ -198,5 +199,14 @@ describe('finding a quest', () => {
     const records = turnIn({}, quest('done', 'genre-rpg'), 'x', T1, 'genres');
     const ids = questsForYou(quests, records, ['genre-rpg'], ['genre-cozy']).map((item) => item.id);
     expect(ids).toEqual(['read', 'path']);
+  });
+});
+
+describe('entry badges', () => {
+  it('shows what still needs her first', () => {
+    expect(entryQuestState([])).toBeNull();
+    expect(entryQuestState(['replied', 'open', 'waiting'])).toBe('open');
+    expect(entryQuestState(['replied', 'waiting'])).toBe('waiting');
+    expect(entryQuestState(['replied', 'replied'])).toBe('replied');
   });
 });

@@ -204,3 +204,12 @@ export function questsForYou(
   const near = new Set([...readEntries, ...startedPathStops]);
   return quests.filter((quest) => !records[quest.id] && near.has(quest.entryId));
 }
+
+// The badge on a Codex entry: what still needs her comes first. Quest to do beats
+// waiting for notes, and the entry only shows complete once every quest on it is.
+export function entryQuestState(statuses: QuestStatus[]): QuestStatus | null {
+  if (statuses.length === 0) return null;
+  if (statuses.includes('open')) return 'open';
+  if (statuses.includes('waiting')) return 'waiting';
+  return 'replied';
+}

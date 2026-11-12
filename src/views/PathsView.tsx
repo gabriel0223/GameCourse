@@ -9,6 +9,7 @@ import { useLibrary } from '../state/LibraryContext';
 import { strings } from '../strings';
 import { hrefs } from '../useHashRoute';
 import { EntryArt } from './CodexView';
+import { QuestMark } from '../components/QuestMark';
 
 const t = strings.codex;
 
@@ -94,7 +95,10 @@ export function PathView({ id }: { id: string | null }) {
               <span className="path-stop-number">{index + 1}</span>
               <EntryArt entry={stop} />
               <span className="path-stop-copy">
-                <strong>{stop.title}</strong>
+                <strong>
+                  {stop.title}
+                  <QuestMark entryId={stop.id} inline />
+                </strong>
                 <span>{stop.summary}</span>
               </span>
             </a>

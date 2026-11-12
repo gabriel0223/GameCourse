@@ -6580,3 +6580,99 @@ button.quest-form-remove {
     grid-column: 1 / -1;
   }
 }
+
+/* Quest badges on Codex entries */
+
+.quest-mark {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 32px;
+  font-style: normal;
+  line-height: 1;
+}
+
+.quest-mark > * {
+  grid-area: 1 / 1;
+}
+
+.quest-mark .quest-mark-shape {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.quest-mark polygon {
+  stroke: var(--ground);
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+
+.quest-mark b {
+  position: relative;
+  font-family: var(--display);
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.quest-mark > svg:not(.quest-mark-shape) {
+  position: relative;
+  width: 15px;
+  height: 15px;
+}
+
+.quest-mark-open polygon {
+  fill: var(--gold);
+}
+
+.quest-mark-open {
+  color: var(--on-gold);
+}
+
+.quest-mark-waiting polygon {
+  fill: #504868;
+}
+
+.quest-mark-waiting {
+  color: var(--text);
+}
+
+.quest-mark-replied polygon {
+  fill: var(--good);
+}
+
+.quest-mark-replied {
+  color: var(--ground);
+}
+
+.quest-mark-replied > svg:not(.quest-mark-shape) {
+  stroke-width: 2.6;
+}
+
+.quest-mark-inline {
+  position: relative;
+  top: auto;
+  left: auto;
+  display: inline-grid;
+  width: 20px;
+  height: 22px;
+  margin-left: 8px;
+  vertical-align: -5px;
+}
+
+.quest-mark-inline polygon {
+  stroke-width: 0;
+}
+
+.quest-mark-inline b {
+  font-size: 12px;
+}
+
+.quest-mark-inline > svg:not(.quest-mark-shape) {
+  width: 12px;
+  height: 12px;
+}

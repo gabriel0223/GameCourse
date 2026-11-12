@@ -12,6 +12,7 @@ import { useLibrary } from '../state/LibraryContext';
 import { strings } from '../strings';
 import { hrefs, useScrollToSection } from '../useHashRoute';
 import { EntryArt, ReadMark } from './CodexView';
+import { QuestMark } from '../components/QuestMark';
 
 const t = strings.codex;
 
@@ -29,7 +30,10 @@ function ConsoleStrip({ consoles, read }: { consoles: CodexEntry[]; read: string
             <a href={hrefs.codexEntry(entry.id)}>
               <EntryArt entry={entry} />
               <span>
-                <strong>{entry.title}</strong>
+                <strong>
+                  {entry.title}
+                  <QuestMark entryId={entry.id} inline />
+                </strong>
                 <small>{[entry.console?.maker, entry.console?.year].join(' · ')}</small>
               </span>
               {read.includes(entry.id) && <ReadMark />}
@@ -126,6 +130,7 @@ export function TimelineView({ at }: { at: string | null }) {
                   <span>{generation.summary}</span>
                 </span>
                 {profile.readEntries.includes(generation.id) && <ReadMark />}
+                <QuestMark entryId={generation.id} />
               </a>
             ) : (
               <header className="timeline-group-title">
@@ -139,7 +144,10 @@ export function TimelineView({ at }: { at: string | null }) {
                 <li className="timeline-event" key={entry.id}>
                   <a href={hrefs.codexEntry(entry.id)}>
                     <span className="timeline-year">{entry.timeline?.label}</span>
-                    <strong>{entry.title}</strong>
+                    <strong>
+                      {entry.title}
+                      <QuestMark entryId={entry.id} inline />
+                    </strong>
                     <span>{entry.summary}</span>
                     {profile.readEntries.includes(entry.id) && <ReadMark />}
                   </a>

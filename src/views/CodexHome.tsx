@@ -10,6 +10,7 @@ import { useLibrary } from '../state/LibraryContext';
 import { strings } from '../strings';
 import { hrefs } from '../useHashRoute';
 import { EntryArt, ReadMark, pathHref } from './CodexView';
+import { QuestMark } from '../components/QuestMark';
 
 const t = strings.codex;
 
@@ -25,6 +26,7 @@ function TodaysEntry() {
     <section className="todays-entry" style={style}>
       <EntryArt entry={entry} />
       {profile.readEntries.includes(entry.id) && <ReadMark />}
+      <QuestMark entryId={entry.id} />
       <div className="todays-entry-copy">
         <p className="todays-entry-date">{t.home.today(today.toLocaleDateString('en', { month: 'long', day: 'numeric' }))}</p>
         <h2>{entry.title}</h2>
