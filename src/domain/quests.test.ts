@@ -184,13 +184,13 @@ describe('finding a quest', () => {
     expect(cleanQuest({ ...quest('a'), minutes: 45 }).minutes).toBeUndefined();
   });
 
-  it('fits a time limit, counting untagged quests only when any length is fine', () => {
-    expect(fitsTime({ ...quest('a'), minutes: 15 }, 30)).toBe(true);
-    expect(fitsTime({ ...quest('a'), minutes: 30 }, 30)).toBe(true);
-    expect(fitsTime({ ...quest('a'), minutes: 60 }, 30)).toBe(false);
-    expect(fitsTime({ ...quest('a'), minutes: 120 }, null)).toBe(true);
-    expect(fitsTime(quest('a'), 60)).toBe(false);
-    expect(fitsTime(quest('a'), null)).toBe(true);
+  it('fits a time range, counting untagged quests only when the range covers everything', () => {
+    expect(fitsTime({ ...quest('a'), minutes: 15 }, 15, 30)).toBe(true);
+    expect(fitsTime({ ...quest('a'), minutes: 60 }, 15, 30)).toBe(false);
+    expect(fitsTime({ ...quest('a'), minutes: 60 }, 60, 240)).toBe(true);
+    expect(fitsTime({ ...quest('a'), minutes: 30 }, 60, 240)).toBe(false);
+    expect(fitsTime(quest('a'), 15, 240)).toBe(true);
+    expect(fitsTime(quest('a'), 15, 120)).toBe(false);
   });
 
   it('suggests open quests from read entries and started paths', () => {

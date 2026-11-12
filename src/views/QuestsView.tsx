@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import type { ReactNode } from 'react';
 import type { FormEvent } from 'react';
 import { GoldAmount } from '../components/GoldAmount';
 import { Icon } from '../components/Icon';
@@ -9,14 +10,13 @@ import {
   DEFAULT_QUEST_MINUTES,
   MAX_QUEST_GOLD,
   QUEST_TIMES,
-  TIME_LIMITS,
   dailyQuest,
   fitsTime,
   newQuestId,
   questIsValid,
   questsForYou,
 } from '../domain/quests';
-import type { Quest, QuestRecord, ReviewItem } from '../domain/quests';
+import type { Quest, QuestRecord, QuestStatus, ReviewItem } from '../domain/quests';
 import { todayLocal } from '../format';
 import { useCodex } from '../state/CodexContext';
 import { useLibrary } from '../state/LibraryContext';
@@ -359,70 +359,213 @@ function TodaysQuest() {
 // The same order the Codex uses for its paths.
 const CATEGORY_ORDER: CodexCategory[] = ['playing', 'genres', 'history', 'consoles', 'people', 'roles', 'industry'];
 
-type Filter = 'for-you' | 'all' | CodexCategory;
+type Sort = 'suggested' | 'shortest' | 'longest' | 'gold';
+const SORTS: Sort[] = ['suggested', 'shortest', 'longest', 'gold'];
+const STATUSES: QuestStatus[] = ['open', 'waiting', 'replied'];
+const LAST_STOP = QUEST_TIMES.length - 1;
 
-// Two filters that combine: what to explore (chips) and how much time she has (up to).
-// For you only offers quests she hasn't done, since it answers "what could I do next?".
-// All and the categories list everything, with the ones she can still do first.
+// A filter button that opens a small menu, like the ones on shopping sites.
+function FilterMenu({ label, count, children }: { label: string; count: number; children: ReactNode }) {
+  const [open, setOpen] = useState(false);
+  const box = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const close = (event: Event) => {
+      if (event instanceof KeyboardEvent ? event.key === 'Escape' : !box.current?.contains(event.target as Node)) setOpen(false);
+    };
+    document.addEventListener('pointerdown', close);
+    document.addEventListener('keydown', close);
+    return () => {
+      document.removeEventListener('pointerdown', close);
+      document.removeEventListener('keydown', close);
+    };
+  }, [open]);
+
+  return (
+    <div className="filter-menu" ref={box}>
+      <button
+        type="button"
+        className="filter-pill"
+        aria-expanded={open}
+        data-active={count > 0 || undefined}
+        onClick={() => setOpen((current) => !current)}
+      >
+        {label}
+        {count > 0 && <span className="filter-pill-count">{count}</span>}
+        <svg viewBox="0 0 12 12" aria-hidden="true">
+          <path d="M3 4.5 6 7.5l3-3" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+        </svg>
+      </button>
+      {open && <div className="filter-popover">{children}</div>}
+    </div>
+  );
+}
+
+function CheckList<T extends string>({
+  options,
+  picked,
+  label,
+  onChange,
+}: {
+  options: T[];
+  picked: T[];
+  label(value: T): string;
+  onChange(next: T[]): void;
+}) {
+  return (
+    <>
+      {options.map((value) => (
+        <label key={value} className="filter-check">
+          <input
+            type="checkbox"
+            checked={picked.includes(value)}
+            onChange={(event) => onChange(event.target.checked ? [...picked, value] : picked.filter((item) => item !== value))}
+          />
+          {label(value)}
+        </label>
+      ))}
+      {picked.length > 0 && (
+        <button className="filter-clear" type="button" onClick={() => onChange([])}>
+          {t.clear}
+        </button>
+      )}
+    </>
+  );
+}
+
+// A slider with two handles that snap to the time tags, so she can say "between 30 min and 1 hour".
+function TimeRange({ range, onChange }: { range: [number, number]; onChange(next: [number, number]): void }) {
+  const [low, high] = range;
+  const percent = (index: number) => (index / LAST_STOP) * 100;
+  return (
+    <div className="time-range" role="group" aria-label={t.howLong}>
+      <div className="time-range-track">
+        <span className="time-range-fill" style={{ left: `${percent(low)}%`, right: `${100 - percent(high)}%` }} />
+        {QUEST_TIMES.map((minutes, index) => (
+          <span key={minutes} className="time-range-tick" style={{ left: `${percent(index)}%` }} data-on={(index >= low && index <= high) || undefined} />
+        ))}
+        <input
+          type="range"
+          min={0}
+          max={LAST_STOP}
+          step={1}
+          value={low}
+          aria-label={t.shortest}
+          aria-valuetext={t.stop(QUEST_TIMES[low])}
+          onChange={(event) => onChange([Math.min(Number(event.target.value), high), high])}
+        />
+        <input
+          type="range"
+          min={0}
+          max={LAST_STOP}
+          step={1}
+          value={high}
+          aria-label={t.longest}
+          aria-valuetext={t.stop(QUEST_TIMES[high])}
+          onChange={(event) => onChange([low, Math.max(Number(event.target.value), low)])}
+        />
+      </div>
+      <div className="time-range-labels" aria-hidden="true">
+        {QUEST_TIMES.map((minutes, index) => (
+          <span key={minutes} style={{ left: `${percent(index)}%` }} data-on={(index >= low && index <= high) || undefined}>
+            {t.stop(minutes)}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Shop-style browsing: filter buttons and a time slider on top, then a count and a sort.
+// For you only offers quests she hasn't done yet, since it answers "what could I do next?".
 function QuestBrowser({ quests }: { quests: Quest[] }) {
   const { find } = useCodex();
   const { profile } = useLibrary();
+  const { status } = useQuests();
   const started = ALL_PATHS.filter(
     (path) => pathRead(path, profile.readEntries) > 0 && !profile.quizzes[path.id]?.passed,
   ).flatMap((path) => path.entryIds);
-  const forYou = questsForYou(quests, profile.quests, profile.readEntries, started);
-  // Until she picks one, the filter follows whether there's anything for her yet, so it
-  // still lands right if her profile finishes loading after this screen opens.
-  const [picked, setFilter] = useState<Filter | null>(null);
-  const [limit, setLimit] = useState<number | null>(null);
-  const filter: Filter = picked ?? (forYou.length ? 'for-you' : 'all');
-  const categories = CATEGORY_ORDER.filter((category) => quests.some((quest) => find(quest.entryId)?.category === category));
-  const open = (quest: Quest) => !profile.quests[quest.id];
+  const forYouIds = new Set(questsForYou(quests, profile.quests, profile.readEntries, started).map((quest) => quest.id));
+  // Until she flips it, For you follows whether there's anything for her yet, so it still
+  // lands right if her profile finishes loading after this screen opens.
+  const [forYouPicked, setForYou] = useState<boolean | null>(null);
+  const forYou = forYouPicked ?? forYouIds.size > 0;
+  const [categories, setCategories] = useState<CodexCategory[]>([]);
+  const [statuses, setStatuses] = useState<QuestStatus[]>([]);
+  const [range, setRange] = useState<[number, number]>([0, LAST_STOP]);
+  const [sort, setSort] = useState<Sort>('suggested');
 
-  const inFilter = (() => {
-    if (filter === 'for-you') return forYou;
-    const listed = filter === 'all' ? quests : quests.filter((quest) => find(quest.entryId)?.category === filter);
-    return [...listed].sort((a, b) => Number(open(b)) - Number(open(a)));
-  })();
-  const shown = inFilter.filter((quest) => fitsTime(quest, limit));
+  const categoryOf = (quest: Quest) => find(quest.entryId)?.category;
+  const present = CATEGORY_ORDER.filter((category) => quests.some((quest) => categoryOf(quest) === category));
+  const shown = quests
+    .filter((quest) => !forYou || forYouIds.has(quest.id))
+    .filter((quest) => categories.length === 0 || categories.includes(categoryOf(quest)!))
+    .filter((quest) => statuses.length === 0 || statuses.includes(status(quest.id)))
+    .filter((quest) => fitsTime(quest, QUEST_TIMES[range[0]], QUEST_TIMES[range[1]]));
 
-  const chip = (value: Filter, label: string) => (
-    <button key={value} type="button" aria-pressed={filter === value} onClick={() => setFilter(value)}>
-      {label}
-    </button>
-  );
-  const limitOption = (value: number | null) => (
-    <button key={value ?? 'any'} type="button" aria-pressed={limit === value} onClick={() => setLimit(value)}>
-      {value === null ? t.anyTime : t.time(value)}
-    </button>
-  );
+  const minutes = (quest: Quest) => quest.minutes ?? Number.POSITIVE_INFINITY;
+  const open = (quest: Quest) => Number(!profile.quests[quest.id]);
+  const order = (quest: Quest) => CATEGORY_ORDER.indexOf(categoryOf(quest) ?? 'industry');
+  const sorted = [...shown].sort((a, b) => {
+    if (sort === 'shortest') return minutes(a) - minutes(b);
+    if (sort === 'longest') return minutes(b) - minutes(a);
+    if (sort === 'gold') return b.gold - a.gold;
+    return open(b) - open(a) || order(a) - order(b);
+  });
 
-  let empty: string = t.emptyFilter.other;
-  if (inFilter.length > 0) empty = t.emptyFilter.tooShort;
-  else if (filter === 'for-you') empty = t.emptyFilter['for-you'];
+  const filtered = !forYou && categories.length + statuses.length === 0 && range[0] === 0 && range[1] === LAST_STOP;
+  const reset = () => {
+    setForYou(false);
+    setCategories([]);
+    setStatuses([]);
+    setRange([0, LAST_STOP]);
+  };
 
   return (
     <>
       <div className="quest-filter-bar">
-        <div className="chips quest-filters" role="group" aria-label={t.filterLabel}>
-          {chip('for-you', t.filters.forYou)}
-          {chip('all', t.filters.all)}
-          <span className="quest-filters-gap" aria-hidden="true" />
-          {categories.map((category) => chip(category, strings.codex.categories[category]))}
+        <div className="quest-filter-buttons">
+          <button type="button" className="filter-pill" aria-pressed={forYou} onClick={() => setForYou(!forYou)}>
+            {forYou && <Icon name="check" />}
+            {t.filters.forYou}
+          </button>
+          <FilterMenu label={t.filters.category} count={categories.length}>
+            <CheckList options={present} picked={categories} label={(value) => strings.codex.categories[value]} onChange={setCategories} />
+          </FilterMenu>
+          <FilterMenu label={t.filters.status} count={statuses.length}>
+            <CheckList options={STATUSES} picked={statuses} label={(value) => t.status[value]} onChange={setStatuses} />
+          </FilterMenu>
         </div>
-        <div className="quest-time-filter" role="group" aria-label={t.howLong}>
-          <span className="quest-time-filter-label">
-            <Icon name="clock" />
-            {t.upTo}
-          </span>
-          <div className="segmented">{[null, ...TIME_LIMITS].map(limitOption)}</div>
-        </div>
+        <TimeRange range={range} onChange={setRange} />
       </div>
-      {shown.length === 0 ? (
-        <p className="empty-small quest-filter-empty">{empty}</p>
+      <div className="quest-results-bar">
+        <p className="count">
+          {t.count(sorted.length)}
+          {!filtered && (
+            <button className="filter-clear" type="button" onClick={reset}>
+              {t.clearAll}
+            </button>
+          )}
+        </p>
+        <label className="quest-sort">
+          {t.sortBy}
+          <select value={sort} onChange={(event) => setSort(event.target.value as Sort)}>
+            {SORTS.map((value) => (
+              <option key={value} value={value}>
+                {t.sorts[value]}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+      {sorted.length === 0 ? (
+        <p className="empty-small quest-filter-empty">
+          {forYou && forYouIds.size === 0 ? t.emptyFilter['for-you'] : t.emptyFilter.other}
+        </p>
       ) : (
         <div className="quest-list">
-          {shown.map((quest) => (
+          {sorted.map((quest) => (
             <QuestRow key={quest.id} id={quest.id} title={quest.title} gold={quest.gold} entryId={quest.entryId} />
           ))}
         </div>

@@ -5909,70 +5909,294 @@ a.button {
 .quest-filter-bar {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  gap: 12px 24px;
-  margin-bottom: 16px;
+  gap: 16px 32px;
 }
 
-.quest-filters {
+.quest-filter-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.filter-menu {
+  position: relative;
+}
+
+.filter-pill {
+  display: inline-flex;
   align-items: center;
+  gap: 7px;
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: transparent;
+  color: var(--soft);
+  font-size: 15px;
+  cursor: pointer;
 }
 
-.quest-time-filter {
+.filter-pill:hover {
+  border-color: #453f56;
+  color: var(--text);
+}
+
+.filter-pill[aria-pressed='true'],
+.filter-pill[data-active] {
+  border-color: var(--text);
+  color: var(--text);
+}
+
+.filter-pill[aria-pressed='true'] {
+  background: var(--text);
+  color: var(--ground);
+  font-weight: 600;
+}
+
+.filter-pill svg {
+  width: 14px;
+  height: 14px;
+}
+
+.filter-pill[aria-expanded='true'] svg {
+  transform: rotate(180deg);
+}
+
+.filter-pill-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  background: var(--text);
+  color: var(--ground);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.filter-popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 220px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  white-space: nowrap;
+  background: var(--surface);
+  box-shadow: 0 12px 32px rgb(0 0 0 / 45%);
+}
+
+.filter-check {
   display: flex;
   align-items: center;
   gap: 10px;
+  min-height: 38px;
+  padding: 0 8px;
+  border-radius: 8px;
+  color: var(--soft);
+  font-size: 15px;
+  cursor: pointer;
 }
 
-.quest-time-filter-label {
-  display: inline-flex;
+.filter-check:hover {
+  background: var(--raised);
+  color: var(--text);
+}
+
+.filter-check input {
+  width: 16px;
+  min-height: 0;
+  height: 16px;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--gold);
+}
+
+.filter-clear {
+  align-self: flex-start;
+  margin: 4px 8px 2px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--muted);
+  font-size: 14px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.filter-clear:hover {
+  color: var(--text);
+}
+
+.time-range {
+  flex: none;
+  width: 250px;
+  padding: 4px 8px 0;
+}
+
+.time-range-track {
+  position: relative;
+  height: 20px;
+}
+
+.time-range-track::before {
+  content: '';
+  position: absolute;
+  top: 9px;
+  right: 0;
+  left: 0;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--line);
+}
+
+.time-range-fill {
+  position: absolute;
+  top: 9px;
+  height: 2px;
+  background: var(--text);
+}
+
+.time-range-tick {
+  position: absolute;
+  top: 6px;
+  width: 2px;
+  height: 8px;
+  margin-left: -1px;
+  border-radius: 1px;
+  background: var(--line);
+}
+
+.time-range-tick[data-on] {
+  background: var(--text);
+}
+
+.time-range input[type='range'] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  min-height: 0;
+  height: 20px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  pointer-events: none;
+  appearance: none;
+}
+
+.time-range input[type='range']::-webkit-slider-runnable-track {
+  height: 20px;
+  background: none;
+}
+
+.time-range input[type='range']::-moz-range-track {
+  height: 20px;
+  background: none;
+}
+
+.time-range input[type='range']::-webkit-slider-thumb {
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+  border: 2px solid var(--ground);
+  border-radius: 50%;
+  background: var(--text);
+  pointer-events: auto;
+  cursor: grab;
+  appearance: none;
+}
+
+.time-range input[type='range']::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--ground);
+  border-radius: 50%;
+  background: var(--text);
+  pointer-events: auto;
+  cursor: grab;
+}
+
+.time-range input[type='range']:focus-visible::-webkit-slider-thumb {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+.time-range-labels {
+  position: relative;
+  height: 20px;
+  margin-top: 4px;
+}
+
+.time-range-labels span {
+  position: absolute;
+  color: var(--muted);
+  font-size: 13px;
+  white-space: nowrap;
+  transform: translateX(-50%);
+}
+
+.time-range-labels span[data-on] {
+  color: var(--text);
+}
+
+/* The end labels line up with the ends of the track, so they don't spill past it. */
+.time-range-labels span:first-child {
+  transform: translateX(-6px);
+}
+
+.time-range-labels span:last-child {
+  transform: translateX(calc(-100% + 6px));
+}
+
+.time-range input[type='range']:focus,
+.time-range input[type='range']:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.quest-results-bar {
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
+  justify-content: space-between;
+  gap: 8px 16px;
+  margin: 18px 0 12px;
+}
+
+.quest-results-bar .count {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.quest-results-bar .filter-clear {
+  margin: 0;
+}
+
+.quest-sort {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   color: var(--muted);
   font-size: 14px;
   white-space: nowrap;
 }
 
-.quest-time-filter-label svg {
-  width: 16px;
-  height: 16px;
-}
-
-.segmented {
-  display: inline-flex;
-  padding: 3px;
-  border: 1px solid var(--line);
-  border-radius: 20px;
-}
-
-.segmented button {
-  min-height: 30px;
-  padding: 0 12px;
-  border: none;
-  border-radius: 16px;
-  background: transparent;
-  color: var(--soft);
+.quest-sort select {
+  width: auto;
+  min-height: 38px;
+  padding: 0 32px 0 14px;
+  border-radius: 19px;
   font-size: 14px;
-  white-space: nowrap;
-  cursor: pointer;
-}
-
-.segmented button:hover {
-  color: var(--text);
-}
-
-.segmented button[aria-pressed='true'] {
-  background: var(--raised);
-  color: var(--text);
-  font-weight: 600;
-}
-
-.quest-filters-gap {
-  width: 1px;
-  height: 22px;
-  margin: 0 4px;
-  background: var(--line);
 }
 
 .quest-filter-empty {
@@ -6308,8 +6532,8 @@ button.quest-form-remove {
   .quest-row-side {
     margin-left: 48px;
   }
-  .quest-filters-gap {
-    display: none;
+  .time-range {
+    width: 100%;
   }
   .quest-form-row {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
