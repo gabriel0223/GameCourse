@@ -6676,3 +6676,54 @@ button.quest-form-remove {
   width: 12px;
   height: 12px;
 }
+
+/* Installed as an app on a phone or tablet.
+   The status bar is see-through, so the page keeps clear of it and the notch. */
+
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 6;
+  height: env(safe-area-inset-top, 0px);
+  background: var(--ground);
+  pointer-events: none;
+}
+
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.top-bar {
+  top: env(safe-area-inset-top, 0px);
+}
+
+.sidebar {
+  padding-top: calc(26px + env(safe-area-inset-top, 0px));
+}
+
+.sign-in {
+  padding-top: calc(16px + env(safe-area-inset-top, 0px));
+}
+
+@media (display-mode: standalone) {
+  body {
+    overscroll-behavior-y: none;
+  }
+}
+
+@media (max-width: 860px) {
+  .sidebar {
+    padding-top: calc(10px + env(safe-area-inset-top, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+  }
+  /* iPhones zoom into any text field under 16px. */
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}

@@ -33,6 +33,12 @@ supabase functions deploy igdb
 
 The IGDB function only answers signed-in users, and only from the site in its `APP_ORIGIN` secret, which defaults to `https://gabriel0223.github.io`.
 
+## Install on a phone
+
+The app is a PWA, so it installs from the browser with no app store. On iPhone, open the live site in Safari, tap Share, then Add to Home Screen. On Android, open it in Chrome and tap Install app in the menu. It opens full screen, keeps its own sign-in, and still opens with no signal, showing the last data it loaded.
+
+`public/` holds the manifest and icons (drawn by `tools/app_icon.py`). The build writes `sw.js` from `pwa/sw.template.js`, listing every built file so the whole app is stored on the phone. Data from Supabase is always fetched fresh and only falls back to the stored copy when offline. Saving still needs a connection. A new deploy takes over the next time the app goes to the background, never while the Codex editor is open.
+
 ## Deploy
 
 Every push to `main` runs the tests, builds the app, and publishes it to GitHub Pages through `.github/workflows/deploy.yml`. In the repo's Settings, Pages needs its source set to GitHub Actions. The Supabase URL and anon key in that workflow are public by design, because they ship in the browser build. Row level security is what protects the data.

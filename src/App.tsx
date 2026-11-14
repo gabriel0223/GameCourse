@@ -9,6 +9,7 @@ import { Sprite } from './components/Sprite';
 import { TopBar } from './components/TopBar';
 import { FriendsProvider } from './state/FriendsContext';
 import { LibraryProvider, useLibrary } from './state/LibraryContext';
+import { forgetCachedData } from './pwa';
 import { strings } from './strings';
 import { GUIDE_CHAPTER_IDS, hrefs, useHashRoute } from './useHashRoute';
 import type { Route } from './useHashRoute';
@@ -260,7 +261,10 @@ export function App() {
       setSession(data.session);
       setReady(true);
     });
-    const { data } = supabase.auth.onAuthStateChange((_event, next) => setSession(next));
+    const { data } = supabase.auth.onAuthStateChange((event, next) => {
+      if (event === 'SIGNED_OUT') forgetCachedData();
+      setSession(next);
+    });
     return () => data.subscription.unsubscribe();
   }, []);
 
