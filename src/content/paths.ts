@@ -88,6 +88,14 @@ export const PATHS: Path[] = [
       'event-steam-deck',
     ],
   }),
+  withGold({
+    id: 'from-2d-to-3d',
+    kind: 'path',
+    title: 'From 2D to 3D',
+    summary: 'How games learned to move, look, and aim in three dimensions.',
+    art: 'path-from-2d-to-3d',
+    entryIds: ['event-star-fox', 'event-mario-64', 'event-tomb-raider', 'event-dualshock', 'event-ocarina'],
+  }),
 ];
 
 // One per era, so its timeline events and its consoles are finished together.

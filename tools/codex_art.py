@@ -841,6 +841,42 @@ def pocket():
     s.oval(134, 34, 138, 38, "#5fd0b6")
 
 
+
+@scene("path-from-2d-to-3d")
+def flat_to_deep():
+    s = Scene("#140f33", "#3a5f9a", 34)
+    s.stars(18, 22)
+    # left: a flat 2D level of square blocks
+    s.rect(0, 46, 70, H, "#6a3a4a")
+    for x in range(0, 70, 8):
+        s.rect(x, 46, x + 7, 49, "#c9704a")
+        s.rect(x, 46, x + 7, 46, "#ffb07a")
+    for x in (22, 30):
+        s.rect(x, 28, x + 7, 35, "#c9704a")
+        s.rect(x + 1, 29, x + 6, 29, "#ffb07a")
+    s.rect(38, 28, 45, 35, "#ffc857")
+    s.rect(40, 30, 43, 33, "#c98a2a")
+    s.character(10, 46, None, frame=4)
+    # right: a floor of polygons running toward the horizon
+    vx, vy = 128, 24
+    s.poly([(70, H), (W, H), (W, vy + 8), (vx, vy)], "#16204a")
+    for x in range(56, W + 80, 16):
+        s.line([(vx, vy), (x, H)], "#3a8ad0")
+    for i, y in enumerate((27, 31, 37, 45, 57)):
+        left = vx - (y - vy) * 72 // (H - vy)
+        s.line([(max(left, 70), y), (W, y)], "#3a8ad0")
+    # a flat-shaded pyramid on the grid
+    s.poly([(118, 44), (130, 20), (130, 48)], "#ffc857")
+    s.poly([(130, 20), (142, 44), (130, 48)], "#c98a2a")
+    # a small ship banking past
+    s.poly([(84, 18), (100, 14), (96, 20)], "#ecebf4")
+    s.poly([(96, 20), (100, 14), (104, 22)], "#a9a6b6")
+    s.px(83, 18, "#f0708a")
+    s.px(82, 18, "#ffc857")
+    # the step between the two halves
+    for y in range(8, 46, 4):
+        s.px(70, y, "#c9c3e8")
+
 def code_screen(s, x, y, w, h, rows=5):
     monitor(s, x, y, w, h)
     colors = ("#7c9bff", "#5fd0b6", "#ffc857", "#f0708a", "#c9a6ff")
