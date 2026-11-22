@@ -670,6 +670,18 @@ export const TIMELINE_ENTRIES: CodexEntry[] = [
     ],
   ),
   event(
+    'starcraft',
+    6,
+    1998,
+    "StarCraft and the birth of esports",
+    "A strategy game turned players into TV stars.",
+    [
+      `Blizzard released StarCraft for Windows on March 31, 1998. It was a real-time strategy game, where you gather resources, build a base, and command an army while your opponent does the same at the same time. Its three races, the human Terrans, the insect-like Zerg, and the psychic Protoss, played completely differently, yet they were carefully balanced against each other. Most strategy games before it had used two sides that mirrored each other. Players could also fight online through Blizzard’s free Battle.net service.`,
+      `Its biggest audience was in South Korea. Internet cafés called PC bangs spread quickly there in 1998 and 1999 as the country built fast broadband, and StarCraft was the game everyone played in them. Of its more than 11 million copies, about 4.5 million sold in Korea. Soon people came to PC bangs just to watch the best players. Cable channels such as OnGameNet and MBCGame broadcast leagues with commentators, big companies sponsored pro teams, and players like Lim Yo-hwan, known as BoxeR, became celebrities. In 2004, a league final on Gwangalli Beach in Busan reportedly drew around 100,000 spectators.`,
+      `Korea showed the world what esports could look like, with pro teams, salaries, commentators, and huge live crowds. League of Legends and many other games followed that model, and Blizzard released StarCraft: Remastered in 2017. Esports also gave players words you will hear everywhere. Micro means controlling individual units precisely, macro means managing your economy and army as a whole, and APM counts actions per minute. Typing gg, for good game, at the end of a match is a polite way to finish, whether you won or lost.`,
+    ],
+  ),
+  event(
     'playstation-2',
     6,
     2000,
@@ -694,6 +706,30 @@ export const TIMELINE_ENTRIES: CodexEntry[] = [
     ],
   ),
   event(
+    'animal-crossing',
+    6,
+    2001,
+    "Animal Crossing and cozy games",
+    "A game with no way to lose.",
+    [
+      `Katsuya Eguchi joined Nintendo in 1986 and moved from Chiba, near Tokyo, to Kyoto, leaving his family and friends behind. He was lonely, and years later he wondered whether a game could recreate that feeling of starting over in a new town, built around family, friendship, and community. With Hisashi Nogami, he directed Dōbutsu no Mori, or Animal Forest, released on Nintendo 64 in Japan on April 14, 2001. An improved version for GameCube followed that December, and it reached North America in 2002 as Animal Crossing.`,
+      `You move into a village of talking animals, with no quest to finish and no enemy to beat. You fish, catch bugs, dig up fossils, decorate your house, and pay off a loan to a shopkeeper named Tom Nook, who never sets a deadline. The game runs on a real clock and calendar, so shops close at night, seasons change, and holidays arrive on their real dates. Villagers notice when you have been away, and weeds grow in your town. It was designed to be played a little every day, not finished in a weekend.`,
+      `It proved that a relaxing game could keep millions of players coming back. Games like Stardew Valley in 2016 share the same spirit, and players now call this style cozy games. Animal Crossing: New Horizons launched in March 2020, just as many people were staying home during the pandemic, and it has sold over 50 million copies. Players visited friends’ islands when they couldn’t visit them in person. Cozy games are a great place to start, because there is no way to fail, and playing at your own pace is the whole point.`,
+    ],
+  ),
+  event(
+    'gta-iii',
+    6,
+    2001,
+    "Grand Theft Auto III and the open world",
+    "A whole city to explore in 3D.",
+    [
+      `The first two Grand Theft Auto games, made by DMA Design in Edinburgh, Scotland, showed their cities from straight above, like a map. For the third, a team of about 23 people at DMA worked with the publisher Rockstar Games in New York to rebuild the idea in full 3D. Grand Theft Auto III is set in Liberty City, a version of New York. It was due in early October 2001 but was delayed after the September 11 attacks so the team could change content that suddenly felt inappropriate. It launched for PlayStation 2 on October 22, 2001.`,
+      `You play a criminal working his way up through the city’s gangs, and the game is violent, with an M rating to match. What amazed players was the freedom. You could follow the story, take side jobs as a taxi or ambulance driver, or simply drive around listening to the car radio, whose stations had their own music, hosts, and fake ads. Crimes raised a wanted level, shown as stars, and the police chased you harder as it rose. Rockstar had offered the game to Microsoft as an Xbox exclusive, but Microsoft turned it down.`,
+      `It became the best-selling game of 2001, sold about 14.5 million copies, and gave the industry a template that is still everywhere: a big world you can roam, a story you advance when you choose, and lots to do between missions. Grand Theft Auto V, in 2013, became one of the best-selling games of all time, and open worlds now range from The Legend of Zelda: Breath of the Wild to Marvel’s Spider-Man. In most of them you can pin a marker on the map, and the minimap guides you there. And don’t rush the story. The side activities are meant to be enjoyed.`,
+    ],
+  ),
+  event(
     'xbox-halo',
     6,
     2001,
@@ -703,6 +739,30 @@ export const TIMELINE_ENTRIES: CodexEntry[] = [
       `Microsoft feared PlayStation 2 might become the computer in everyone’s living room, so a small team including Seamus Blackley, Kevin Bachus, Ted Hase, and Otto Berkes proposed a console built on PC technology. Its working name, DirectX Box, became Xbox. It launched in North America on November 15, 2001, and its first controller was so large that it became a joke, nicknamed the Duke.`,
       `Microsoft needed an unmissable game. It bought Bungie, whose science fiction shooter Halo had first been shown publicly at a Mac event with Steve Jobs. Halo: Combat Evolved became a launch title, and it proved that a first-person shooter could feel great on a controller. Its movement, shields, and mix of weapons became a template for console shooters, and Master Chief became Xbox’s mascot.`,
       `Xbox Live followed in November 2002. It required broadband, which was a bold choice, but gave players a shared friends list, voice chat, and a single account. Halo 2 turned it into a phenomenon in 2004 with online matchmaking. Xbox sold about 24 million units, and it was a costly start, but it established Microsoft as a permanent player in the console business.`,
+    ],
+  ),
+  event(
+    'melee',
+    6,
+    2001,
+    "Super Smash Bros. Melee and grassroots esports",
+    "A Nintendo party game became a fan-run sport.",
+    [
+      `Nintendo’s GameCube launched in Japan on September 14, 2001, and in North America that November. It was small and cube-shaped, with a carrying handle, and it used 8 cm discs instead of full-size DVDs, partly to make copying harder. It never caught PlayStation 2, selling about 21.7 million consoles. Its best-selling game arrived weeks after launch: Super Smash Bros. Melee, directed by Masahiro Sakurai at HAL Laboratory, released on November 21 in Japan and December 3 in North America.`,
+      `Smash Bros. works differently from most fighting games. Nintendo characters like Mario, Link, and Pikachu don’t drain a health bar. Each hit raises a percentage, and the higher it climbs, the farther the next hit sends you flying. You win by knocking opponents off the stage, and getting back after a big hit, called recovering, is a skill of its own. Four players can fight at once while items drop in, so it was easy to enjoy at a party. Melee became the GameCube’s best-selling game, at around 7 million copies.`,
+      `Some players found that Melee was also very deep. They discovered advanced techniques like wavedashing, a slide made possible by a quirk in its physics, and ran their own tournaments for years with little help from Nintendo. In 2013, fans raised about 94,000 dollars for breast cancer research to win Melee a spot at Evo, the biggest fighting game tournament, and Nintendo briefly tried to block the stream before backing down. Super Smash Bros. Ultimate works the same way, and Nintendo even made an adapter so players could keep their GameCube controllers. In Smash, watch the percentage under each fighter, and after a big hit, save your second jump and your up special to get back.`,
+    ],
+  ),
+  event(
+    'metroid-prime',
+    6,
+    2002,
+    "Metroid Prime and the Metroidvania",
+    "An old kind of exploration in a new dimension.",
+    [
+      `Metroid games are about exploring one big connected world. In Super Metroid, released in 1994, Samus Aran finds locked doors and ledges she can’t reach, then returns once a new ability opens the way. Konami’s Castlevania: Symphony of the Night used the same structure in 1997, and fans joined the two names into a genre, the Metroidvania. Then the series went quiet for eight years, and Nintendo handed its 3D return to Retro Studios, a young American studio in Austin, Texas. It was the first Metroid made outside Japan.`,
+      `Fans were worried, especially after Shigeru Miyamoto suggested a first-person view and the game began to look like a shooter. Nintendo called it a first-person adventure instead. Metroid Prime launched on GameCube in November 2002 and put you inside Samus’s helmet. Rain beads on her visor, and a bright flash sometimes shows her face reflected in it. A scan visor lets you examine creatures and machines to learn the story and find weak points. Exploring still came first, and it became one of the highest-rated games ever made.`,
+      `It showed Nintendo that one of its biggest series could thrive in another studio’s hands, and Retro later revived Donkey Kong Country too. Metroidvanias are everywhere now, especially among indie games like Hollow Knight, and Metroid Prime Remastered brought the original to Switch in 2023. The genre teaches a habit worth keeping. When you find a door you can’t open or a ledge you can’t reach, mark it on the map and come back later. It usually means a new ability is waiting somewhere else.`,
     ],
   ),
   event(
@@ -727,6 +787,30 @@ export const TIMELINE_ENTRIES: CodexEntry[] = [
       `Massively multiplayer online games already existed, with Ultima Online and EverQuest leading the way, but they often demanded a lot of time and patience. Blizzard, known for Warcraft, StarCraft, and Diablo, thought the genre could be friendlier. World of Warcraft launched on November 23, 2004, after years of development.`,
       `It made online worlds easy to understand. Quests always pointed you toward something to do, travel was simpler, and solo players could progress comfortably. Groups could then take on dungeons and huge raids, while guilds became real social communities. Many players formed lifelong friendships there, and some couples even met in the game. Its peak passed 12 million subscribers around 2010.`,
       `It also became a cultural landmark. A bug in 2005 caused a virtual plague, the Corrupted Blood incident, that spread through cities and was later studied by real epidemiologists. South Park built an award-winning episode around the game. Many later games copied its quests and interface, and its continued success, including the Classic servers launched in 2019, shows how long a world can last.`,
+    ],
+  ),
+  event(
+    're4',
+    6,
+    2005,
+    "Resident Evil 4 and the over-the-shoulder camera",
+    "Capcom moved the camera and changed action games.",
+    [
+      `Resident Evil 4 took about five years and several false starts. The first version, directed by Hideki Kamiya, was so fast and flashy that series creator Shinji Mikami felt it no longer fit Resident Evil. Instead of being thrown away, it became a new series, Devil May Cry, in 2001. Other versions were scrapped too, until Mikami took over as director himself. The finished game launched on GameCube on January 11, 2005, and came to PlayStation 2 later that year.`,
+      `Leon Kennedy, a rookie cop in Resident Evil 2 and now a government agent, is sent to a village in rural Europe to rescue the president’s daughter. The fixed cameras of earlier games were gone. The camera sat just behind Leon’s shoulder, and when you aimed, a laser sight showed exactly where your shot would land. Shooting an enemy in the leg made it stumble, and a button prompt let Leon follow up with a kick. Some cutscenes asked you to press a button quickly to survive, a feature called a quick time event.`,
+      `The over-the-shoulder view spread fast. Developers at Epic Games told Capcom that Gears of War, in 2006, was influenced by it, and Dead Space, Uncharted, and The Last of Us all follow the same basic setup. Capcom remade Resident Evil 4 in 2023, and it was a hit all over again. In most third-person action games today, holding the left trigger raises your weapon and moves the camera over your shoulder. Aim for the legs or arms to slow enemies down, and keep an eye out for button prompts during cutscenes.`,
+    ],
+  ),
+  event(
+    'shadow-of-the-colossus',
+    6,
+    2005,
+    "Shadow of the Colossus and games as art",
+    "Sixteen giants and almost nothing else.",
+    [
+      `Fumito Ueda’s team at Sony had already made Ico in 2001, a quiet game about a boy leading a girl out of a castle, with almost no text on screen. It sold modestly but deeply moved the people who played it. One of them, Hidetaka Miyazaki, said it changed his life and led him into game development, where he later created Dark Souls. Ueda’s next game, Shadow of the Colossus, launched for PlayStation 2 in October 2005.`,
+      `A young man named Wander rides his horse, Agro, into a forbidden land, hoping to bring a girl back to life. To do it, he must defeat 16 colossi, enormous creatures roaming a huge, empty landscape. There are no other enemies, no towns, and no shops. To find the next colossus, you hold up your sword in sunlight, and its reflected beam points the way. Each colossus is a puzzle. You find a way to climb onto it, hold on while a meter shows how long your grip will last, and search for its glowing weak points.`,
+      `Many players felt sad rather than triumphant as each giant fell. In 2010, the film critic Roger Ebert wrote that video games could never be art, and this was the game many players pointed to in reply. Its quiet style influenced developers around the world, and Bluepoint Games remade it for PlayStation 4 in 2018. It also teaches you to read a world with almost no help. When a game gives you few markers, look at the light, the landscape, and the shapes that stand out, because they are usually guiding you.`,
     ],
   ),
   event(
