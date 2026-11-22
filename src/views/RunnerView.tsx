@@ -3,6 +3,7 @@ import { CodexLinks } from '../components/CodexLinks';
 import { ControlsGuide } from '../components/ControlsGuide';
 import { PauseMenu } from '../components/PauseMenu';
 import { ScoreBoard } from '../components/FriendBits';
+import { VolumeSlider } from '../components/VolumeSlider';
 import { RunResults } from '../components/RunResults';
 import { spriteUrl } from '../components/Sprite';
 import { bestScore } from '../domain/practice';
@@ -12,7 +13,9 @@ import { DEVICES, PAD_PAUSE, allControls, findDevice } from '../practice/devices
 import type { Device, DeviceId } from '../practice/devices';
 import { PadReader, usePadConfirm, usePadStatus } from '../practice/gamepad';
 import { STAGE_H, STAGE_W, applyEvents, drawRun, loadWorld, newFx } from '../practice/runnerArt';
-import { currentTarget, newRun, pressControl, stepRun, togglePause } from '../practice/runnerGame';
+import { loadVolume, saveVolume } from '../practice/jetAudio';
+import { createRunnerAudio } from '../practice/runnerAudio';
+import { COUNTDOWN, currentTarget, newRun, pressControl, stepRun, togglePause } from '../practice/runnerGame';
 import { useLibrary } from '../state/LibraryContext';
 import { strings } from '../strings';
 import { hrefs } from '../useHashRoute';
@@ -32,6 +35,9 @@ function RunnerStage({ device, hints, onFinish }: { device: Device; hints: boole
   const [paused, setPaused] = useState(false);
   const pause = useRef<() => void>(() => undefined);
   const quit = useRef<() => void>(() => undefined);
+  const [volume, setVolume] = useState(loadVolume);
+  const applyVolume = useRef<(value: number) => void>(() => undefined);
+  const startVolume = useRef(volume);
   const finish = useRef(onFinish);
   finish.current = onFinish;
   const bestAtStart = useRef(bestScore(profile.practice, GAME_ID));
@@ -68,6 +74,10 @@ function RunnerStage({ device, hints, onFinish }: { device: Device; hints: boole
     const fx = newFx();
     const reader = new PadReader();
     const controls = allControls(device);
+    const audio = createRunnerAudio(startVolume.current);
+    applyVolume.current = audio.setVolume;
+    // One above the countdown, so "3" ticks on the first frame too.
+    let lastCount = COUNTDOWN + 1;
     let frame = 0;
     let last = performance.now();
     let finished = false;
@@ -81,6 +91,7 @@ function RunnerStage({ device, hints, onFinish }: { device: Device; hints: boole
     const flipPause = () => {
       togglePause(run);
       setPaused(run.status === 'paused');
+      audio.setPaused(run.status === 'paused');
     };
     pause.current = flipPause;
     quit.current = () => {
@@ -97,6 +108,12 @@ function RunnerStage({ device, hints, onFinish }: { device: Device; hints: boole
         if (control) pressControl(run, control);
       }
       stepRun(run, delta, device);
+      if (run.status === 'countdown' || (run.status === 'running' && lastCount > 0)) {
+        const count = Math.max(0, Math.ceil(run.countdown));
+        if (count !== lastCount) audio.tick(count === 0);
+        lastCount = count;
+      }
+      audio.play(run.events, run.streak);
       applyEvents(fx, run.events, run.time);
       const prompt = currentTarget(run);
       const announcement = prompt ? `${prompt.id}: ${prompt.control.name}` : '';
@@ -116,6 +133,7 @@ function RunnerStage({ device, hints, onFinish }: { device: Device; hints: boole
         flipPause();
         return;
       }
+      if (run.status !== 'paused') audio.wake();
       if (device.usesPad || event.ctrlKey || event.metaKey || event.altKey) return;
       const control = controls.find((item) => item.code === event.code);
       if (!control) return;
@@ -141,6 +159,7 @@ function RunnerStage({ device, hints, onFinish }: { device: Device; hints: boole
       window.removeEventListener('blur', stop);
       window.removeEventListener('gamepaddisconnected', stop);
       document.removeEventListener('visibilitychange', hidden);
+      audio.dispose();
     };
   }, [device, hints]);
 
@@ -148,7 +167,18 @@ function RunnerStage({ device, hints, onFinish }: { device: Device; hints: boole
     <>
       <div className="runner-frame">
         <canvas ref={canvas} className="runner-canvas" role="img" aria-label={t.canvasLabel} />
-        {paused && <PauseMenu guide={runnerControls(device)} onResume={() => pause.current()} onQuit={() => quit.current()} />}
+        {paused && (
+          <PauseMenu guide={runnerControls(device)} onResume={() => pause.current()} onQuit={() => quit.current()}>
+            <VolumeSlider
+              value={volume}
+              onChange={(value) => {
+                setVolume(value);
+                saveVolume(value);
+                applyVolume.current(value);
+              }}
+            />
+          </PauseMenu>
+        )}
       </div>
       <p ref={announcer} className="sr-only" role="status" data-testid="runner-prompt" />
       {!paused && (
@@ -169,6 +199,7 @@ function Setup({ onStart }: { onStart(device: Device, hints: boolean): void }) {
   const { profile } = useLibrary();
   const [deviceId, setDeviceId] = useState(lastDevice);
   const [hints, setHints] = useState(lastHints);
+  const [volume, setVolume] = useState(loadVolume);
   const pad = usePadStatus();
   const device = findDevice(deviceId);
   const ready = !device.usesPad || pad.connected;
@@ -227,6 +258,13 @@ function Setup({ onStart }: { onStart(device: Device, hints: boolean): void }) {
           <input type="checkbox" checked={hints} onChange={(event) => setHints(event.target.checked)} />
           {t.hints}
         </label>
+        <VolumeSlider
+          value={volume}
+          onChange={(value) => {
+            setVolume(value);
+            saveVolume(value);
+          }}
+        />
         <button className="button button-primary runner-start" type="button" disabled={!ready} onClick={start}>
           {t.start}
         </button>
