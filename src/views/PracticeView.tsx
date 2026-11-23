@@ -10,8 +10,9 @@ import { hrefs } from '../useHashRoute';
 const t = strings.practice;
 const GAMES = [
   { id: 'runner', href: hrefs.runner, picture: runnerPicture, ...t.games.runner },
-  { id: 'jet', href: hrefs.jet, picture: jetPicture, ...t.games.jet },
+  // Easiest to hardest, so the row reads as a progression.
   { id: 'cupid', href: hrefs.cupid, picture: cupidPicture, ...t.games.cupid },
+  { id: 'jet', href: hrefs.jet, picture: jetPicture, ...t.games.jet },
 ];
 
 export function PracticeView() {
