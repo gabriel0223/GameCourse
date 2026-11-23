@@ -12,7 +12,7 @@ import type { JetScheme } from '../practice/controls';
 import { PAD_PAUSE } from '../practice/devices';
 import { PadReader, usePadConfirm, usePadStatus } from '../practice/gamepad';
 import { createJetAudio, loadVolume, saveVolume } from '../practice/jetAudio';
-import { currentTarget, dot, fireMissile, length, newJetRun, normalize, rightWing, stepJetRun, sub, switchTarget, toggleJetPause } from '../practice/jetGame';
+import { beingLocked, currentTarget, dot, dropFlares, fireMissile, length, newJetRun, normalize, rightWing, stepJetRun, sub, switchTarget, toggleJetPause } from '../practice/jetGame';
 import type { Ending, JetRun } from '../practice/jetGame';
 import { HUD_H, HUD_W, drawHud } from '../practice/jetHud';
 import { MouseFlight, readPadFlight } from '../practice/jetInput';
@@ -41,6 +41,9 @@ interface Setup {
 interface Finished {
   run: FinishedRun;
   ending: Ending | null;
+  kills: number;
+  waves: number;
+  combo: number;
 }
 
 function FlightStage({ setup, onFinish }: { setup: Setup; onFinish(result: Finished): void }) {
@@ -87,6 +90,9 @@ function FlightStage({ setup, onFinish }: { setup: Setup; onFinish(result: Finis
       finish.current({
         run: { game: GAME_ID, device: setup.scheme, score: run.score, bestStreak: 0, mistakes: 0 },
         ending: run.ending,
+        kills: run.kills,
+        waves: run.wave - 1,
+        combo: run.bestCombo,
       });
     };
     const capture = () => {
@@ -118,6 +124,7 @@ function FlightStage({ setup, onFinish }: { setup: Setup; onFinish(result: Finis
         for (const button of reader.presses()) {
           if (button === PAD_PAUSE) flipPause();
           if (button === 1) fireMissile(run);
+          if (button === 2) dropFlares(run);
           if (button === 3) switchTarget(run);
         }
       }
@@ -140,6 +147,11 @@ function FlightStage({ setup, onFinish }: { setup: Setup; onFinish(result: Finis
         status.current.dataset.altitude = String(Math.round(run.jet.pos.y));
         status.current.dataset.score = String(run.score);
         status.current.dataset.threats = String(run.missiles.filter((item) => item.enemy).length);
+        status.current.dataset.wave = String(run.wave);
+        status.current.dataset.hp = String(Math.round(run.health));
+        status.current.dataset.missiles = String(run.missilesLeft);
+        status.current.dataset.flares = String(run.flaresLeft);
+        status.current.dataset.locked = String(beingLocked(run));
         status.current.dataset.upright = run.jet.up.y.toFixed(2);
         status.current.dataset.quality = String(scene.quality);
         status.current.dataset.sound = audio.state();
@@ -164,8 +176,9 @@ function FlightStage({ setup, onFinish }: { setup: Setup; onFinish(result: Finis
         return;
       }
       if (usesPad) return;
-      if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ShiftLeft', 'ShiftRight', 'Space'].includes(event.code)) event.preventDefault();
+      if (['KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyF', 'ShiftLeft', 'ShiftRight', 'Space'].includes(event.code)) event.preventDefault();
       if (event.code === 'Space' && !event.repeat) switchTarget(run);
+      if (event.code === 'KeyF' && !event.repeat) dropFlares(run);
       mouse.key(event.code, true);
     };
     const keyUp = (event: KeyboardEvent) => {
@@ -389,7 +402,12 @@ export function JetView() {
         <RunResults
           game={GAME_ID}
           score={phase.finished.run.score}
-          stats={[{ label: t.bestScore, value: phase.reward.best }]}
+          stats={[
+            { label: t.jet.kills, value: phase.finished.kills },
+            { label: t.jet.wavesCleared, value: phase.finished.waves },
+            { label: t.jet.bestCombo, value: t.jet.combo(phase.finished.combo) },
+            { label: t.bestScore, value: phase.reward.best },
+          ]}
           reward={phase.reward}
           note={phase.finished.ending ? t.jet.endings[phase.finished.ending] : undefined}
           usesPad={phase.setup.scheme !== 'mouse'}

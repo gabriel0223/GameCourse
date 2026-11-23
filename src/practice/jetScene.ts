@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { rightWing } from './jetGame';
-import type { Jet, JetRun, Vec } from './jetGame';
+import { ENEMIES, pitchOf, rightWing, yawOf } from './jetGame';
+import type { Bullet, EnemyKind, Jet, JetRun, Vec } from './jetGame';
 import { SUN, createSkyPass } from './jetSky';
 
 // Drawn tiny and scaled up with hard pixels, for the look of an early 3D console.
@@ -242,6 +242,90 @@ function makeDrone() {
   return drone;
 }
 
+// A sleek single-seat fighter with a dark hull, canted twin tails, and a glowing eye in place of a cockpit.
+function makeFighter(ace: boolean) {
+  const HULL = ace ? '#7A1E2A' : '#45434E';
+  const WING = ace ? '#9C2A34' : '#5A5864';
+  const TRIM = ace ? '#E8B048' : '#B8322A';
+  const shape = new Shape();
+  shape.loft(
+    [
+      [-7.5, 0.04, 0.04, 0],
+      [-5.6, 0.5, 0.42, 0.05],
+      [-2.4, 0.95, 0.66, 0.1],
+      [1.5, 1.2, 0.7, 0.1],
+      [5.2, 1.0, 0.56, 0.05],
+      [6.6, 0.55, 0.36, 0],
+    ],
+    6,
+    HULL,
+  );
+  const wing = [[1, 0, -1.6], [6.2, -0.15, 3], [6.2, -0.15, 3.9], [1.1, 0, 4.2]];
+  shape.both(wing, WING);
+  shape.both([[5.2, -0.13, 2.7], [6.2, -0.15, 3], [6.2, -0.15, 3.9], [5.2, -0.13, 3.8]], TRIM);
+  shape.both([[0.9, 0.05, 4.6], [3.6, -0.05, 6.4], [3.6, -0.05, 7.1], [1, 0.05, 6.8]], WING);
+  shape.both([[0.7, 0.5, 3.6], [1.7, 2.4, 5.9], [1.75, 2.4, 6.8], [0.8, 0.5, 6.4]], HULL);
+  shape.both([[1.5, 1.9, 5.4], [1.7, 2.4, 5.9], [1.75, 2.4, 6.8], [1.6, 1.9, 6.6]], TRIM);
+  const group = new THREE.Group();
+  group.add(shape.build(modelMaterial()));
+  const eye = new THREE.Mesh(
+    new THREE.OctahedronGeometry(0.55, 0),
+    new THREE.MeshBasicMaterial({ color: ace ? new THREE.Color(1.6, 1.1, 0.3) : new THREE.Color(1.4, 0.08, 0.08) }),
+  );
+  eye.position.set(0, 0.6, -3.4);
+  group.add(eye);
+  return group;
+}
+
+// A big, slow gunship with a straight wing and four engine pods.
+function makeHeavy() {
+  const shape = new Shape();
+  shape.loft(
+    [
+      [-8, 0.2, 0.2, 0],
+      [-6, 1.4, 1.2, 0.1],
+      [-1, 1.9, 1.5, 0.2],
+      [5, 1.7, 1.3, 0.2],
+      [9, 0.7, 0.6, 0.4],
+    ],
+    6,
+    '#4C5262',
+  );
+  shape.both([[1.2, 0.4, -1.4], [12, 0.1, -0.4], [12, 0.1, 2.2], [1.2, 0.4, 2.8]], '#5E6474');
+  shape.both([[10.6, 0.1, -0.5], [12, 0.1, -0.4], [12, 0.1, 2.2], [10.6, 0.1, 2.1]], '#B8322A');
+  for (const x of [-7.4, -4, 4, 7.4]) {
+    shape.loft(
+      [
+        [-1.6, 0.2, 0.2, -0.45],
+        [-1.1, 0.6, 0.6, -0.45],
+        [2.4, 0.6, 0.6, -0.45],
+        [2.8, 0.4, 0.4, -0.45],
+      ],
+      6,
+      '#383C48',
+      x,
+    );
+  }
+  shape.both([[0.5, 0.6, 7.6], [4.6, 0.5, 9.4], [4.6, 0.5, 10.2], [0.5, 0.6, 9.8]], '#5E6474');
+  shape.poly([[0, 1, 6.4], [0, 4.2, 9.2], [0, 4.2, 10.4], [0, 1, 10]], '#383C48');
+  const group = new THREE.Group();
+  group.add(shape.build(modelMaterial()));
+  for (const side of [-1, 1]) {
+    const eye = new THREE.Mesh(new THREE.OctahedronGeometry(0.5, 0), new THREE.MeshBasicMaterial({ color: new THREE.Color(1.4, 0.08, 0.08) }));
+    eye.position.set(side * 0.7, 0.5, -6.4);
+    group.add(eye);
+  }
+  return group;
+}
+
+const ENEMY_SCALE: Record<EnemyKind, number> = { drone: 2.4, fighter: 2.4, heavy: 3.2, ace: 2.7 };
+
+function makeEnemy(kind: EnemyKind) {
+  if (kind === 'fighter' || kind === 'ace') return makeFighter(kind === 'ace');
+  if (kind === 'heavy') return makeHeavy();
+  return makeDrone();
+}
+
 function makeMissile(enemy: boolean) {
   const shape = new Shape();
   shape.loft(
@@ -320,14 +404,14 @@ function makeTrails() {
   return { points, emit, material };
 }
 
-function makeTracers() {
+function makeTracers(tint: THREE.Color, pick: (run: JetRun) => Bullet[]) {
   const geometry = new THREE.BufferGeometry();
   const position = new THREE.BufferAttribute(new Float32Array(MAX_TRACERS * 6), 3);
   geometry.setAttribute('position', position);
-  const lines = new THREE.LineSegments(geometry, new THREE.LineBasicMaterial({ color: new THREE.Color(1.4, 1.15, 0.5) }));
+  const lines = new THREE.LineSegments(geometry, new THREE.LineBasicMaterial({ color: tint }));
   lines.frustumCulled = false;
   const update = (run: JetRun) => {
-    const bullets = run.bullets.slice(-MAX_TRACERS);
+    const bullets = pick(run).slice(-MAX_TRACERS);
     bullets.forEach((bullet, index) => {
       const { pos, vel } = bullet;
       position.setXYZ(index * 2, pos.x, pos.y, pos.z);
@@ -367,6 +451,9 @@ const SMOKE = new THREE.Color(0.86, 0.8, 0.7);
 const ENEMY_SMOKE = new THREE.Color(0.9, 0.3, 0.12);
 const FIRE = [new THREE.Color(1.3, 1.0, 0.4), new THREE.Color(1.1, 0.45, 0.08), new THREE.Color(0.2, 0.14, 0.14)];
 const SPARK = new THREE.Color(1.3, 1.1, 0.5);
+const FLARE = [new THREE.Color(1.6, 1.5, 1.2), new THREE.Color(1.5, 0.9, 0.3), new THREE.Color(1.3, 0.55, 0.15)];
+const DAMAGE_SMOKE = new THREE.Color(0.22, 0.18, 0.2);
+const HURT = new THREE.Color(1.4, 0.35, 0.1);
 
 // Builds a rotation from the way the jet is pointing. Three.js cameras and models face -z, like the jet.
 function attitude(jet: Jet, target: THREE.Quaternion) {
@@ -405,9 +492,11 @@ export function createJetScene(canvas: HTMLCanvasElement): JetScene {
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(FOV, RENDER_W / RENDER_H, NEAR, FAR);
   const trails = makeTrails();
-  const tracers = makeTracers();
+  const tracers = makeTracers(new THREE.Color(1.4, 1.15, 0.5), (run) => run.bullets);
+  // Enemy rounds glow red, so she can tell at a glance whose fire is whose.
+  const enemyTracers = makeTracers(new THREE.Color(1.6, 0.25, 0.15), (run) => run.enemyBullets);
   const { jet, flames } = makeJet();
-  scene.add(trails.points, tracers.lines, jet);
+  scene.add(trails.points, tracers.lines, enemyTracers.lines, jet);
 
   const drones = new Map<number, THREE.Group>();
   const missiles = new Map<number, THREE.Mesh>();
@@ -433,6 +522,7 @@ export function createJetScene(canvas: HTMLCanvasElement): JetScene {
   let started = false;
   let flash = 0;
   let shake = 0;
+  let hit = 0;
   let level = 1;
   let slow = 0;
   let quick = 0;
@@ -474,15 +564,34 @@ export function createJetScene(canvas: HTMLCanvasElement): JetScene {
       api.quality = level;
       trails.material.uniforms.uTime.value = time;
       tracers.update(run);
+      enemyTracers.update(run);
 
       for (const event of run.events) {
-        if (event.type === 'drone-down') blast(event.pos, 22, time);
+        if (event.type === 'drone-down') blast(event.pos, event.kind === 'heavy' ? 30 : 22, time);
         if (event.type === 'crashed') blast(event.pos, 16, time);
+        if (event.type === 'burst') blast(event.pos, 7, time);
         if (event.type === 'drone-hit') {
+          if (event.heavy) blast(event.pos, 9, time);
           for (let i = 0; i < 6; i += 1) {
             const a = (i / 6) * Math.PI * 2;
             trails.emit(event.pos, time, SPARK, { x: Math.cos(a) * 40, y: Math.sin(a) * 40, z: Math.cos(a * 2) * 30 }, 0.4);
           }
+        }
+        if (event.type === 'hurt' && run.status === 'running') {
+          hit = 0.3;
+          for (let i = 0; i < 5; i += 1) {
+            const a = (i / 5) * Math.PI * 2 + time;
+            trails.emit(event.pos, time, HURT, { x: Math.cos(a) * 25, y: Math.sin(a) * 25, z: Math.sin(a * 3) * 25 }, 0.35);
+          }
+        }
+      }
+      // Flares burn bright and leave a short smoky streak as they fall.
+      for (const flare of run.flares) {
+        // A cluster of hot points around each flare keeps it bright and visible at this low resolution.
+        for (let i = 0; i < 3; i += 1) {
+          const a = time * 40 + flare.id + i * 2.1;
+          const at = { x: flare.pos.x + Math.cos(a) * 1.6, y: flare.pos.y + Math.sin(a * 1.3) * 1.6, z: flare.pos.z + Math.sin(a) * 1.6 };
+          trails.emit(at, time, FLARE[i], { x: 0, y: 3, z: 0 }, i === 0 ? 0.35 : 0.9);
         }
       }
       run.events.length = 0;
@@ -512,14 +621,18 @@ export function createJetScene(canvas: HTMLCanvasElement): JetScene {
         seen.add(drone.id);
         let mesh = drones.get(drone.id);
         if (!mesh) {
-          mesh = makeDrone();
-          // Oversized on purpose, so a drone is more than a speck at this resolution.
-          mesh.scale.setScalar(2.4);
+          mesh = makeEnemy(drone.kind);
+          // Oversized on purpose, so an enemy is more than a speck at this resolution.
+          mesh.scale.setScalar(ENEMY_SCALE[drone.kind]);
           drones.set(drone.id, mesh);
           scene.add(mesh);
         }
         mesh.position.copy(toThree(drone.pos));
-        mesh.rotation.set(0, -drone.yaw, -(drone.wantYaw - drone.yaw) * 0.6, 'YXZ');
+        mesh.rotation.set(pitchOf(drone.dir), -yawOf(drone.dir), -drone.bank, 'YXZ');
+        // A badly damaged enemy trails smoke.
+        if (run.status === 'running' && drone.health <= ENEMIES[drone.kind].health / 2 && Math.floor(time * 30) % 2 === 0) {
+          trails.emit(drone.pos, time, DAMAGE_SMOKE, { x: 0, y: 6, z: 0 }, 1.4);
+        }
       }
       for (const [id, mesh] of drones) {
         if (!seen.has(id)) {
@@ -577,6 +690,9 @@ export function createJetScene(canvas: HTMLCanvasElement): JetScene {
       if (run.firing) shake = 0.12;
       shake = Math.max(0, shake - delta);
       if (shake > 0) wanted.add(new THREE.Vector3(Math.sin(time * 91) * 0.07, Math.sin(time * 113) * 0.07, 0));
+      // Taking hits jolts the camera much harder than her own gun does.
+      hit = Math.max(0, hit - delta);
+      if (hit > 0) wanted.add(new THREE.Vector3(Math.sin(time * 71) * hit * 2.2, Math.sin(time * 97) * hit * 2.2, 0));
       camPos.copy(wanted);
       started = true;
       camera.position.copy(camPos);

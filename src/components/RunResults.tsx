@@ -9,7 +9,7 @@ const t = strings.practice;
 interface RunResultsProps {
   game: string;
   score: number;
-  stats: Array<{ label: string; value: number }>;
+  stats: Array<{ label: string; value: number | string }>;
   reward: RunReward;
   note?: string;
   usesPad: boolean;

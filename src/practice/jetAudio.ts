@@ -1,4 +1,4 @@
-import { length, sub } from './jetGame';
+import { beingLocked, length, sub } from './jetGame';
 import type { JetRun, Vec } from './jetGame';
 
 // Every sound is built live from noise and simple tones, so the game ships with no audio files.
@@ -48,6 +48,10 @@ export interface SoundKit {
   boom(when: number, size: number, level: number): void;
   beep(when: number, frequency: number, seconds: number, level: number): void;
   alert(when: number, urgent: boolean): void;
+  flares(when: number, level: number): void;
+  hurt(when: number): void;
+  whoosh(when: number): void;
+  enemyGun(when: number, level: number): void;
 }
 
 export function createSoundKit(ctx: BaseAudioContext, out: AudioNode): SoundKit {
@@ -123,6 +127,35 @@ export function createSoundKit(ctx: BaseAudioContext, out: AudioNode): SoundKit 
       osc.connect(tone);
       osc.start(when);
       osc.stop(when + 0.15);
+    },
+    // A quick stutter of pops with a hiss behind it.
+    flares(when, level) {
+      for (let i = 0; i < 4; i += 1) {
+        const at = when + i * 0.07;
+        burst(white, at, 0.05, filter('bandpass', 1400 + i * 260, 1.2, fade(at, 0.22 * level, 0.045)));
+      }
+      burst(white, when, 0.6, filter('highpass', 2600, 0.6, fade(when, 0.06 * level, 0.55, 0.02)));
+    },
+    // A hard metallic knock, so a hit on her plane can't be mistaken for her own gun.
+    hurt(when) {
+      sweep('square', when, 420, 140, 0.09, filter('lowpass', 1800, 1.4, fade(when, 0.26, 0.1)));
+      burst(white, when, 0.06, filter('bandpass', 3200, 1.5, fade(when, 0.16, 0.05)));
+      sweep('sine', when, 95, 45, 0.12, fade(when, 0.4, 0.12));
+    },
+    // A missile tearing past after she made it miss.
+    whoosh(when) {
+      const body = filter('bandpass', 2400, 1.6, fade(when, 0.32, 0.55, 0.12));
+      body.frequency.setValueAtTime(2600, when);
+      body.frequency.exponentialRampToValueAtTime(500, when + 0.6);
+      burst(white, when, 0.7, body);
+    },
+    // An enemy burst, dull and distant compared with hers.
+    enemyGun(when, level) {
+      for (let i = 0; i < 7; i += 1) {
+        const at = when + i / 9;
+        burst(white, at, 0.06, filter('bandpass', 420, 0.9, fade(at, 0.3 * level, 0.06)));
+        sweep('sine', at, 110, 48, 0.06, fade(at, 0.25 * level, 0.06));
+      }
     },
     beep(when, frequency, seconds, level) {
       const gain = ctx.createGain();
@@ -256,6 +289,7 @@ export function createJetAudio(volume: number): JetAudio {
   let nextGun = 0;
   let nextLock = 0;
   let nextAlarm = 0;
+  let nextLocked = 0;
   let cut = false;
   let wake = 0;
 
@@ -284,6 +318,17 @@ export function createJetAudio(volume: number): JetAudio {
         if (event.type === 'drone-hit') kit.hit(now);
         if (event.type === 'drone-down') kit.boom(now, 1, Math.max(0.3, away(run, event.pos)));
         if (event.type === 'crashed') kit.boom(now, 1.7, 1);
+        if (event.type === 'burst') kit.boom(now, 0.35, Math.max(0.2, away(run, event.pos)));
+        if (event.type === 'flares') kit.flares(now, 1);
+        if (event.type === 'enemy-flares') kit.flares(now, Math.max(0.25, away(run, event.pos)));
+        if (event.type === 'hurt' && event.amount < 50) kit.hurt(now);
+        if (event.type === 'enemy-gun') kit.enemyGun(now, Math.max(0.3, away(run, event.pos)));
+        if (event.type === 'missile-lost' && event.enemy) kit.whoosh(now);
+        if (event.type === 'wave-clear') [660, 880, 1320].forEach((hz, i) => kit.beep(now + i * 0.11, hz, 0.12, 0.11));
+        if (event.type === 'wave-start' && event.wave > 1) {
+          kit.beep(now, event.ace ? 440 : 990, 0.16, 0.12);
+          kit.beep(now + 0.2, event.ace ? 330 : 990, event.ace ? 0.4 : 0.16, 0.12);
+        }
       }
 
       if (run.status === 'over') {
@@ -314,12 +359,17 @@ export function createJetAudio(volume: number): JetAudio {
       }
 
       const threat = run.missiles
-        .filter((item) => item.enemy)
+        .filter((item) => item.enemy && item.tracking)
         .reduce((nearest, item) => Math.min(nearest, length(sub(item.pos, run.jet.pos))), Infinity);
       if (threat < Infinity && now >= nextAlarm) {
         // The pulses hurry as the missile closes, and the last stretch also rises in pitch.
         kit.alert(now, threat < 250);
         nextAlarm = now + (threat < 250 ? 0.16 : threat < 550 ? 0.3 : 0.55);
+      } else if (threat === Infinity && beingLocked(run) && now >= nextLocked) {
+        // A steady two-note warble while an enemy locks on, before anything is fired.
+        kit.beep(now, 620, 0.09, 0.07);
+        kit.beep(now + 0.12, 520, 0.09, 0.07);
+        nextLocked = now + 0.45;
       }
     },
     setPaused(paused) {

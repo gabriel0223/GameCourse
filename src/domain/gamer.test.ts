@@ -111,8 +111,8 @@ describe('practice', () => {
     expect(bestScore(loadPractice({ best: 14 }), 'runner')).toBe(14);
     expect(loadPractice(undefined)).toEqual(NEW_PRACTICE);
   });
-  it('counts only the runner toward trying every controller, and pays more per drone', () => {
-    const flight = { game: 'jet', device: 'mouse', score: 2, bestStreak: 0, mistakes: 0 };
+  it('counts only the runner toward trying every controller, and pays about 3 XP per drone', () => {
+    const flight = { game: 'jet', device: 'mouse', score: 200, bestStreak: 0, mistakes: 0 };
     const result = applyRun(NEW_PRACTICE, flight, '2026-11-03');
     expect(result.practice.devices).toEqual([]);
     expect(result.reward.xp).toBe(6);

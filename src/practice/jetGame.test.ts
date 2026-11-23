@@ -1,13 +1,23 @@
 import { describe, expect, it } from 'vitest';
 import {
   CEILING,
+  COMBO_TIME,
+  ENEMIES,
+  ENEMY_BULLET_DAMAGE,
+  ENEMY_LOCK_TIME,
   ENEMY_MISSILE_SPEED,
+  FLARES,
   LOCK_CONE,
+  MAX_HEALTH,
+  MAX_MISSILES,
+  MISSILE_RELOAD,
+  WAVE_BREAK,
   NO_STEER,
   add,
   currentTarget,
   direction,
   dot,
+  dropFlares,
   fireMissile,
   headingOf,
   isLocked,
@@ -22,10 +32,12 @@ import {
   sub,
   switchTarget,
   toggleJetPause,
+  waveRoster,
 } from './jetGame';
-import type { Drone, JetRun, Steer } from './jetGame';
+import type { Drone, EnemyKind, JetRun, Missile, Steer } from './jetGame';
 
 const STEP = 1 / 60;
+const vec3 = (x: number, y: number, z: number) => ({ x, y, z });
 const seeded = (seed = 7) => () => {
   seed = (seed * 16807) % 2147483647;
   return seed / 2147483647;
@@ -38,10 +50,16 @@ function flying(): JetRun {
   return run;
 }
 
+// Stops the waves, so a test controls exactly which enemies are in the air.
+function hold(run: JetRun) {
+  run.queue = [];
+  run.calm = Infinity;
+}
+
 function emptySky() {
   const run = flying();
   run.drones = [];
-  run.nextSpawn = Infinity;
+  hold(run);
   return run;
 }
 
@@ -50,24 +68,36 @@ function fly(run: JetRun, seconds: number, steer: Steer = NO_STEER) {
   for (let i = 0; i < seconds / STEP && run.status === 'running'; i += 1) stepJetRun(run, STEP, steer, random);
 }
 
-// Puts one quiet drone straight ahead, so a test controls exactly what happens.
-function droneAhead(run: JetRun, range = 500): Drone {
+// Puts one quiet enemy straight ahead, flying away from her, so a test controls exactly what happens.
+function droneAhead(run: JetRun, range = 500, kind: EnemyKind = 'drone'): Drone {
   const drone = run.drones[0];
   run.drones = [drone];
+  drone.kind = kind;
+  drone.health = ENEMIES[kind].health;
+  drone.speed = ENEMIES[kind].speed;
+  drone.flares = 0;
   drone.pos = add(run.jet.pos, noseVector(run.jet), range);
   drone.nextShot = Infinity;
+  drone.nextBurst = Infinity;
   drone.nextTurn = Infinity;
-  drone.yaw = headingOf(run.jet);
-  drone.wantYaw = drone.yaw;
+  drone.nextEvadeRoll = Infinity;
+  drone.wantYaw = headingOf(run.jet);
+  drone.dir = direction(drone.wantYaw, 0);
   run.targetId = drone.id;
-  run.nextSpawn = Infinity;
+  hold(run);
   return drone;
+}
+
+function enemyMissile(pos: Missile['pos'], dir: Missile['dir']): Missile {
+  return { id: 99, pos, dir, speed: ENEMY_MISSILE_SPEED, life: 8, target: null, flare: null, tracking: true, enemy: true };
 }
 
 describe('jet flight', () => {
   it('starts with drones in the air and counts down', () => {
     const run = newJetRun(seeded());
-    expect(run.drones.length).toBe(3);
+    expect(run.drones.length).toBe(4);
+    expect(run.wave).toBe(1);
+    expect(run.health).toBe(MAX_HEALTH);
     expect(run.status).toBe('countdown');
     stepJetRun(run, 1, { ...NO_STEER, roll: 1 }, seeded());
     expect(run.jet.up).toEqual({ x: 0, y: 1, z: 0 });
@@ -151,8 +181,8 @@ describe('jet flight', () => {
     const slow = flying();
     fast.drones = [];
     slow.drones = [];
-    fast.nextSpawn = Infinity;
-    slow.nextSpawn = Infinity;
+    hold(fast);
+    hold(slow);
     fly(fast, 3, { ...NO_STEER, boost: 1 });
     fly(slow, 3, { ...NO_STEER, brake: 1 });
     expect(fast.jet.speed).toBeGreaterThan(170);
@@ -213,7 +243,8 @@ describe('jet combat', () => {
     // The drone turns away, but the missile follows it.
     drone.wantYaw = headingOf(run.jet) + 1;
     fly(run, 4);
-    expect(run.score).toBe(1);
+    expect(run.kills).toBe(1);
+    expect(run.score).toBe(ENEMIES.drone.points);
     expect(run.drones.some((item) => item.id === drone.id)).toBe(false);
   });
   it('flies straight without a lock, so a miss is possible', () => {
@@ -265,7 +296,7 @@ describe('jet combat', () => {
       drone.pos = add(run.jet.pos, noseVector(run.jet), 300);
       stepJetRun(run, STEP, held, seeded());
     }
-    expect(run.score).toBe(1);
+    expect(run.kills).toBe(1);
     expect(run.drones).toHaveLength(0);
   });
   it('catches gun rounds that cross a drone inside one slow frame', () => {
@@ -288,55 +319,166 @@ describe('jet combat', () => {
   it('leads a moving drone', () => {
     const run = flying();
     const drone = droneAhead(run, 600);
-    drone.yaw = Math.PI / 2;
+    drone.dir = direction(Math.PI / 2, 0);
     const lead = leadPoint(run, drone);
     expect(lead.x).toBeGreaterThan(drone.pos.x);
     expect(lead.z).toBeCloseTo(drone.pos.z, 3);
   });
-  it('sends more drones as the score grows', () => {
-    const run = flying();
-    run.score = 8;
-    run.nextSpawn = 0;
-    fly(run, 0.2);
-    expect(run.drones.length).toBeGreaterThan(3);
-  });
-  it('ends the run on an enemy missile hit, with no second chance', () => {
-    const run = flying();
-    droneAhead(run);
-    run.drones = [];
-    run.missiles.push({
-      id: 99,
-      pos: add(run.jet.pos, direction(headingOf(run.jet), 0), 300),
-      dir: normalize(sub(run.jet.pos, add(run.jet.pos, direction(headingOf(run.jet), 0), 300))),
-      speed: ENEMY_MISSILE_SPEED,
-      life: 9,
-      target: null,
-      enemy: true,
-    });
+  it('ends the run on an enemy missile hit, whatever her health', () => {
+    const run = emptySky();
+    const ahead = add(run.jet.pos, direction(headingOf(run.jet), 0), 300);
+    run.missiles.push(enemyMissile(ahead, normalize(sub(run.jet.pos, ahead))));
     fly(run, 4);
     expect(run.status).toBe('over');
     expect(run.ending).toBe('missile');
+    expect(run.health).toBe(0);
   });
-  it('lets a hard turn dodge an enemy missile fired from behind', () => {
-    const run = flying();
-    run.drones = [];
-    run.nextSpawn = Infinity;
+  it('lets a hard turn make an enemy missile overshoot and lose her', () => {
+    const run = emptySky();
     const behind = add(run.jet.pos, direction(headingOf(run.jet), 0), -320);
-    run.missiles.push({
-      id: 99,
-      pos: behind,
-      dir: direction(headingOf(run.jet), 0),
-      speed: ENEMY_MISSILE_SPEED,
-      life: 9,
-      target: null,
-      enemy: true,
-    });
+    run.missiles.push(enemyMissile(behind, direction(headingOf(run.jet), 0)));
     // She waits until it's close, then banks hard and pulls, so it can't turn tightly enough.
     while (run.missiles.length && length(sub(run.missiles[0].pos, run.jet.pos)) > 200) fly(run, STEP * 2, { ...NO_STEER, boost: 1 });
     fly(run, 0.58, { ...NO_STEER, roll: 1, boost: 1 });
     fly(run, 9, { ...NO_STEER, pitch: 1, boost: 1 });
     expect(run.status).toBe('running');
     expect(run.missiles).toHaveLength(0);
+  });
+  it('pulls chasing missiles onto her flares, and has only a few per wave', () => {
+    const run = emptySky();
+    const behind = add(run.jet.pos, direction(headingOf(run.jet), 0), -600);
+    run.missiles.push(enemyMissile(behind, direction(headingOf(run.jet), 0)));
+    dropFlares(run, seeded());
+    expect(run.flaresLeft).toBe(FLARES - 1);
+    expect(run.missiles[0].tracking).toBe(false);
+    expect(run.missiles[0].flare).not.toBeNull();
+    fly(run, 6);
+    expect(run.status).toBe('running');
+    for (let i = 0; i < 10; i += 1) {
+      dropFlares(run, seeded());
+      fly(run, 1.3);
+    }
+    expect(run.flaresLeft).toBe(0);
+  });
+  it('wears down her health with enemy gunfire, and ends the flight at zero', () => {
+    const run = emptySky();
+    run.enemyBullets.push({ pos: add(run.jet.pos, run.jet.nose, 60), vel: { x: 0, y: 0, z: 760 }, life: 1 });
+    fly(run, 0.2);
+    expect(run.health).toBe(MAX_HEALTH - ENEMY_BULLET_DAMAGE);
+    expect(run.status).toBe('running');
+    run.health = ENEMY_BULLET_DAMAGE;
+    run.enemyBullets.push({ pos: add(run.jet.pos, run.jet.nose, 60), vel: { x: 0, y: 0, z: 760 }, life: 1 });
+    fly(run, 0.2);
+    expect(run.status).toBe('over');
+    expect(run.ending).toBe('gunned');
+  });
+  it('sends fighters after her, and they open fire from behind', () => {
+    const run = flying();
+    const fighter = droneAhead(run, 700, 'fighter');
+    fighter.nextBurst = 0;
+    fighter.pos = add(run.jet.pos, run.jet.nose, -700);
+    fly(run, 12, { ...NO_STEER, yaw: 0.15 });
+    expect(run.health).toBeLessThan(MAX_HEALTH);
+    expect(run.status === 'running' || run.ending === 'gunned').toBe(true);
+  });
+  it('locks on before firing a missile, which gives her a warning', () => {
+    const run = flying();
+    const drone = droneAhead(run, 600);
+    drone.nextShot = 0;
+    fly(run, 0.1);
+    expect(drone.aim).toBeGreaterThan(0);
+    expect(run.missiles).toHaveLength(0);
+    fly(run, ENEMY_LOCK_TIME);
+    expect(run.missiles.filter((item) => item.enemy)).toHaveLength(1);
+  });
+  it('runs out of missiles and reloads them one at a time', () => {
+    const run = emptySky();
+    for (let i = 0; i < MAX_MISSILES + 2; i += 1) {
+      fireMissile(run);
+      fly(run, 0.55);
+    }
+    expect(run.missilesLeft).toBe(0);
+    const fired = run.missiles.length;
+    fireMissile(run);
+    expect(run.missiles.length).toBe(fired);
+    fly(run, MISSILE_RELOAD + 0.1);
+    expect(run.missilesLeft).toBe(1);
+  });
+  it('loses a target that gets behind the missile', () => {
+    const run = flying();
+    const drone = droneAhead(run, 700);
+    fly(run, 1);
+    fireMissile(run);
+    fly(run, 0.1);
+    drone.pos = add(run.missiles[0].pos, run.missiles[0].dir, -300);
+    fly(run, 0.1);
+    expect(run.missiles[0].target).toBeNull();
+  });
+  it('lets enemies throw her missiles off with flares', () => {
+    const run = flying();
+    const drone = droneAhead(run, 700, 'heavy');
+    drone.flares = 2;
+    drone.nextEvadeRoll = 0;
+    fly(run, 1);
+    fireMissile(run);
+    fly(run, 3);
+    expect(run.flares.some((item) => item.enemy) || drone.flares < 2).toBe(true);
+    expect(drone.health).toBe(ENEMIES.heavy.health);
+  });
+  it('takes several missiles to bring down a heavy', () => {
+    const run = flying();
+    const heavy = droneAhead(run, 500, 'heavy');
+    for (let i = 0; i < 2; i += 1) {
+      fly(run, 1);
+      fireMissile(run);
+      fly(run, 2);
+      heavy.pos = add(run.jet.pos, noseVector(run.jet), 500);
+    }
+    expect(run.drones).toContain(heavy);
+    expect(heavy.health).toBeLessThan(ENEMIES.heavy.health);
+    fly(run, 1);
+    fireMissile(run);
+    fly(run, 2);
+    expect(run.drones).not.toContain(heavy);
+  });
+  it('multiplies points for quick kills, and the combo fades', () => {
+    const run = flying();
+    const first = droneAhead(run, 300);
+    run.drones.push({ ...first, id: 500, pos: add(first.pos, vec3(0, 400, 0)) });
+    first.health = 1;
+    fly(run, 0.4, { ...NO_STEER, gun: true });
+    expect(run.score).toBe(ENEMIES.drone.points);
+    expect(run.combo).toBe(2);
+    const second = run.drones[0];
+    second.health = 1;
+    second.pos = add(run.jet.pos, noseVector(run.jet), 300);
+    run.targetId = second.id;
+    fly(run, 0.4, { ...NO_STEER, gun: true });
+    expect(run.score).toBe(ENEMIES.drone.points * 3);
+    fly(run, COMBO_TIME + 0.5);
+    expect(run.combo).toBe(1);
+  });
+  it('pays a bonus, patches her up, and starts the next wave after a short calm', () => {
+    const run = flying();
+    run.drones = [];
+    run.queue = [];
+    run.health = 50;
+    run.flaresLeft = 0;
+    fly(run, 0.1);
+    expect(run.wave).toBe(2);
+    expect(run.score).toBe(300);
+    expect(run.health).toBe(85);
+    expect(run.flaresLeft).toBe(FLARES);
+    expect(run.drones).toHaveLength(0);
+    fly(run, WAVE_BREAK + 0.2);
+    expect(run.drones.some((item) => item.kind === 'fighter')).toBe(true);
+  });
+  it('builds up to an ace every fifth wave, and grows after that', () => {
+    expect(waveRoster(1).every((kind) => kind === 'drone')).toBe(true);
+    expect(waveRoster(4)).toContain('heavy');
+    expect(waveRoster(5)).toContain('ace');
+    expect(waveRoster(10)).toContain('ace');
+    expect(waveRoster(7).length).toBeGreaterThan(waveRoster(2).length);
   });
   it('ends the run on a collision', () => {
     const run = flying();
