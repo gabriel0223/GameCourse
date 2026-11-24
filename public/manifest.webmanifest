@@ -1,6 +1,6 @@
 {
-  "name": "Games Course",
-  "short_name": "Games Course",
+  "name": "Companion",
+  "short_name": "Companion",
   "description": "Log your games, level up your character, read the Codex, and practice.",
   "id": "./",
   "start_url": "./",

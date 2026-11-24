@@ -1,6 +1,6 @@
 // Interface text. Game content such as item names lives with the game rules.
 export const strings = {
-  appName: 'Games Course',
+  appName: 'Companion',
   level: 'Level',
   nav: {
     library: 'Library',
@@ -156,7 +156,7 @@ export const strings = {
   },
   friends: {
     title: 'Friends',
-    intro: 'Everyone with a Games Course account is a friend. Open a profile to see their character, games, and high scores.',
+    intro: 'Everyone with a Companion account is a friend. Open a profile to see their character, games, and high scores.',
     empty: 'Nobody else has an account yet.',
     unnamed: 'New friend',
     journey: 'Journey',

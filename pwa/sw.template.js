@@ -1,4 +1,4 @@
-/* Games Course service worker.
+/* Companion service worker.
    Makes the app installable, quick to open, and readable offline.
    The build fills in VERSION and PRECACHE (see the pwa plugin in vite.config.ts). */
 

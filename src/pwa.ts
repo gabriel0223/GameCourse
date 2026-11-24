@@ -1,4 +1,4 @@
-// Registers the service worker that makes Games Course installable on a phone
+// Registers the service worker that makes Companion installable on a phone
 // and usable without a signal. See pwa/sw.template.js.
 
 const singleFile = import.meta.env.VITE_SINGLE_FILE === '1';
