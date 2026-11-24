@@ -92,6 +92,9 @@ select {
 }
 
 .brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   padding: 0 12px;
   font-family: var(--display);
   font-size: 19px;
@@ -99,6 +102,14 @@ select {
   letter-spacing: -0.04em;
   text-decoration: none;
   white-space: nowrap;
+}
+
+.brand-icon {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  box-shadow: 0 0 0 1px var(--line);
 }
 
 .main-nav {
@@ -4543,6 +4554,11 @@ textarea:hover {
   }
   .brand {
     padding: 0;
+  }
+  .brand-icon {
+    width: 26px;
+    height: 26px;
+    border-radius: 7px;
   }
   .main-nav {
     position: fixed;

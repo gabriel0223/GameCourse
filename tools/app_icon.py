@@ -1,4 +1,5 @@
-"""Draws the home screen icons for the installed app into public/.
+"""Draws the home screen icons for the installed app into public/, plus the
+small logo beside the app name (src/assets/app-icon.png).
 
 A smooth controller in the app's colors, with a heart where the touchpad sits.
 The icon is built as SVG and turned into PNGs with rsvg-convert.
@@ -93,6 +94,9 @@ def main() -> None:
     render(regular, 180, out / 'apple-touch-icon.png')
     # Tiny sizes read better with the controller filling the square.
     render(svg(1.0), 32, out / 'favicon-32.png')
+    # The small logo beside the app name in the top left corner.
+    assets = out.parent / 'src' / 'assets'
+    render(svg(0.96), 96, assets / 'app-icon.png')
 
 
 if __name__ == '__main__':

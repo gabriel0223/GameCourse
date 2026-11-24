@@ -33,6 +33,7 @@ import { QuestsProvider, useQuests } from './state/QuestsContext';
 import { RunnerView } from './views/RunnerView';
 import { ShopView } from './views/ShopView';
 import { SearchView } from './views/SearchView';
+import appIcon from './assets/app-icon.png';
 
 // The 3D engine is large, so it only loads when this game opens.
 const JetView = lazy(() => import('./views/JetView').then((module) => ({ default: module.JetView })));
@@ -90,6 +91,7 @@ function Sidebar({ route }: { route: Route }) {
   return (
     <aside className="sidebar">
       <a className="brand" href="#/">
+        <img className="brand-icon" src={appIcon} alt="" width={30} height={30} />
         {strings.appName}
       </a>
       <nav className="main-nav" aria-label="Main">
