@@ -5,7 +5,7 @@ import { changeStatus, logSession, newEntry } from './library';
 import type { Game, LibraryEntry } from './types';
 import { WARDROBE_GENRES, genreEntryId } from './genres';
 import { DAILY_PRACTICE_XP, NEW_PRACTICE, RUN_XP_CAP, applyRun, bestScore, loadPractice } from './practice';
-import { DEFAULT_PROFILE, HAIRSTYLES, HAIR_COLORS, PIECES, SHOP_TIERS } from './wardrobe';
+import { BEARDS, DEFAULT_PROFILE, HAIRSTYLES, HAIR_COLORS, PIECES, SHOP_TIERS, characterLayers, restoreProfile } from './wardrobe';
 
 const NOW = '2026-11-03T12:00:00.000Z';
 const game = (id: string, genres: string[]): Game => ({
@@ -212,6 +212,26 @@ describe('gold', () => {
     const cost = PIECES.reduce((sum, piece) => sum + piece.price, 0);
     const sample = [played('1', ['Puzzle'], 2600), played('2', ['RPG'], 2600)];
     expect(deriveGamer(sample, DEFAULT_PROFILE).gold.earned).toBeLessThan(cost);
+  });
+});
+
+describe('beards', () => {
+  it('has a sprite for every beard in every hair color', () => {
+    for (const beard of BEARDS.filter((item) => item.id !== 'none')) {
+      for (const color of HAIR_COLORS) {
+        expect(existsSync(`src/assets/sprites/beard-${beard.id}-${color.id}.png`), `${beard.id} ${color.id}`).toBe(true);
+      }
+    }
+  });
+  it('starts with no beard, including on older saves', () => {
+    const { beard: _, ...old } = DEFAULT_PROFILE;
+    expect(restoreProfile(old).beard).toBe('none');
+    expect(characterLayers(DEFAULT_PROFILE, deriveGamer([], DEFAULT_PROFILE).equipped).some((layer) => layer.startsWith('beard'))).toBe(false);
+  });
+  it('draws the beard in the hair color, over the top and under the hair', () => {
+    const profile = { ...DEFAULT_PROFILE, beard: 'short', hairColor: 'black' };
+    const worn = { accessory: null, top: PIECES.find((piece) => piece.id === 'top-rpg') ?? null, bottom: null };
+    expect(characterLayers(profile, worn)).toEqual(['base-fair', 'top-rpg', 'beard-short-black', 'hair-ponytail-black']);
   });
 });
 

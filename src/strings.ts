@@ -129,6 +129,7 @@ export const strings = {
     nameSaved: 'Name saved',
     hairstyle: 'Hairstyle',
     hairColor: 'Hair color',
+    beard: 'Beard',
     skinTone: 'Skin tone',
     nextUp: 'Next up',
     allEarned: 'You’ve earned every achievement. Amazing!',

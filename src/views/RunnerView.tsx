@@ -7,6 +7,7 @@ import { VolumeSlider } from '../components/VolumeSlider';
 import { RunResults } from '../components/RunResults';
 import { spriteUrl } from '../components/Sprite';
 import { bestScore } from '../domain/practice';
+import { characterLayers } from '../domain/wardrobe';
 import type { FinishedRun, RunReward } from '../domain/practice';
 import { runnerControls } from '../practice/controls';
 import { DEVICES, PAD_PAUSE, allControls, findDevice } from '../practice/devices';
@@ -43,15 +44,7 @@ function RunnerStage({ device, hints, onFinish }: { device: Device; hints: boole
   const bestAtStart = useRef(bestScore(profile.practice, GAME_ID));
 
   // The outfit is read once, so a run keeps one look from start to finish.
-  const layerNames = useRef(
-    [
-      `base-${profile.skin}`,
-      gamer.equipped.bottom?.id,
-      gamer.equipped.top?.id,
-      `hair-${profile.hairStyle}-${profile.hairColor}`,
-      gamer.equipped.accessory?.id,
-    ].filter((name): name is string => Boolean(name)),
-  );
+  const layerNames = useRef(characterLayers(profile, gamer.equipped));
 
   useEffect(() => {
     const element = canvas.current;

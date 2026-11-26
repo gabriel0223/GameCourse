@@ -244,11 +244,20 @@ export const HAIRSTYLES = [
   { id: 'braid', name: 'Braid' },
 ];
 
+// Beards use the hair color. 'none' draws nothing.
+export const BEARDS = [
+  { id: 'none', name: 'None' },
+  { id: 'stubble', name: 'Stubble' },
+  { id: 'short', name: 'Short beard' },
+  { id: 'full', name: 'Full beard' },
+];
+
 export interface CharacterProfile {
   characterName: string;
   skin: string;
   hairStyle: string;
   hairColor: string;
+  beard: string;
   equipped: Record<Slot, string | null>;
   // Each bought piece and the gold paid, so changing a price later can't alter past purchases.
   owned: Record<string, number>;
@@ -272,6 +281,7 @@ export const DEFAULT_PROFILE: CharacterProfile = {
   skin: 'fair',
   hairStyle: 'ponytail',
   hairColor: 'plum',
+  beard: 'none',
   equipped: { accessory: null, top: null, bottom: null },
   owned: {},
   customized: false,
@@ -287,6 +297,21 @@ export const DEFAULT_PROFILE: CharacterProfile = {
 export function restoreProfile(saved: Partial<CharacterProfile> | null | undefined): CharacterProfile {
   if (!saved) return DEFAULT_PROFILE;
   return { ...DEFAULT_PROFILE, ...saved, practice: loadPractice(saved.practice) };
+}
+
+// Sprite layers from back to front. The beard goes over the top's collar and under the hair.
+export function characterLayers(profile: CharacterProfile, worn: Record<Slot, Piece | null>): string[] {
+  const beard = BEARDS.some((item) => item.id === profile.beard && item.id !== 'none')
+    ? `beard-${profile.beard}-${profile.hairColor}`
+    : null;
+  return [
+    `base-${profile.skin}`,
+    worn.bottom?.id,
+    worn.top?.id,
+    beard,
+    `hair-${profile.hairStyle}-${profile.hairColor}`,
+    worn.accessory?.id,
+  ].filter((layer): layer is string => Boolean(layer));
 }
 
 // Only pieces she owns can be worn, so a stale save can't show something unbought.

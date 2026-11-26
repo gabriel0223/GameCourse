@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react';
+import { characterLayers } from '../domain/wardrobe';
 import type { CharacterProfile, Piece, Slot } from '../domain/wardrobe';
 
 const FILES = import.meta.glob('../assets/sprites/*.png', { eager: true, query: '?url', import: 'default' }) as Record<
@@ -23,13 +24,7 @@ interface SpriteProps {
 export function Sprite({ profile, equipped, scale, walking = false }: SpriteProps) {
   const width = FRAME_WIDTH * scale;
   const height = FRAME_HEIGHT * scale;
-  const layers = [
-    `base-${profile.skin}`,
-    equipped.bottom?.id,
-    equipped.top?.id,
-    `hair-${profile.hairStyle}-${profile.hairColor}`,
-    equipped.accessory?.id,
-  ].filter((layer): layer is string => Boolean(layer));
+  const layers = characterLayers(profile, equipped);
 
   return (
     <div

@@ -29,6 +29,7 @@ const SAMPLE: Friend = {
     skin: 'tan',
     hairStyle: 'short',
     hairColor: 'black',
+    beard: 'short',
     equipped: { accessory: 'acc-shooter', top: 'top-adventure', bottom: 'bottom-action' },
     owned: { 'acc-shooter': 200, 'top-adventure': 60, 'bottom-action': 120 },
     customized: true,

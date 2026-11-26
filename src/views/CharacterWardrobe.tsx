@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { PIECE_FILTERS, PieceDetail, PieceFilters, PieceItems } from '../components/PieceShelf';
 import type { PieceFilter } from '../components/PieceShelf';
 import { spriteUrl } from '../components/Sprite';
-import { HAIRSTYLES, HAIR_COLORS, PIECES, SKIN_TONES, findPiece } from '../domain/wardrobe';
+import { BEARDS, HAIRSTYLES, HAIR_COLORS, PIECES, SKIN_TONES, findPiece } from '../domain/wardrobe';
 import type { Slot } from '../domain/wardrobe';
 import { useLibrary } from '../state/LibraryContext';
 import { strings } from '../strings';
@@ -37,6 +37,30 @@ function Looks() {
                 </span>
               </button>
               {style.name}
+            </div>
+          ))}
+        </div>
+      </div>
+      <div>
+        <h3>{t.beard}</h3>
+        <div className="hair-options">
+          {BEARDS.map((beard) => (
+            <div className="hair-option" key={beard.id}>
+              <button
+                className="tile"
+                type="button"
+                aria-label={beard.name}
+                aria-pressed={profile.beard === beard.id}
+                data-selected={profile.beard === beard.id}
+                onClick={() => setAppearance({ beard: beard.id })}
+              >
+                <span className="tile-art hair-preview">
+                  <img src={spriteUrl(`base-${profile.skin}`)} alt="" />
+                  {beard.id !== 'none' && <img src={spriteUrl(`beard-${beard.id}-${profile.hairColor}`)} alt="" />}
+                  <img src={spriteUrl(`hair-${profile.hairStyle}-${profile.hairColor}`)} alt="" />
+                </span>
+              </button>
+              {beard.name}
             </div>
           ))}
         </div>

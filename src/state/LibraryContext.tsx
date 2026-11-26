@@ -36,7 +36,7 @@ interface LibraryValue {
   removeGame(entry: LibraryEntry): void;
   buy(piece: Piece): void;
   equip(slot: Slot, pieceId: string | null): void;
-  setAppearance(change: Partial<Pick<CharacterProfile, 'skin' | 'hairStyle' | 'hairColor'>>): void;
+  setAppearance(change: Partial<Pick<CharacterProfile, 'skin' | 'hairStyle' | 'hairColor' | 'beard'>>): void;
   setRead(entryId: string, read: boolean): void;
   setCharacterName(name: string): void;
   recordQuiz(pathId: string, score: number, total: number): void;
@@ -183,7 +183,7 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
         putProfile({ ...current, customized: true, equipped: { ...current.equipped, [slot]: pieceId } });
       },
       setAppearance: (change) => {
-        const changedHair = 'hairStyle' in change || 'hairColor' in change;
+        const changedHair = 'hairStyle' in change || 'hairColor' in change || 'beard' in change;
         const current = latestProfile.current;
         putProfile({
           ...current,

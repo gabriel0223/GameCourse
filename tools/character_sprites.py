@@ -245,6 +245,36 @@ def hair(style, color):
     return strip(HAIR_STYLES[style], {"h": h, "H": d, "L": l}, per)
 
 
+# ---------- beards: drawn over the top and under the hair, in the hair color ----------
+# The sideburn meets the hair in front of the ear at columns 8-9.
+BEARDS = {
+    "stubble": rows(9,
+        ".........HH.....",
+        "........HHH.....",
+        "....H.HHHHH.....",
+        ".....HHHH.......",),
+    "short": rows(8,
+        ".........H......",
+        ".........hH.....",
+        ".........hhH....",
+        "....HhhhhhhH....",
+        "....ohhhhhHo....",),
+    "full": rows(8,
+        ".........H......",
+        ".........hH.....",
+        "........hhhH....",
+        "....hLhhhhhH....",
+        "....ohhhhhHo....",
+        ".....ohhHHo.....",
+        "......oooo......"),
+}
+
+
+def beard(style, color):
+    h, d, l = HAIR_COLORS[color]
+    return strip(BEARDS[style], {"h": h, "H": d, "L": l})
+
+
 # ---------- tops: the arm is drawn over the torso, '.' leaves the hand to the base ----------
 LONG = {13: "d", 14: "d", 15: "."}
 SHORT = {13: "d", 14: ".", 15: "."}
@@ -650,6 +680,8 @@ def main():
         ACCS[g].save(f"{OUT}/acc-{g}.png")
     for st, col in itertools.product(HAIR_STYLES, HAIR_COLORS):
         hair(st, col).save(f"{OUT}/hair-{st}-{col}.png")
+    for st, col in itertools.product(BEARDS, HAIR_COLORS):
+        beard(st, col).save(f"{OUT}/beard-{st}-{col}.png")
 
     if not REVIEW:
         return
@@ -672,6 +704,15 @@ def main():
         im = stack(base("brown"), hair(st, "plum"), ACCS[a]).crop((4 * W, 0, 5 * W, FULL_H))
         sh.alpha_composite(up(im, z), (i * W * z, j * FULL_H * z))
     sh.save(f"{REVIEW}/heads.png")
+    # every beard with a few hairstyles and colors
+    z = 8
+    looks = [("tan", "short", "black"), ("fair", "bob", "brown"), ("deep", "long", "dark-brown"), ("light", "ponytail", "blonde")]
+    sh = Image.new("RGBA", (W * z * 4, FULL_H * z * len(looks)), bg)
+    for (i, b), (j, (sk, st, col)) in itertools.product(enumerate([None, *BEARDS]), enumerate(looks)):
+        layers = [base(sk), TOPS["adventure"]] + ([beard(b, col)] if b else []) + [hair(st, col)]
+        im = stack(*layers).crop((4 * W, 0, 5 * W, FULL_H))
+        sh.alpha_composite(up(im, z), (i * W * z, j * FULL_H * z))
+    sh.save(f"{REVIEW}/beards.png")
     print(offsets())
 
 
