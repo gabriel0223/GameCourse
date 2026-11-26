@@ -242,6 +242,10 @@ export const HAIRSTYLES = [
   { id: 'curly', name: 'Curly' },
   { id: 'pigtails', name: 'Pigtails' },
   { id: 'braid', name: 'Braid' },
+  { id: 'buzz', name: 'Buzz cut' },
+  { id: 'side-part', name: 'Side part' },
+  { id: 'spiky', name: 'Spiky' },
+  { id: 'messy', name: 'Messy' },
 ];
 
 // Beards use the hair color. 'none' draws nothing.

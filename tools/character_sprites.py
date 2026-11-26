@@ -229,6 +229,46 @@ HAIR_STYLES = {
         "............oo..")},
 }
 
+# Short styles. Each keeps the back of the head covered down to row 10.
+SHORT_BACK = rows(8,
+    "....H...HhhhHo..",
+    "........HhhhHo..",
+    ".........HHHo...",
+    "..........oo....")
+HAIR_STYLES.update({
+    "buzz": {**rows(3,
+        "................",
+        ".....oooooooo...",
+        "....ohLLhhhhhoo.",
+        "...o.HhhhhhhhHo.",
+        "........HhhhhHo."), **rows(8,
+        "........HhhhHo..",
+        "........HhhhHo..",
+        ".........HHHo...",
+        "..........oo....")},
+    "side-part": {**rows(3,
+        ".....oooooo.....",
+        "....ohhhhhHoo...",
+        "...ohLLLLhHhhho.",
+        "..ohhhhhhhhhhho.",
+        "...oHHHhhhhhhho."), **SHORT_BACK},
+    "spiky": {**rows(1,
+        "......o..o..o...",
+        ".....oho.ho.ho..",
+        "....ohhhohhohho.",
+        "...ohLLhhhhhhhoo",
+        "...ohhLhhhhhhhho",
+        "..ohhhhhhhhhhhho",
+        "...oHhHHhHhhhhho"), **SHORT_BACK},
+    "messy": {**rows(2,
+        "......oo.oo.....",
+        "....oohhohhoo...",
+        "...ohhLhhhhhhoo.",
+        "..ohLLhhhhhhhhho",
+        "...ohhhhhhhhhhho",
+        "..oHhHhHHhhhhhho"), **SHORT_BACK},
+})
+
 
 # Tails swing out on the contact frames, so loose hair trails behind her steps.
 SWING = {
@@ -713,6 +753,15 @@ def main():
         im = stack(*layers).crop((4 * W, 0, 5 * W, FULL_H))
         sh.alpha_composite(up(im, z), (i * W * z, j * FULL_H * z))
     sh.save(f"{REVIEW}/beards.png")
+
+    styles = ["short", "buzz", "side-part", "spiky", "messy"]
+    looks = [("tan", "black", "short"), ("fair", "brown", None), ("deep", "dark-brown", "full"), ("light", "blonde", "stubble")]
+    sh = Image.new("RGBA", (W * z * len(styles), FULL_H * z * len(looks)), bg)
+    for (i, st), (j, (sk, col, b)) in itertools.product(enumerate(styles), enumerate(looks)):
+        layers = [base(sk), TOPS["adventure"]] + ([beard(b, col)] if b else []) + [hair(st, col)]
+        im = stack(*layers).crop((4 * W, 0, 5 * W, FULL_H))
+        sh.alpha_composite(up(im, z), (i * W * z, j * FULL_H * z))
+    sh.save(f"{REVIEW}/short-styles.png")
     print(offsets())
 
 
