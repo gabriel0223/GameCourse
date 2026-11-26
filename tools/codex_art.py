@@ -877,6 +877,41 @@ def flat_to_deep():
     for y in range(8, 46, 4):
         s.px(70, y, "#c9c3e8")
 
+@scene("path-made-in-japan")
+def made_in_japan():
+    s = Scene("#2a1d52", "#f08a6a", 35)
+    s.stars(14, 16)
+    # a snow-capped mountain at dusk
+    s.poly([(18, 46), (62, 12), (106, 46)], "#5a3f78")
+    s.poly([(52, 20), (62, 12), (72, 20), (67, 18), (62, 22), (57, 18)], "#f4f1fa")
+    s.ground(46, "#3a2f4a", "#5a4a6a")
+    # a capsule toy machine
+    s.rect(6, 34, 20, 52, "#d8434a")
+    s.oval(5, 22, 21, 37, "#cfe8f4")
+    for x, y, c in ((9, 28, "#ffc857"), (14, 26, "#5fd0b6"), (11, 32, "#f0708a"), (16, 31, "#7c9bff")):
+        s.oval(x, y, x + 3, y + 3, c)
+    s.oval(10, 40, 15, 45, "#f4f1fa")
+    s.rect(9, 48, 16, 50, "#14101f")
+    # a game shop with a striped awning and a lantern
+    s.rect(110, 18, 158, 52, "#4a3a5a")
+    for i, x in enumerate(range(108, 160, 6)):
+        s.rect(x, 18, x + 5, 23, "#f4f1fa" if i % 2 else "#c9503c")
+    s.rect(114, 27, 132, 40, "#ffd98a")
+    for y in (31, 35):
+        s.rect(116, y, 130, y, "#e0a24a")
+    s.rect(138, 27, 152, 52, "#2a2236")
+    s.rect(140, 29, 150, 50, "#ffc857")
+    s.oval(101, 22, 107, 30, "#e8503c")
+    s.rect(103, 20, 105, 21, "#14101f")
+    s.rect(103, 30, 105, 31, "#14101f")
+    # a line of players waiting for launch day, with her in the middle
+    s.character(118, 53, None, hair=("short", "black"), skin="light", flip=True)
+    s.character(100, 53, None, hair=("bob", "black"), skin="light", flip=True)
+    s.character(82, 53, None, frame=4, flip=True)
+    s.character(64, 53, None, hair=("spiky", "dark-brown"), skin="light", flip=True)
+    s.character(46, 53, None, hair=("hime", "black"), skin="fair", flip=True)
+
+
 def code_screen(s, x, y, w, h, rows=5):
     monitor(s, x, y, w, h)
     colors = ("#7c9bff", "#5fd0b6", "#ffc857", "#f0708a", "#c9a6ff")

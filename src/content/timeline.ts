@@ -442,6 +442,18 @@ export const TIMELINE_ENTRIES: CodexEntry[] = [
     ],
   ),
   event(
+    'dragon-quest',
+    3,
+    1986,
+    "Dragon Quest and the Japanese RPG",
+    "The game that taught Japan to love RPGs.",
+    [
+      `In the early 1980s, Japanese computer fans were playing American role-playing games like Wizardry and Ultima. Yuji Horii, a game maker who also wrote about games for the manga magazine Weekly Shōnen Jump, loved them, but he wanted to make one that anybody could pick up, not just computer experts. With programmer Koichi Nakamura’s studio Chunsoft, he made Dragon Quest for the Famicom, and Enix released it in Japan on May 27, 1986. A Jump editor brought in Akira Toriyama, the artist behind Dragon Ball, to draw its heroes and monsters, and Koichi Sugiyama wrote a grand opening theme that orchestras still perform.`,
+      `You play a lone hero sent by a king to defeat the Dragonlord. Fights are simple menus: choose to fight, cast a spell, use an item, or run, and each win brings experience points and gold. Toriyama’s smiling blue Slime, the weakest monster in the game, became the series mascot. Sales started slowly, but coverage in Jump helped the game take off. Dragon Quest III arrived on Wednesday, February 10, 1988, sold over a million copies on its first day, and reports at the time counted almost 300 students picked up by police for skipping school. A famous story says the government then banned weekday releases. That never happened, but Enix did choose to release later games on weekends.`,
+      `Dragon Quest set the pattern for the Japanese RPG: turn-based battles chosen from a menu, levels that rise as you fight, and a story told through towns full of people to talk to. Final Fantasy followed a year later, and the two rivals merged as Square Enix in 2003. In North America the series was called Dragon Warrior until 2005, because a tabletop game already owned the name there. In Japan, the Slime still shows up everywhere, from plush toys to ads, and Dragon Quest III HD-2D Remake, from 2024, is a lovely way to play the classic today. A tip for any RPG: if a boss keeps beating you, go back to an area you can handle and fight there for a while to gain levels. Players call this grinding.`,
+    ],
+  ),
+  event(
     'final-fantasy',
     3,
     1987,
@@ -838,6 +850,18 @@ export const TIMELINE_ENTRIES: CodexEntry[] = [
     ],
   ),
   event(
+    'monster-hunter',
+    7,
+    2008,
+    "Monster Hunter and hunting together",
+    "Friends met up in person to hunt giant monsters on PSP.",
+    [
+      `Capcom released the first Monster Hunter on PlayStation 2 in Japan in March 2004. You hunt giant creatures across wild landscapes, but your hunter never levels up. Instead, you carve materials from the monsters you defeat and craft them into better weapons and armor, so getting stronger means getting better gear, and getting better yourself. The game was designed for up to four players online, but online console play was still unusual, and the series found its real home when it moved to Sony’s handheld, PSP.`,
+      `PSP could link up to four consoles in the same room through local wireless, called ad hoc mode, with no internet needed. In Japan, groups of friends started meeting up after school or work, each holding a PSP, to take down a monster together. Monster Hunter Portable 2nd, in 2007, was the first PSP game to sell a million copies in Japan. Monster Hunter Portable 2nd G followed on March 27, 2008, sold about 880,000 copies in its first four days, and became the first PSP game in Japan to pass two million. In the West, it was called Monster Hunter Freedom Unite.`,
+      `Monster Hunter showed that a handheld could be the most social console in the house, and that playing together could be the heart of a game rather than an extra. For years the series stayed far bigger in Japan, until Capcom made Monster Hunter: World for a global audience in 2018 and released it everywhere at once. It became Capcom’s best-selling game ever, with most of its sales outside Japan. A tip for your first hunts: big monsters warn you before they attack, with a roar, a lowered head, or a step back. Watch for those signs instead of attacking nonstop, and when a monster starts limping away, it’s weak, so follow it.`,
+    ],
+  ),
+  event(
     'minecraft',
     7,
     2009,
@@ -859,6 +883,18 @@ export const TIMELINE_ENTRIES: CodexEntry[] = [
       `Justin.tv was a live video site founded around Justin Kan broadcasting his life. Its gaming section kept growing, so the company, with Emmett Shear playing a key role, spun it off as Twitch in June 2011. The timing was right. Faster internet and better streaming tools meant anyone could share their game live, and viewers could talk back through chat.`,
       `Twitch was different from television because audiences and hosts could interact. Channel chats developed their own humor, and viewers could support streamers with subscriptions and donations. Esports tournaments for games like League of Legends drew massive audiences. In 2014, Twitch Plays Pokémon let thousands of viewers control a single game through chat, an event as chaotic as it sounds.`,
       `Amazon bought Twitch for about 970 million dollars in 2014. Streaming became a real career for some, and Tyler Blevins, known as Ninja, reached mainstream fame in 2018 when rapper Drake joined him to play Fortnite. It also changed how games are marketed, because a popular streamer could turn a small game into a hit overnight, as happened with Among Us.`,
+    ],
+  ),
+  event(
+    'puzzle-and-dragons',
+    8,
+    2012,
+    "Puzzle & Dragons and the gacha game",
+    "A free phone game showed how much money mobile could make.",
+    [
+      `GungHo Online Entertainment released Puzzle & Dragons for iPhone in Japan on February 20, 2012. It mixed a match-three puzzle with monster collecting. You drag one orb around a board, pushing the others aside, to line up rows of the same color, and every match lets a member of your monster team attack. It was free to download and fit perfectly on a touch screen, and players soon gave it a nickname, Pazudora. It shot to the top of the charts of highest-earning apps and stayed there for about two years.`,
+      `The game earned its money through Magic Stones, a currency you could earn by logging in and clearing dungeons, or buy with real money. Spending stones on the Rare Egg Machine gave you a random monster, and the rarest ones were very powerful. This is called gacha, after the capsule toy machines found all over Japan, where you turn a handle and get a random toy. Puzzle & Dragons became the first mobile game to earn a billion dollars, in 2013. Hits like Monster Strike followed, and in 2014 players in Japan made up nearly 30 percent of all the money spent on phone games around the world.`,
+      `Gacha games spread far beyond Japan, with hits like Fate/Grand Order and, from China, Genshin Impact. Their randomness also raised concerns. In 2012, Japan’s Consumer Affairs Agency declared one version illegal: kompu gacha, where collecting a full set of random items unlocked a prize. If you play a gacha game, decide on a spending limit before you start, or play for free, since most of these games give away plenty of currency. Look for the published odds, and for the pity system many games use, which guarantees a top prize after a set number of pulls.`,
     ],
   ),
   event(

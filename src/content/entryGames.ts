@@ -94,6 +94,7 @@ export const ENTRY_GAMES: Record<string, CodexGame[]> = {
   'event-tetris': [game('Tetris', 1984)],
   'event-nes-mario': [game('Super Mario Bros.', 1985)],
   'event-zelda': [game('The Legend of Zelda', 1986), game('The Legend of Zelda: Breath of the Wild', 2017)],
+  'event-dragon-quest': [game('Dragon Quest', 1986), game('Dragon Quest III', 1988), game('Dragon Quest III HD-2D Remake', 2024)],
   'event-final-fantasy': [game('Final Fantasy', 1987), game('Dragon Quest', 1986), game('Final Fantasy VII', 1997)],
   'event-game-boy': [
     game('Tetris', 1984),
@@ -204,8 +205,15 @@ export const ENTRY_GAMES: Record<string, CodexGame[]> = {
   ],
   'event-wii': [game('Wii Sports', 2006), game('Wii Fit', 2007)],
   'event-app-store': [game('Angry Birds', 2009), game('Candy Crush Saga', 2012), game('Clash of Clans', 2012)],
+  'event-monster-hunter': [game('Monster Hunter', 2004), game('Monster Hunter Freedom Unite', 2008), game('Monster Hunter: World', 2018)],
   'event-minecraft': [game('Minecraft', 2011)],
   'event-twitch': [game('League of Legends', 2009), game('Fortnite', 2017), game('Among Us', 2018)],
+  'event-puzzle-and-dragons': [
+    game('Puzzle & Dragons', 2012),
+    game('Monster Strike', 2013),
+    game('Fate/Grand Order', 2015),
+    game('Genshin Impact', 2020),
+  ],
   'event-vr': [game('Beat Saber', 2018), game('Half-Life: Alyx', 2020)],
   'event-pokemon-go': [game('Pokémon Go', 2016), game('Ingress', 2013)],
   'event-switch': [

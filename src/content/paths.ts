@@ -96,6 +96,21 @@ export const PATHS: Path[] = [
     art: 'path-from-2d-to-3d',
     entryIds: ['event-star-fox', 'event-mario-64', 'event-tomb-raider', 'event-dualshock', 'event-ocarina'],
   }),
+  withGold({
+    id: 'made-in-japan',
+    kind: 'path',
+    title: 'Made in Japan',
+    summary: 'The games that were biggest in Japan, from arcades to phones.',
+    art: 'path-made-in-japan',
+    entryIds: [
+      'event-space-invaders',
+      'event-famicom',
+      'event-dragon-quest',
+      'event-pokemon',
+      'event-monster-hunter',
+      'event-puzzle-and-dragons',
+    ],
+  }),
 ];
 
 // One per era, so its timeline events and its consoles are finished together.
