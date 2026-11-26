@@ -5,7 +5,7 @@ import { changeStatus, logSession, newEntry } from './library';
 import type { Game, LibraryEntry } from './types';
 import { WARDROBE_GENRES, genreEntryId } from './genres';
 import { DAILY_PRACTICE_XP, NEW_PRACTICE, RUN_XP_CAP, applyRun, bestScore, loadPractice } from './practice';
-import { DEFAULT_PROFILE, HAIRSTYLES, HAIR_COLORS, PIECES } from './wardrobe';
+import { DEFAULT_PROFILE, HAIRSTYLES, HAIR_COLORS, PIECES, SHOP_TIERS } from './wardrobe';
 
 const NOW = '2026-11-03T12:00:00.000Z';
 const game = (id: string, genres: string[]): Game => ({
@@ -28,9 +28,13 @@ const earned = (entries: LibraryEntry[], profile = DEFAULT_PROFILE) =>
     .map((item) => item.id);
 
 describe('wardrobe', () => {
-  it('has three pieces in each of the 10 genres', () => {
-    expect(PIECES).toHaveLength(30);
-    expect(new Set(PIECES.map((piece) => piece.id)).size).toBe(30);
+  it('has six pieces in each of the 10 genres, each with its own sprite', () => {
+    expect(PIECES).toHaveLength(60);
+    expect(new Set(PIECES.map((piece) => piece.id)).size).toBe(60);
+    expect(new Set(PIECES.map((piece) => piece.name)).size).toBe(60);
+    for (const piece of PIECES) {
+      expect(existsSync(`src/assets/sprites/${piece.id}.png`), piece.id).toBe(true);
+    }
   });
   it('starts with no pieces owned and one piece per genre in the Shop', () => {
     const state = deriveGamer([], DEFAULT_PROFILE);
@@ -40,7 +44,7 @@ describe('wardrobe', () => {
     expect(new Set(start.map((piece) => piece.genre)).size).toBe(WARDROBE_GENRES.length);
   });
   it('mixes outfit types and keeps prices equal at each level', () => {
-    for (const level of [1, 3, 5]) {
+    for (const { level } of SHOP_TIERS) {
       const tier = PIECES.filter((piece) => piece.shopLevel === level);
       expect(tier).toHaveLength(10);
       expect(new Set(tier.map((piece) => piece.price)).size).toBe(1);
@@ -49,19 +53,43 @@ describe('wardrobe', () => {
       }
     }
   });
-  it('gives each genre one of every outfit type', () => {
+  it('gives each genre two of every outfit type, one per tier, pricier as they go', () => {
     for (const genre of WARDROBE_GENRES) {
       const own = PIECES.filter((piece) => piece.genre === genre);
-      expect(new Set(own.map((piece) => piece.slot)).size).toBe(3);
-      expect(own.map((piece) => piece.shopLevel).sort()).toEqual([1, 3, 5]);
+      for (const slot of ['bottom', 'top', 'accessory']) {
+        expect(own.filter((piece) => piece.slot === slot)).toHaveLength(2);
+      }
+      expect(own.map((piece) => piece.shopLevel).sort((a, b) => a - b)).toEqual(SHOP_TIERS.map((tier) => tier.level));
     }
+    const prices = SHOP_TIERS.map((tier) => tier.price);
+    expect([...prices].sort((a, b) => a - b)).toEqual(prices);
   });
-  it('adds a piece at genre level 3 and another at genre level 5', () => {
+  it('adds pieces one tier at a time as she plays a genre', () => {
     const inShop = (minutes: number) =>
-      [...deriveGamer([played('1', ['Platform'], minutes)], DEFAULT_PROFILE).available].filter((id) => id.endsWith('platform'));
-    expect(inShop(149)).toEqual(['top-platform']);
-    expect(inShop(150).sort()).toEqual(['acc-platform', 'top-platform']);
-    expect(inShop(420)).toHaveLength(3);
+      [...deriveGamer([played('1', ['Platform'], minutes)], DEFAULT_PROFILE).available].filter((id) =>
+        PIECES.some((piece) => piece.id === id && piece.genre === 'Platformer'),
+      );
+    expect(inShop(269)).toEqual(['top-platform']);
+    expect(inShop(270).sort()).toEqual(['acc-platform', 'top-platform']);
+    expect(inShop(810)).toHaveLength(3);
+    expect(inShop(1620)).toHaveLength(4);
+  });
+  it('takes at least 50 hours in a genre to unlock all of its pieces', () => {
+    const unlocked = (entries: LibraryEntry[]) =>
+      PIECES.filter((piece) => piece.genre === 'Puzzle').every((piece) =>
+        deriveGamer(entries, DEFAULT_PROFILE).available.has(piece.id),
+      );
+    const finished = (id: string, minutes: number) => changeStatus(played(id, ['Puzzle'], minutes), 'finished', NOW);
+    // 50 hours of play falls short, even with two games finished along the way.
+    expect(unlocked([played('1', ['Puzzle'], 50 * 60)])).toBe(false);
+    expect(unlocked([finished('1', 25 * 60), finished('2', 25 * 60)])).toBe(false);
+    // The fastest route is finishing lots of short games: four in 44 hours fall short,
+    // and five in 45 hours just get there.
+    expect(unlocked([1, 2, 3, 4].map((id) => finished(String(id), 11 * 60)))).toBe(false);
+    expect(unlocked([1, 2, 3, 4, 5].map((id) => finished(String(id), 9 * 60)))).toBe(true);
+    // Without finishing anything, it takes about 67 and a half hours.
+    expect(unlocked([played('1', ['Puzzle'], 67 * 60)])).toBe(false);
+    expect(unlocked([played('1', ['Puzzle'], 67.5 * 60)])).toBe(true);
   });
   it('counts a game toward each of its genres', () => {
     const { genres, stats } = deriveGamer([played('1', ['Platform', 'Puzzle'], 150)], DEFAULT_PROFILE);
@@ -178,7 +206,7 @@ describe('gold', () => {
   it('lets her buy a first piece early on', () => {
     const entry = played('1', ['Puzzle'], 60);
     const profile = { ...DEFAULT_PROFILE, customized: true, readEntries: ['genre-rpg'] };
-    expect(deriveGamer([entry], profile).gold.balance).toBeGreaterThanOrEqual(60);
+    expect(deriveGamer([entry], profile).gold.balance).toBeGreaterThanOrEqual(SHOP_TIERS[0].price);
   });
   it('can pay for the full wardrobe in the long run, but not quickly', () => {
     const cost = PIECES.reduce((sum, piece) => sum + piece.price, 0);

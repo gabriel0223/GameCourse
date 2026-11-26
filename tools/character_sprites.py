@@ -434,6 +434,202 @@ ACCS.update({
 })
 
 
+# ---------- second outfits: one per genre, for higher genre levels ----------
+# Keys name the outfit, not the genre. wardrobe.ts ties each one to its genre.
+def legs(row16, row17, u16, u17):
+    """Trousers: the near and far leg trade places between the A and B frames."""
+    back = row17[:3] + row17[8:12] + row17[7] + row17[3:7] + row17[12:]
+    return {"A": {16: row16, 17: row17}, "U": {16: u16, 17: u17}, "B": {16: row16, 17: back}}
+
+
+SECOND = ["knight", "cat", "ninja", "pirate", "space", "royal", "gothic", "knit", "sport", "magician"]
+TOPS.update({
+    "knight": strip({
+        13: ".....oLmmmmo....",
+        14: ".....omMmmmo....",
+        15: ".....oyyyyyo....",
+    }, {"m": "#C9D3E6", "L": "#F4F7FF", "M": "#8F9BB5", "y": "#FFC857", "d": "#8F9BB5"}, arm={13: "y", 14: "d"}),
+    "cat": strip({
+        12: "..........oco...",
+        13: ".....occcccco...",
+        14: ".....ocyccco....",
+        15: ".....oCCCCCo....",
+    }, {"c": "#8B7CF6", "C": "#6A5BD6", "y": "#FFE27A", "d": "#7A6BE8"}, arm=LONG),
+    "ninja": strip({
+        13: ".....ocwccco....",
+        14: ".....occwcco....",
+        15: ".....orrrrro....",
+    }, {"c": "#34313F", "w": "#6E6A86", "r": "#4A5BD1", "d": "#34313F"}, arm=LONG),
+    "pirate": strip({
+        13: ".....owcgcco....",
+        14: ".....owcccco....",
+        15: ".....owcgccco...",
+        16: "..........occo..",
+        17: "...........oo...",
+    }, {"c": "#7A2E3A", "w": "#F4F1FA", "g": "#FFC857", "d": "#5E222C"}, arm=LONG),
+    "space": strip({
+        13: ".....owwtwwo....",
+        14: ".....oTTTTTo....",
+        15: ".....owwgwwo....",
+    }, {"w": "#EEF2FA", "t": "#22D3EE", "T": "#B9C3D6", "g": "#22D3EE", "d": "#D5DCEA"}, arm={13: "t", 14: "d"}),
+    "royal": strip({
+        12: ".........owwo...",
+        13: ".....onngrrrro..",
+        14: ".....ongnrrrro..",
+        15: ".....onngnrrrro.",
+        16: "..........orrro.",
+        17: "...........ooo..",
+    }, {"n": "#2C3E73", "w": "#F4F1FA", "g": "#FFC857", "r": "#C23B5A", "d": "#2C3E73"}, arm=LONG),
+    "gothic": strip({
+        13: ".....owwrwwo....",
+        14: ".....okkkkko....",
+        15: ".....okkkkko....",
+    }, {"w": "#EDE6DA", "r": "#C2304A", "k": "#26222E", "d": "#26222E"}, arm=LONG),
+    "knit": strip({
+        13: ".....owcccco....",
+        14: ".....owcbcco....",
+        15: ".....owccccco...",
+    }, {"w": "#FFF7EA", "c": "#D9B98C", "b": "#8A5A32", "d": "#C9A77A"}, arm=LONG),
+    "sport": strip({
+        13: ".....owcccco....",
+        14: ".....ocwcwco....",
+        15: ".....occccco....",
+    }, {"w": "#F4F1FA", "c": "#2BB3A3", "d": "#2BB3A3"}, arm=SHORT),
+    "magician": strip({
+        13: ".....owrwbbo....",
+        14: ".....owbbbbo....",
+        15: ".....owbybbo....",
+    }, {"w": "#F4F1FA", "r": "#8B5CF6", "b": "#6B4526", "y": "#FFC857", "d": "#F4F1FA"}, arm=LONG),
+})
+BOTS.update({
+    "knight": strip({
+        16: "....ocdcdcco....",
+        17: "...ocdcdcdcdo...",
+    }, {"c": "#B8C2D6", "d": "#7D879E"}),
+    "cat": strip({}, {"c": "#2E3466", "y": "#FFE27A"}, legs(
+        "....ocycccco....", "...occo.occo....",
+        ".....occyco.....", ".....occcco.....")),
+    "ninja": strip({
+        16: "....ocdccdco....",
+        17: "...occdccdcco...",
+    }, {"c": "#3A4470", "d": "#2B3356"}),
+    "pirate": strip({}, {"w": "#F4F1FA", "s": "#3F6FD8"}, legs(
+        "....owswswso....", "...owso.owso....",
+        ".....oswswo.....", ".....owswso.....")),
+    "space": strip({}, {"w": "#EEF2FA", "T": "#B9C3D6", "t": "#22D3EE"}, legs(
+        "....owTwwTwo....", "...otwo.otwo....",
+        ".....owTTwo.....", ".....otwtwo.....")),
+    "royal": strip({
+        16: "....okwkwkwo....",
+        17: "...owkwkwkwko...",
+    }, {"k": "#2C3E73", "w": "#F4F1FA"}),
+    "gothic": strip({
+        16: "....okkkkkko....",
+        17: "...owwwwwwwwo...",
+    }, {"k": "#26222E", "w": "#EDE6DA"}),
+    "knit": strip({}, {"c": "#7FA6D9", "d": "#5D82B8"}, legs(
+        "....ocdcdcdo....", "...ocdo.odco....",
+        ".....ocdcdo.....", ".....ocddco.....")),
+    "sport": strip({
+        16: "....owgwgwgo....",
+        17: "...owgwgwgwgo...",
+    }, {"w": "#F4F1FA", "g": "#C9D1E0"}),
+    "magician": strip({
+        16: "....orryyyto....",
+        17: "...obbbbtttto...",
+    }, {"r": "#E8667F", "y": "#FFC857", "b": "#3E8FD8", "t": "#2BB3A3"}),
+})
+ACCS.update({
+    "knight": strip({
+        4: "............o.o.",
+        5: "...ooooooooowowo",
+        6: "...oybyyyyyyowwo",
+        7: "...oooooooooooo.",
+    }, {"y": "#FFC857", "b": "#3F6FD8", "w": "#F4F7FF"}),
+    "cat": strip({
+        1: "....o....o......",
+        2: "...oko..oko.....",
+        3: "...okpo.okpo....",
+        4: "...okkoookko....",
+    }, {"k": "#FF9463", "p": "#F6B4C8"}),
+    "ninja": strip({
+        12: ".....orrrrrroo..",
+        13: ".....orrrrrrrro.",
+    }, {"r": "#4A5BD1", "R": "#7C8BF2"}, {
+        "A": {14: "..........oRrro.", 15: "............oRro", 16: ".............oo."},
+        "U": {14: "..........oRro..", 15: "...........oRro.", 16: "............oo.."},
+        "B": {14: "..........oRrrro", 15: "..............oo"},
+    }),
+    "pirate": strip({
+        3: ".....oooooo.....",
+        4: "....orwrrrroo...",
+        5: "...orrrrrwrrro..",
+        6: "...ooooooooorroo",
+        7: "...........oorro",
+        8: "............o.o.",
+    }, {"r": "#D93A3A", "w": "#F4F1FA"}),
+    "space": strip({
+        3: "..........oo....",
+        4: "..........oco...",
+        5: "..........oco...",
+        6: ".........ooooo..",
+        7: ".........occcco.",
+        8: ".........ocggco.",
+        9: ".........occcco.",
+        10: "..........ooo...",
+        11: "....goooooo.....",
+    }, {"c": "#39424E", "g": "#22D3EE"}),
+    "royal": strip({
+        2: ".....oooooo.....",
+        3: "....occcccccoo..",
+        4: "...occgcccccccoo",
+        5: "...oaaaaaaaaaao.",
+        6: ".oooooooooooooo.",
+    }, {"c": "#2C3E73", "g": "#FFC857", "a": "#FFC857"}),
+    "gothic": strip({
+        3: "....o.o.o.o.o...",
+        4: "...owowowowowo..",
+        5: "...okkkkrkkkkko.",
+        6: "...oooooooooooo.",
+    }, {"k": "#26222E", "r": "#C2304A", "w": "#EDE6DA"}),
+    "knit": strip({
+        0: ".......oo.......",
+        1: "......owwo......",
+        2: ".....oowwoo.....",
+        3: "....occcccco....",
+        4: "...occcccccco...",
+        5: "...oaaaaaaaaao..",
+        6: "...ooooooooooo..",
+    }, {"c": "#F2A7B5", "a": "#E8889C", "w": "#FFF7EA"}),
+    "sport": strip({
+        12: "......orro......",
+        13: "......orro......",
+        14: ".....oyyyo......",
+        15: ".....oyYyo......",
+        16: "......ooo.......",
+    }, {"r": "#E8475F", "y": "#FFC857", "Y": "#E0A12E"}),
+    "magician": strip({
+        0: ".....oooooo.....",
+        1: ".....okLkkko....",
+        2: ".....okLkkko....",
+        3: ".....okkkkko....",
+        4: ".....opppppo....",
+        5: "...okkkkkkkkko..",
+        6: "...ooooooooooo..",
+    }, {"k": "#2B2A33", "L": "#55516A", "p": "#8B5CF6"}),
+})
+
+
+def offsets():
+    """Where each accessory's art sits, for PieceArt.tsx: the middle of its rows lands mid-tile."""
+    out = {}
+    for key, im in ACCS.items():
+        frame = im.crop((4 * W, 0, 5 * W, FULL_H))
+        top, bottom = frame.getbbox()[1], frame.getbbox()[3] - 1
+        out[key] = round(48 - 6 * ((top + bottom) / 2 + 0.5))
+    return out
+
+
 def stack(*layers):
     c = Image.new("RGBA", layers[0].size, (0, 0, 0, 0))
     for l in layers:
@@ -459,28 +655,24 @@ def main():
         return
     os.makedirs(REVIEW, exist_ok=True)
     bg = (31, 42, 92, 255)
-    genres = list(TOPS)
-    # the five new sets in all frames, then every top and bottom in idle and stride
+    # the second outfits in all frames, two looks each
     z = 6
-    sh = Image.new("RGBA", (80 * z, FULL_H * z * 5), bg)
-    for i, g in enumerate(genres[5:]):
-        im = stack(base("fair"), BOTS[g], TOPS[g], hair("bob", "brown"), ACCS[g])
-        sh.alpha_composite(up(im, z), (0, i * FULL_H * z))
-    sh.save(f"{REVIEW}/new-sets.png")
+    sh = Image.new("RGBA", (80 * z * 2, FULL_H * z * len(SECOND)), bg)
+    for i, g in enumerate(SECOND):
+        for j, (sk, st, col) in enumerate([("fair", "bob", "brown"), ("deep", "long", "pink")]):
+            im = stack(base(sk), BOTS[g], TOPS[g], hair(st, col), ACCS[g])
+            sh.alpha_composite(up(im, z), (j * 80 * z, i * FULL_H * z))
+    sh.save(f"{REVIEW}/second-sets.png")
 
+    # every accessory on every hairstyle, standing
     z = 3
-    sh = Image.new("RGBA", (W * z * 10, FULL_H * z * 10), bg)
-    for (i, t), (j, b) in itertools.product(enumerate(genres), enumerate(genres)):
-        im = stack(base("tan"), BOTS[b], TOPS[t], hair("long", "plum"))
-        cell = im.crop((0, 0, W, FULL_H)) if (i + j) % 2 else im.crop((4 * W, 0, 5 * W, FULL_H))
-        sh.alpha_composite(up(cell, z), (i * W * z, j * FULL_H * z))
-    sh.save(f"{REVIEW}/pairs.png")
-
-    sh = Image.new("RGBA", (W * z * 10, FULL_H * z * 5), bg)
-    for (i, a), (j, st) in itertools.product(enumerate(genres), enumerate(HAIR_STYLES)):
-        im = stack(base("brown"), hair(st, "pink"), ACCS[a]).crop((4 * W, 0, 5 * W, FULL_H))
+    keys = list(ACCS)
+    sh = Image.new("RGBA", (W * z * len(keys), FULL_H * z * len(HAIR_STYLES)), bg)
+    for (i, a), (j, st) in itertools.product(enumerate(keys), enumerate(HAIR_STYLES)):
+        im = stack(base("brown"), hair(st, "plum"), ACCS[a]).crop((4 * W, 0, 5 * W, FULL_H))
         sh.alpha_composite(up(im, z), (i * W * z, j * FULL_H * z))
     sh.save(f"{REVIEW}/heads.png")
+    print(offsets())
 
 
 if __name__ == "__main__":

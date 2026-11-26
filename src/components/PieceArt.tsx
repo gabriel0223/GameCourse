@@ -17,6 +17,16 @@ const ACCESSORY_OFFSET: Record<string, number> = {
   'acc-rpg': 13,
   'acc-shooter': -17,
   'acc-strategy': 13,
+  'acc-cat': 16,
+  'acc-gothic': 4,
+  'acc-knight': -2,
+  'acc-knit': 13,
+  'acc-magician': 13,
+  'acc-ninja': -53,
+  'acc-pirate': -2,
+  'acc-royal': 7,
+  'acc-space': -11,
+  'acc-sport': -53,
 };
 
 function artOffset(piece: Piece): number {

@@ -369,7 +369,7 @@ export const strings = {
   shop: {
     title: 'Shop',
     balance: 'Your gold',
-    earnHint: 'Earn gold from achievements and level-ups. Harder achievements pay more.',
+    earnHint: 'Earn gold from quests, paths, achievements, and level-ups. Play more in a genre to add its pieces to the Shop.',
     tryOn: 'Trying on',
     close: 'Close details',
     pick: 'Pick a piece to try it on.',

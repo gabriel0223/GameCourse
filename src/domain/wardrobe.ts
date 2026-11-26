@@ -18,12 +18,18 @@ export interface Piece {
 
 export const SLOTS: Slot[] = ['accessory', 'top', 'bottom'];
 
-// Each genre's three pieces reach the Shop one at a time, and later pieces cost more.
-// Starting values, to be tuned once there is real play data.
+// Each genre's six pieces reach the Shop one at a time, and later pieces cost more.
+// Genre XP is 100 an hour plus 500 per finished game, so the last tier (6,750 XP)
+// takes about 67 hours of play alone, or 50 to 60 hours with a few games finished.
+// Gold from paths, quests, and achievements comes in faster than that, so prices are
+// set for the whole wardrobe to stay a long-term goal (42,000 gold for all 60 pieces).
 export const SHOP_TIERS = [
-  { level: 1, price: 60 },
-  { level: 3, price: 120 },
-  { level: 5, price: 200 },
+  { level: 1, price: 150 },
+  { level: 4, price: 300 },
+  { level: 7, price: 500 },
+  { level: 10, price: 750 },
+  { level: 13, price: 1000 },
+  { level: 16, price: 1500 },
 ];
 
 // Genres take turns on which slot comes first, so every tier is a mix of outfit types.
@@ -34,7 +40,10 @@ const TIER_ORDERS: Slot[][] = [
 ];
 
 type Art = [name: string, blurb: string];
-const SETS: Array<{ key: string; genre: WardrobeGenre; top: Art; bottom: Art; accessory: Art }> = [
+type Outfit = { key: string; genre: WardrobeGenre; top: Art; bottom: Art; accessory: Art };
+
+// The first outfit fills the first three tiers. Keys are also the sprite file names.
+const SETS: Outfit[] = [
   {
     key: 'rpg',
     genre: 'RPG',
@@ -107,11 +116,90 @@ const SETS: Array<{ key: string; genre: WardrobeGenre; top: Art; bottom: Art; ac
   },
 ];
 
-export const PIECES: Piece[] = SETS.flatMap((set, index) =>
+// The second outfit, one per genre in the same order, fills the last three tiers.
+const SECOND_SETS: Outfit[] = [
+  {
+    key: 'knight',
+    genre: 'RPG',
+    accessory: ['Hero’s circlet', 'Worn by everyone the prophecy was about.'],
+    top: ['Silver armor', 'Polished before every boss, just in case.'],
+    bottom: ['Chainmail skirt', 'Jingles a little on every step.'],
+  },
+  {
+    key: 'cat',
+    genre: 'Platformer',
+    accessory: ['Cat ears', 'Grants +1 climb. Possibly.'],
+    top: ['Power-up hoodie', 'The star means it’s working.'],
+    bottom: ['Star leggings', 'For the last jump before the flagpole.'],
+  },
+  {
+    key: 'ninja',
+    genre: 'Action',
+    accessory: ['Ninja scarf', 'Trails behind her at full speed.'],
+    top: ['Shinobi top', 'Dark enough to dodge in.'],
+    bottom: ['Hakama', 'Wide enough for a perfect parry stance.'],
+  },
+  {
+    key: 'pirate',
+    genre: 'Adventure',
+    accessory: ['Pirate bandana', 'X marks the spot, and the forehead.'],
+    top: ['Captain’s coat', 'Long tails for windy decks.'],
+    bottom: ['Striped trousers', 'Every sailor’s favorite pattern.'],
+  },
+  {
+    key: 'space',
+    genre: 'Shooter',
+    accessory: ['Comms headset', 'Callouts, crystal clear.'],
+    top: ['Space armor', 'Shields recharge between fights.'],
+    bottom: ['Armored leggings', 'Rated for zero gravity.'],
+  },
+  {
+    key: 'royal',
+    genre: 'Strategy',
+    accessory: ['Officer cap', 'Every plan looks better under it.'],
+    top: ['Royal cape', 'For the turn the war is won.'],
+    bottom: ['Chessboard skirt', 'Sixty-four squares, all under control.'],
+  },
+  {
+    key: 'gothic',
+    genre: 'Horror',
+    accessory: ['Lace headdress', 'Pretty enough to haunt a mansion.'],
+    top: ['Gothic blouse', 'Black lace for very long nights.'],
+    bottom: ['Frilled skirt', 'Still spotless after the basement.'],
+  },
+  {
+    key: 'knit',
+    genre: 'Cozy',
+    accessory: ['Pompom beanie', 'Knitted during a rainy in-game week.'],
+    top: ['Chunky cardigan', 'One more day, then bed. Probably.'],
+    bottom: ['Flannel pajamas', 'The official uniform of long sessions.'],
+  },
+  {
+    key: 'sport',
+    genre: 'Racing and Sports',
+    accessory: ['Gold medal', 'First place, and she has the replay.'],
+    top: ['Team jersey', 'Number one on the roster.'],
+    bottom: ['Tennis skirt', 'Pleated for a fast serve.'],
+  },
+  {
+    key: 'magician',
+    genre: 'Puzzle',
+    accessory: ['Top hat', 'Something clever is hiding inside.'],
+    top: ['Riddle waistcoat', 'A gentle puzzler’s favorite vest.'],
+    bottom: ['Tile skirt', 'Slide the colors until they line up.'],
+  },
+];
+
+const pieceId = (slot: Slot, key: string) => `${slot === 'accessory' ? 'acc' : slot}-${key}`;
+
+export const PIECES: Piece[] = [...SETS, ...SECOND_SETS].flatMap((set, index) =>
   SLOTS.map((slot) => {
-    const tier = SHOP_TIERS[TIER_ORDERS[index % TIER_ORDERS.length].indexOf(slot)];
+    const outfit = Math.floor(index / SETS.length);
+    // The second outfit shifts its slot order by one, so each genre's six tiers don't repeat a pattern.
+    const order = TIER_ORDERS[((index % SETS.length) + outfit) % TIER_ORDERS.length];
+    const tier = SHOP_TIERS[outfit * SLOTS.length + order.indexOf(slot)];
     return {
-      id: `${slot === 'accessory' ? 'acc' : slot}-${set.key}`,
+      id: pieceId(slot, set.key),
       slot,
       genre: set.genre,
       name: set[slot][0],
